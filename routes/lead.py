@@ -189,8 +189,10 @@ async def update_lead(lead_id: int,username:str,
         print("Error while updating lead:", e)
         return {"message": "Failed to update lead"}
 
-@router.put("/lead/{lead_id}")
+@router.put("/lead_status/{lead_id}")
 async def update_lead_status(lead_id: int, status: str,alias_name:str,username:str,progress: str= None):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
     query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
     cursor.execute(query, (username,))
     result = cursor.fetchone()  
@@ -220,7 +222,7 @@ async def update_lead_status(lead_id: int, status: str,alias_name:str,username:s
         print("Error while updating lead status:", e)
         return {"message": "Failed to update lead status"}
     
-@router.close("/lead/{lead_id}")
+@router.delete("/lead/{lead_id}")
 async def close_lead(lead_id: int,alias_name:str,username:str):
     query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
     cursor.execute(query, (username,))
