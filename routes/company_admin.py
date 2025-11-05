@@ -47,12 +47,23 @@ async def companyadmin_login(username: str, password: str):
         return {"error": str(e)}
     
 @router.get("/employees")
-async def get_employees(username:str,alias_name:str):
+async def get_employees(username:str,alias_name:str,salesman_list:bool = False):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
-
-
-    query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1"""
+    try:
+        query = f"""SELECT role FROM  {alias_name}_employees WHERE username = %s"""
+        cursor.execute(query,(username,))
+        result = cursor.fetchone()
+        if salesman_list and result["role"].lower() == "admin":
+            query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role = 'Salesman'"""
+        if not salesman_list and result["role"].lower() == "admin":
+            query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role != 'Admin'"""
+        if salesman_list and result["role"].lower() != "admin":
+            return {"error":"Only admin can access salesman list."}
+        else:
+            return {"error":"Only admin can access employee list."}
+    except Exception as e :
+        return {"error":str(e)}
     cursor.execute(query)
     result = cursor.fetchall()
     cursor.close()
