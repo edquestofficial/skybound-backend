@@ -41,7 +41,7 @@ async def raise_review_request(username:str,alias_name:str, project_id:int):
         if assigned_to != username:
             return {"message": "Unauthorized to update lead"}
 
-        cursor.execute(f"UPDATE {table_name} SET progress = %s WHERE id = %s", ("Raised Review", project_id))
+        cursor.execute(f"UPDATE {table_name} SET progress = %s WHERE id = %s", ("raised review", project_id))
         connection.commit()
         return {"message": "Review request raised successfully"}
     except Exception as e:
@@ -60,14 +60,14 @@ async def close_project(username:str,alias_name:str, project_id:int):
         if role not in ['Admin',"HR"]:
             return {"message": "Unauthorized to update lead"}
         
-        cursor.execute(f"UPDATE {table_name} SET progress = %s,active = %s  WHERE id = %s", ("Closed",False, project_id))
+        cursor.execute(f"UPDATE {table_name} SET progress = %s,active = %s  WHERE id = %s", ("closed",False, project_id))
         connection.commit()
         return {"message": "Project closed successfully"}
     except Exception as e:
         return {"error": str(e)}
     
 @router.get("/projects")
-async def get_projects(username:str,alias_name:str,progress: str = "PO Raised",active: bool = True):
+async def get_projects(username:str,alias_name:str,progress: str = "po raised",active: bool = True):
     table_name = f"{alias_name}_projects"
     try:
         query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
