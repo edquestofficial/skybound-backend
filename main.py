@@ -9,6 +9,7 @@ from routes.super_admin import router as super_router
 from routes.company_admin import router as company_admin_router
 from routes.attendence import router as attendence_router 
 from routes.lead import router as lead_router
+from routes.projects import router as project_router 
 # from routes.face_match import router as face_match_router 
 
 app = FastAPI()
@@ -24,6 +25,7 @@ app.include_router(company_admin_router, prefix="/companyadmin")
 app.include_router(super_router, prefix="/superadmin")
 app.include_router(attendence_router, prefix="/attendence")
 app.include_router(lead_router, prefix="/lead")
+app.include_router(project_router, prefix="/projects")
 
 @app.get("/")
 def root():
