@@ -20,7 +20,7 @@ async def add_lead(
                      status: str,
                         assigned_to: str,
                         progress: str,
-                        active: bool,
+                        active: str,
                         next_followup:str,
                         alias_name:str
                    ):
@@ -72,7 +72,7 @@ async def get_leads(request:Request):
         return {"error": "Invalid JSON data"}
 
 @router.get("/leads")
-async def fetch_leads(username:str,alias_name:str):
+async def fetch_leads(username:str,alias_name:str,active:str):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
@@ -91,8 +91,8 @@ async def fetch_leads(username:str,alias_name:str):
             cursor.close()
             connection.close()
             return {"leads": leads}
-        query = f"SELECT * FROM {alias_name}_leads"
-        cursor.execute(query)
+        query = f"SELECT * FROM {alias_name}_leads where active = %s"
+        cursor.execute(query,(active,))
         leads = cursor.fetchall()
         if leads is None:
             return {"message": "No leads found"}
@@ -117,7 +117,7 @@ async def update_lead(lead_id: int,username:str,
                      status: str    = None,
                         assigned_to: str        = None,
                         progress: str      = None,
-                        active: bool     = None,
+                        active: str     = None,
                         next_followup:str   = None,
                         alias_name:str = None):
     connection = get_connection()
@@ -205,9 +205,29 @@ async def update_lead_status(lead_id: int, status: str,alias_name:str,username:s
     params = []
     update_fields.append("status = %s")
     params.append(status)
-    if progress is not None:
+    if progress is not None and progress != "PO Raised":
         update_fields.append("progress = %s")
         params.append(progress)
+    if progress is not None and progress == "PO Raised":
+        try:
+            query = f"SELECT * FROM {alias_name}_leads WHERE id = %s"
+            cursor.execute(query, (lead_id,))
+            lead = cursor.fetchone()
+            if not lead:
+                return {"message": "Lead not found"}
+            query = f"INSERT INTO {alias_name}_projects (id) VALUES (%s)"
+            cursor.execute(query, (lead['id'],))
+            connection.commit()
+
+        except Exception as e:
+            print("Error while fetching lead details:", e)
+            raise {"message": f"Failed to fetch lead details {e}"}
+
+
+        update_fields.append("progress = %s")
+        params.append(progress)
+        update_fields.append("active = %s")
+        params.append("Closed")
     params.append(lead_id)
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
@@ -246,7 +266,7 @@ async def close_lead(lead_id: int,alias_name:str,username:str):
         return {"message": "Unauthorized to close this lead"}
     try:
         query = f"UPDATE {alias_name}_leads SET active = %s WHERE id = %s"
-        cursor.execute(query, (False, lead_id))
+        cursor.execute(query, ("Closed", lead_id))
         connection.commit()
         cursor.close()
         connection.close()

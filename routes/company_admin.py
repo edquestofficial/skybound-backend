@@ -56,12 +56,12 @@ async def get_employees(username:str,alias_name:str,salesman_list:bool = False):
         result = cursor.fetchone()
         if salesman_list and result["role"].lower() == "admin":
             query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role = 'Salesman'"""
-        if not salesman_list and result["role"].lower() == "admin":
+        elif not salesman_list and result["role"].lower() == "admin":
             query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role != 'Admin'"""
-        if salesman_list and result["role"].lower() != "admin":
+        elif salesman_list and result["role"].lower() != "admin":
             return {"error":"Only admin can access salesman list."}
         else:
-            return {"error":"Only admin can access employee list."}
+            return {"error":"Only admin can access employee list11."}
     except Exception as e :
         return {"error":str(e)}
     cursor.execute(query)
