@@ -16,13 +16,13 @@ async def add_lead(
                    contect_1:int,
                    inquery_type:str,
                    email: str,
-                requirement: str,
-                     status: str,
-                        assigned_to: str,
+                   requirement: str,
                         progress: str,
-                        active: str,
-                        next_followup:str,
-                        alias_name:str
+                        alias_name:str,
+                        active: str = "Open",
+                        next_followup:str=None,
+                     status: str=None,
+                        assigned_to: str=None
                    ):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
@@ -83,7 +83,7 @@ async def fetch_leads(username:str,alias_name:str,active:str):
             return {"message": "User not found"}
         role = result['role']
         if role not in ['Admin',"HR"]:
-            query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s"
+            query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
             cursor.execute(query, (username,))
             leads = cursor.fetchall()
             if leads is None:
@@ -91,7 +91,7 @@ async def fetch_leads(username:str,alias_name:str,active:str):
             cursor.close()
             connection.close()
             return {"leads": leads}
-        query = f"SELECT * FROM {alias_name}_leads where active = %s"
+        query = f"SELECT * FROM {alias_name}_leads WHERE active = %s"
         cursor.execute(query,(active,))
         leads = cursor.fetchall()
         if leads is None:
