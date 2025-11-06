@@ -76,9 +76,18 @@ async def get_leads(request:Request):
         return {"error": "Invalid JSON data"}
 
 @router.get("/leads")
-async def fetch_leads(username:str,alias_name:str,active:str="open"):
+async def fetch_leads(username:str,alias_name:str,active:str="open" , unassigned: bool = False):
+    parameters = []
+    values = []
+
     if active not in ("open","closed","in progress"):
         return {"message": "Invalid progress value provided. Must be 'open', 'closed', or 'in progress'."}
+    if active:
+        parameters.append("WHERE active = %s")
+        values.append(active)
+    if unassigned:
+        parameters.append("assigned_to IS %s")
+        values.append(None)
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
@@ -97,8 +106,10 @@ async def fetch_leads(username:str,alias_name:str,active:str="open"):
             cursor.close()
             connection.close()
             return {"leads": leads}
-        query = f"SELECT * FROM {alias_name}_leads where active = %s"
-        cursor.execute(query,(active,))
+        filter  = " AND ".join(parameters)
+        query = f"SELECT * FROM {alias_name}_leads "+filter
+        print(query)
+        cursor.execute(query,tuple(values))
         leads = cursor.fetchall()
         if leads is None:
             return {"message": "No leads found"}
@@ -291,14 +302,25 @@ async def close_lead(lead_id: int,alias_name:str,username:str):
 async def count_leads(alias_name:str, username:str):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
-    return {"total_leads": 100,
-            "active_leads": 80,
-            "closed_leads": 20,
-            "assinged_leads": 50,
-            "unassinged_leads": 50,
-            "hot_leads": 30,
-            "cold_leads": 20,
-            "warm_leads": 50}
+
+    query = f"""SELECT 
+    COUNT(*) as total_leads,
+    COUNT(CASE WHEN active = 'open' THEN 1 END) as open_leads,
+    COUNT(CASE WHEN active = 'closed' THEN 1 END) as closed_leads,
+    COUNT(CASE WHEN active = 'in progress' THEN 1 END) as in_progress_leads,
+    COUNT(CASE WHEN assigned_to IS NULL THEN 1 END) as unassigned_leads
+    FROM {alias_name}_leads"""
+    try:
+        cursor.execute(query)
+        result = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        return result
+    except Exception as e:
+        print("Error while counting leads:", e)
+        return {"message": f"Failed to count leads {e}"}
+
+
     # try:
     #     query = f"SELECT * FROM {alias_name}_leads"
     #     cursor.execute(query)
