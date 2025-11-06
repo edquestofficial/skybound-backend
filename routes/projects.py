@@ -67,8 +67,24 @@ async def close_project(username:str,alias_name:str, project_id:int):
         return {"error": str(e)}
     
 @router.get("/projects")
-async def get_projects(username:str,alias_name:str,progress: str = "po raised",active: bool = True):
+async def get_projects(username:str,alias_name:str,assigned_to: bool,progress: str = None,active: bool = True):
     table_name = f"{alias_name}_projects"
+    parameters = []
+    values = []
+
+    if assigned_to:
+        parameters.append(f"{table_name}.assigned_to IS %s")
+        values.append(None)
+    elif not assigned_to:
+        parameters.append(f"{table_name}.assigned_to IS NOT %s")
+        values.append(None)
+    if progress:
+        parameters.append(f"{table_name}.progress = %s")
+        values.append(progress)
+    if active is not None:
+        parameters.append(f"{table_name}.active = %s")
+        values.append(active)
+    filter  = " AND ".join(parameters)
     try:
         query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
         cursor.execute(query, (username,))
@@ -77,8 +93,7 @@ async def get_projects(username:str,alias_name:str,progress: str = "po raised",a
             return {"message": "User not found"}
         role = result['role']
         if role in ['Admin',"HR"]:
-            cursor.execute(f"SELECT {table_name}.*,{alias_name}_leads.UNIQUE_QUERY_ID,{alias_name}_leads.name,{alias_name}_leads.company_name,{alias_name}_leads.city,{alias_name}_leads.state,{alias_name}_leads.contact_1,{alias_name}_leads.inquiry_type,{alias_name}_leads.requirement FROM {table_name} LEFT JOIN {alias_name}_leads ON {table_name}.id = {alias_name}_leads.id WHERE {table_name}.active = %s AND {table_name}.progress = %s", (active,progress))
-            print(f"SELECT * FROM {table_name} LEFT JOIN {alias_name}_leads ON {table_name}.id = {alias_name}_leads.id WHERE {table_name}.active = %s AND {table_name}.progress = %s", (active,progress))
+            cursor.execute(f"SELECT {table_name}.*,{alias_name}_leads.UNIQUE_QUERY_ID,{alias_name}_leads.name,{alias_name}_leads.company_name,{alias_name}_leads.city,{alias_name}_leads.state,{alias_name}_leads.contact_1,{alias_name}_leads.inquiry_type,{alias_name}_leads.requirement FROM {table_name} LEFT JOIN {alias_name}_leads ON {table_name}.id = {alias_name}_leads.id WHERE {filter}", tuple(values))
         else:
             cursor.execute(f"SELECT {table_name}.*,{alias_name}_leads.UNIQUE_QUERY_ID,{alias_name}_leads.name,{alias_name}_leads.company_name,{alias_name}_leads.city,{alias_name}_leads.state,{alias_name}_leads.contact_1,{alias_name}_leads.inquiry_type,{alias_name}_leads.requirement FROM {table_name} LEFT JOIN {alias_name}_leads ON {table_name}.id = {alias_name}_leads.id WHERE {table_name}.assigned_to = %s AND {table_name}active = %s", (username,True))
         projects = cursor.fetchall()
