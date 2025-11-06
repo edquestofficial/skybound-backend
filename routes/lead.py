@@ -16,14 +16,18 @@ async def add_lead(
                    contect_1:int,
                    inquery_type:str,
                    email: str,
-                   requirement: str,
-                        progress: str,
+                requirement: str,
                         alias_name:str,
-                        active: str = "Open",
+                        progress: str,
+                        active: str="open",
                         next_followup:str=None,
-                     status: str=None,
-                        assigned_to: str=None
+                     status: str =None,
+                        assigned_to: str= None,
                    ):
+    if active and active not in ("open","closed","in progress"):
+        return {"message": "Invalid progress value provided. Must be 'open', 'closed', or 'in progress'."}
+    if progress and progress not in ("warm","hot","cold","po raised"):
+        return {"message": "Invalid progress value provided. Must be 'Warm', 'Hot', 'Cold', or 'PO Raised'."}
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     query = f"""
@@ -41,7 +45,7 @@ async def add_lead(
     
 
 alias_name = "tq"  # Example alias name; in practice, this would come from the request
-@router.post("/leads")
+# @router.post("/leads")
 async def get_leads(request:Request):
     data = await request.json()
     id= data.get("UNIQUE_QUERY_ID")
@@ -72,7 +76,9 @@ async def get_leads(request:Request):
         return {"error": "Invalid JSON data"}
 
 @router.get("/leads")
-async def fetch_leads(username:str,alias_name:str,active:str):
+async def fetch_leads(username:str,alias_name:str,active:str="open"):
+    if active not in ("open","closed","in progress"):
+        return {"message": "Invalid progress value provided. Must be 'open', 'closed', or 'in progress'."}
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
@@ -120,6 +126,10 @@ async def update_lead(lead_id: int,username:str,
                         active: str     = None,
                         next_followup:str   = None,
                         alias_name:str = None):
+    if active and active not in ("open","closed","in progress"):
+        return {"message": "Invalid progress value provided. Must be 'Open', 'Closed', or 'In Progress'."}
+    if progress and  progress not in ("warm","hot","cold","po raised"):
+        return {"message": "Invalid progress value provided. Must be 'Warm', 'Hot','Cold', or 'PO Raised'."}
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
@@ -191,6 +201,8 @@ async def update_lead(lead_id: int,username:str,
 
 @router.put("/lead_status/{lead_id}")
 async def update_lead_status(lead_id: int, status: str,alias_name:str,username:str,progress: str= None):
+    if progress and progress not in ("warm","hot","cold","po raised"):
+        return {"message": "Invalid progress value provided. Must be 'Warm', 'Hot','Cold', or 'PO Raised'."}
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
@@ -205,10 +217,10 @@ async def update_lead_status(lead_id: int, status: str,alias_name:str,username:s
     params = []
     update_fields.append("status = %s")
     params.append(status)
-    if progress is not None and progress != "PO Raised":
+    if progress is not None and progress != "po raised":
         update_fields.append("progress = %s")
         params.append(progress)
-    if progress is not None and progress == "PO Raised":
+    if progress is not None and progress == "po raised":
         try:
             query = f"SELECT * FROM {alias_name}_leads WHERE id = %s"
             cursor.execute(query, (lead_id,))
@@ -227,7 +239,7 @@ async def update_lead_status(lead_id: int, status: str,alias_name:str,username:s
         update_fields.append("progress = %s")
         params.append(progress)
         update_fields.append("active = %s")
-        params.append("Closed")
+        params.append("closed")
     params.append(lead_id)
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
@@ -266,7 +278,7 @@ async def close_lead(lead_id: int,alias_name:str,username:str):
         return {"message": "Unauthorized to close this lead"}
     try:
         query = f"UPDATE {alias_name}_leads SET active = %s WHERE id = %s"
-        cursor.execute(query, ("Closed", lead_id))
+        cursor.execute(query, ("closed", lead_id))
         connection.commit()
         cursor.close()
         connection.close()
