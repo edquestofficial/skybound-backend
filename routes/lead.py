@@ -75,8 +75,20 @@ async def get_leads(request:Request):
     except Exception as e:
         return {"error": "Invalid JSON data"}
 
+@router.put("/assign")
+async def assigen(username:str,alias_name:str,assign_to:str,lead_id:str):
+    table_name = f"{alias_name}_lrads"
+    try:
+        cursor.execute(f"UPDATE {table_name} SET assigned_to = %s, active = 'in progress' WHERE id = %s", (assign_to, lead_id))
+        connection.commit()
+        return {"message": "lead assigned successfully"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @router.get("/leads")
 async def fetch_leads(username:str,alias_name:str,active:str="open" , unassigned: bool = False):
+# async def fetch_leads(username:str,alias_name:str,active:str="open" , unassigned: bool = False):
     parameters = []
     values = []
 
@@ -85,9 +97,9 @@ async def fetch_leads(username:str,alias_name:str,active:str="open" , unassigned
     if active:
         parameters.append("WHERE active = %s")
         values.append(active)
-    if unassigned:
-        parameters.append("assigned_to IS %s")
-        values.append(None)
+    # if unassigned:
+    #     parameters.append("assigned_to IS %s")
+    #     values.append(None)
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
