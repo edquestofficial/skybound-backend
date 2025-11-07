@@ -55,7 +55,7 @@ async def add_company(
         connection.commit()
 
         query = """CREATE TABLE IF NOT EXISTS {}_leads (id INT AUTO_INCREMENT PRIMARY KEY, UNIQUE_QUERY_ID BIGINT,date DATE DEFAULT (CURRENT_DATE),name VARCHAR(255),company_name VARCHAR(255),city VARCHAR(100),state VARCHAR(100),contact_1 BIGINT,
-        inquiry_type VARCHAR(100),email VARCHAR(255),requirement TEXT,status VARCHAR(50),assigned_to VARCHAR(255),progress VARCHAR(100),active VARCHAR(15),next_followup VARCHAR(15)
+        inquiry_type VARCHAR(100),email VARCHAR(255),requirement TEXT,status VARCHAR(50),assigned_to VARCHAR(255),progress VARCHAR(100),stage VARCHAR(15),next_followup VARCHAR(15)
         )""".format(alias_name)
         cursor.execute(query)
         connection.commit()

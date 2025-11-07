@@ -31,34 +31,34 @@ app.include_router(project_router, prefix="/projects")
 def root():
     return {"message": "Welcome to FastAPI + MySQL!"}
 
-@app.get("/employees")
-def get_employees():
-    connection = get_connection()
-    if connection is None:
-        raise HTTPException(status_code=500, detail="Database connection failed")
+# @app.get("/employees")
+# def get_employees():
+#     connection = get_connection()
+#     if connection is None:
+#         raise HTTPException(status_code=500, detail="Database connection failed")
     
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM employees;")  # Replace with your table name
-    result = cursor.fetchall()
+#     cursor = connection.cursor(dictionary=True)
+#     cursor.execute("SELECT * FROM employees;")  # Replace with your table name
+#     result = cursor.fetchall()
     
-    cursor.close()
-    connection.close()
-    return {"employees": result}
+#     cursor.close()
+#     connection.close()
+#     return {"employees": result}
 
-@app.get("/employee/{emp_id}")
-def get_employee(emp_id: int):
-    connection = get_connection()
-    if connection is None:
-        raise HTTPException(status_code=500, detail="Database connection failed")
+# @app.get("/employee/{emp_id}")
+# def get_employee(emp_id: int):
+#     connection = get_connection()
+#     if connection is None:
+#         raise HTTPException(status_code=500, detail="Database connection failed")
     
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM employees WHERE id = %s;", (emp_id,))
-    result = cursor.fetchone()
+#     cursor = connection.cursor(dictionary=True)
+#     cursor.execute("SELECT * FROM employees WHERE id = %s;", (emp_id,))
+#     result = cursor.fetchone()
     
-    cursor.close()
-    connection.close()
+#     cursor.close()
+#     connection.close()
 
-    if not result:
-        raise HTTPException(status_code=404, detail="Employee not found")
+#     if not result:
+#         raise HTTPException(status_code=404, detail="Employee not found")
 
-    return result
+#     return result

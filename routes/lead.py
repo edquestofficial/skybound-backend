@@ -19,22 +19,22 @@ async def add_lead(
                 requirement: str,
                         alias_name:str,
                         progress: str,
-                        active: str="open",
+                        stage: str="open",
                         next_followup:str=None,
                      status: str =None,
                         assigned_to: str= None,
                    ):
-    if active and active not in ("open","closed","in progress"):
+    if stage and stage not in ("open","closed","in progress"):
         return {"message": "Invalid progress value provided. Must be 'open', 'closed', or 'in progress'."}
     if progress and progress not in ("warm","hot","cold","po raised"):
         return {"message": "Invalid progress value provided. Must be 'Warm', 'Hot', 'Cold', or 'PO Raised'."}
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     query = f"""
-        INSERT INTO {alias_name}_leads (date, name, company_name, city, state, contact_1, inquiry_type, email, requirement, status, assigned_to, progress, active, next_followup) VALUES (CURDATE(),%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""" 
+        INSERT INTO {alias_name}_leads (date, name, company_name, city, state, contact_1, inquiry_type, email, requirement, status, assigned_to, progress, stage, next_followup) VALUES (CURDATE(),%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""" 
     try:
 
-        cursor.execute(query, (name, company_name, city, state, contect_1, inquery_type, email, requirement, status, assigned_to, progress, active, next_followup))
+        cursor.execute(query, (name, company_name, city, state, contect_1, inquery_type, email, requirement, status, assigned_to, progress, stage, next_followup))
         connection.commit() 
         cursor.close()
         connection.close()
@@ -75,16 +75,16 @@ async def get_leads(request:Request):
     except Exception as e:
         return {"error": "Invalid JSON data"}
 
-@router.get("/leads")
-async def fetch_leads(username:str,alias_name:str,active:str="open" , unassigned: bool = False):
+@router.get("/get_leads")
+async def fetch_leads(username:str,alias_name:str,stage:str="open" , unassigned: bool = False):
     parameters = []
     values = []
 
-    if active not in ("open","closed","in progress"):
+    if stage not in ("open","closed","in progress"):
         return {"message": "Invalid progress value provided. Must be 'open', 'closed', or 'in progress'."}
-    if active:
-        parameters.append("WHERE active = %s")
-        values.append(active)
+    if stage:
+        parameters.append("WHERE stage = %s")
+        values.append(stage)
     if unassigned:
         parameters.append("assigned_to IS %s")
         values.append(None)
@@ -121,7 +121,7 @@ async def fetch_leads(username:str,alias_name:str,active:str="open" , unassigned
         print("Error while fetching leads:", e)
         return {"message": "Failed to fetch leads"}
     
-@router.put("/lead/{lead_id}")
+@router.put("/update_lead")
 async def update_lead(lead_id: int,username:str,
                    name: str,
                    company_name: str = None,
@@ -134,10 +134,10 @@ async def update_lead(lead_id: int,username:str,
                      status: str    = None,
                         assigned_to: str        = None,
                         progress: str      = None,
-                        active: str     = None,
+                        stage: str     = None,
                         next_followup:str   = None,
                         alias_name:str = None):
-    if active and active not in ("open","closed","in progress"):
+    if stage and stage not in ("open","closed","in progress"):
         return {"message": "Invalid progress value provided. Must be 'Open', 'Closed', or 'In Progress'."}
     if progress and  progress not in ("warm","hot","cold","po raised"):
         return {"message": "Invalid progress value provided. Must be 'Warm', 'Hot','Cold', or 'PO Raised'."}
@@ -189,9 +189,9 @@ async def update_lead(lead_id: int,username:str,
         if progress is not None:
             update_fields.append("progress = %s")
             params.append(progress)
-        if active is not None:
+        if stage is not None:
             update_fields.append("active = %s")
-            params.append(active)
+            params.append(stage)
         if next_followup is not None:
             update_fields.append("next_followup = %s")
             params.append(next_followup)
@@ -249,7 +249,7 @@ async def update_lead_status(lead_id: int, status: str,alias_name:str,username:s
 
         update_fields.append("progress = %s")
         params.append(progress)
-        update_fields.append("active = %s")
+        update_fields.append("stage = %s")
         params.append("closed")
     params.append(lead_id)
     connection = get_connection()
@@ -288,7 +288,7 @@ async def close_lead(lead_id: int,alias_name:str,username:str):
     if assigned_to != username and role != 'Admin':
         return {"message": "Unauthorized to close this lead"}
     try:
-        query = f"UPDATE {alias_name}_leads SET active = %s WHERE id = %s"
+        query = f"UPDATE {alias_name}_leads SET stage = %s WHERE id = %s"
         cursor.execute(query, ("closed", lead_id))
         connection.commit()
         cursor.close()
@@ -305,10 +305,9 @@ async def count_leads(alias_name:str, username:str):
 
     query = f"""SELECT 
     COUNT(*) as total_leads,
-    COUNT(CASE WHEN active = 'open' THEN 1 END) as open_leads,
-    COUNT(CASE WHEN active = 'closed' THEN 1 END) as closed_leads,
-    COUNT(CASE WHEN active = 'in progress' THEN 1 END) as in_progress_leads,
-    COUNT(CASE WHEN assigned_to IS NULL THEN 1 END) as unassigned_leads
+    COUNT(CASE WHEN stage = 'open' THEN 1 END) as open_leads,
+    COUNT(CASE WHEN stage = 'closed' THEN 1 END) as closed_leads,
+    COUNT(CASE WHEN stage = 'in progress' THEN 1 END) as in_progress_leads
     FROM {alias_name}_leads"""
     try:
         cursor.execute(query)
