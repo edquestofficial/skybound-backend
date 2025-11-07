@@ -57,7 +57,7 @@ async def close_project(username:str,alias_name:str, project_id:int):
         if not result:
             return {"message": "User not found"}
         role = result['role']
-        if role not in ['Admin',"HR"]:
+        if role not in ['Admin',"HR","Customer"]:
             return {"message": "Unauthorized to update lead"}
         
         cursor.execute(f"UPDATE {table_name} SET progress = %s,active = %s  WHERE id = %s", ("closed",False, project_id))
