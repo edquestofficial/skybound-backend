@@ -1,14 +1,17 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request,Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from db_config import get_connection
 from datetime import datetime
 
 router = APIRouter()
+security = HTTPBearer()
 
 connection = get_connection()
 cursor = connection.cursor(dictionary=True)
 
 @router.post("/lead")
 async def add_lead(
+    request:Request,
                 name: str,
                    company_name: str,
                    city: str,
@@ -17,13 +20,18 @@ async def add_lead(
                    inquery_type:str,
                    email: str,
                 requirement: str,
-                        alias_name:str,
                         progress: str,
                         stage: str="open",
                         next_followup:str=None,
                      status: str =None,
                         assigned_to: str= None,
+                        credentials: HTTPAuthorizationCredentials = Depends(security)
                    ):
+    role_user = request.state.user[1]
+    alias_name = request.state.user[2]
+    if role_user.lower() not in ["admin","hr"]:
+        return {"error":"Only admin,hr and salesman can add lead."}
+    
     if stage and stage not in ("open","closed","in progress"):
         return {"message": "Invalid progress value provided. Must be 'open', 'closed', or 'in progress'."}
     if progress and progress not in ("warm","hot","cold","po raised"):
@@ -44,36 +52,36 @@ async def add_lead(
         return {"message": "Failed to add lead"}
     
 
-alias_name = "tq"  # Example alias name; in practice, this would come from the request
-# @router.post("/leads")
-async def get_leads(request:Request):
-    data = await request.json()
-    id= data.get("UNIQUE_QUERY_ID")
-    name = data.get("name")
-    company_name = data.get("company_name")
-    city = data.get("city")
-    state = data.get("state")
-    contect_1 = data.get("contect_1")
-    inquery_type = data.get("inquery_type")
-    email = data.get("email")
-    requirement = data.get("requirement")
-    status = data.get("status")
-    assigned_to = data.get("assigned_to")
-    progress = data.get("progress")
-    active = data.get("active")
-    next_followup = data.get("next_followup")
-    try:
-        connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
-        query = f"""
-            INSERT INTO {alias_name}_leads (UNIQUE_QUERY_ID,date, name, company_name, city, state, contact_1, inquiry_type, email, requirement, status, assigned_to, progress, active, next_followup) VALUES (%s,CURDATE(),%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""" 
-        cursor.execute(query, (id,name, company_name, city, state, contect_1, inquery_type, email, requirement, status, assigned_to, progress, active, next_followup))
-        connection.commit() 
-        cursor.close()
-        connection.close()
-        return {"message": "Lead added successfully"}
-    except Exception as e:
-        return {"error": "Invalid JSON data"}
+# alias_name = "tq"  # Example alias name; in practice, this would come from the request
+# # @router.post("/leads")
+# async def get_leads(request:Request):
+#     data = await request.json()
+#     id= data.get("UNIQUE_QUERY_ID")
+#     name = data.get("name")
+#     company_name = data.get("company_name")
+#     city = data.get("city")
+#     state = data.get("state")
+#     contect_1 = data.get("contect_1")
+#     inquery_type = data.get("inquery_type")
+#     email = data.get("email")
+#     requirement = data.get("requirement")
+#     status = data.get("status")
+#     assigned_to = data.get("assigned_to")
+#     progress = data.get("progress")
+#     active = data.get("active")
+#     next_followup = data.get("next_followup")
+#     try:
+#         connection = get_connection()
+#         cursor = connection.cursor(dictionary=True)
+#         query = f"""
+#             INSERT INTO {alias_name}_leads (UNIQUE_QUERY_ID,date, name, company_name, city, state, contact_1, inquiry_type, email, requirement, status, assigned_to, progress, active, next_followup) VALUES (%s,CURDATE(),%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""" 
+#         cursor.execute(query, (id,name, company_name, city, state, contect_1, inquery_type, email, requirement, status, assigned_to, progress, active, next_followup))
+#         connection.commit() 
+#         cursor.close()
+#         connection.close()
+#         return {"message": "Lead added successfully"}
+#     except Exception as e:
+#         return {"error": "Invalid JSON data"}
 
 @router.get("/get_leads")
 async def fetch_leads(username:str,alias_name:str,stage:str="open" , unassigned: bool = False):
@@ -122,7 +130,9 @@ async def fetch_leads(username:str,alias_name:str,stage:str="open" , unassigned:
         return {"message": "Failed to fetch leads"}
     
 @router.put("/update_lead")
-async def update_lead(lead_id: int,username:str,
+async def update_lead(
+    request:Request,
+    lead_id: int,
                    name: str,
                    company_name: str = None,
                    city: str = None,
@@ -136,7 +146,13 @@ async def update_lead(lead_id: int,username:str,
                         progress: str      = None,
                         stage: str     = None,
                         next_followup:str   = None,
-                        alias_name:str = None):
+                     credentials: HTTPAuthorizationCredentials = Depends(security)):
+    username = request.state.user[0]
+    alias_name = request.state.user[2]
+    role_user = request.state.user[1]
+    if role_user.lower() not in ["admin",]:
+        return {"error":"Only admin can update lead."}
+    
     if stage and stage not in ("open","closed","in progress"):
         return {"message": "Invalid progress value provided. Must be 'Open', 'Closed', or 'In Progress'."}
     if progress and  progress not in ("warm","hot","cold","po raised"):
@@ -211,19 +227,17 @@ async def update_lead(lead_id: int,username:str,
         return {"message": "Failed to update lead"}
 
 @router.put("/lead_status/{lead_id}")
-async def update_lead_status(lead_id: int, status: str,alias_name:str,username:str,progress: str= None):
+async def update_lead_status(request:Request,lead_id: int, status: str,progress: str= None,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    username = request.state.user[0]
+    role_user = request.state.user[1]
+    alias_name = request.state.user[2]
+    if role_user.lower() not in ["admin","salesman"]:
+        return {"error":"Only admin and salesman can update lead status."}
+    
     if progress and progress not in ("warm","hot","cold","po raised"):
         return {"message": "Invalid progress value provided. Must be 'Warm', 'Hot','Cold', or 'PO Raised'."}
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
-    query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
-    cursor.execute(query, (username,))
-    result = cursor.fetchone()  
-    if not result:
-        return {"message": "User not found"}
-    role = result['role']
-    if role not in ['Admin',"Salesman"]:
-        return {"message": "Unauthorized to update lead's status"}
     update_fields = []
     params = []
     update_fields.append("status = %s")
@@ -239,6 +253,9 @@ async def update_lead_status(lead_id: int, status: str,alias_name:str,username:s
             if not lead:
                 return {"message": "Lead not found"}
             query = f"INSERT INTO {alias_name}_projects (id) VALUES (%s)"
+
+            if lead['assigned_to'] != username and role_user != 'Admin':
+                return {"message": "Unauthorized to update this lead"}
             cursor.execute(query, (lead['id'],))
             connection.commit()
 
@@ -266,14 +283,11 @@ async def update_lead_status(lead_id: int, status: str,alias_name:str,username:s
         return {"message": "Failed to update lead status"}
     
 @router.delete("/lead/{lead_id}")
-async def close_lead(lead_id: int,alias_name:str,username:str):
-    query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
-    cursor.execute(query, (username,))
-    result = cursor.fetchone()  
-    if not result:
-        return {"message": "User not found"}
-    role = result['role']
-    if role not in ['Admin',"Salesman"]:
+async def close_lead(request:Request,lead_id: int,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    username = request.state.user[0]
+    role_user = request.state.user[1]
+    alias_name = request.state.user[2]
+    if role_user not in ['Admin',"Salesman"]:
         return {"message": "Unauthorized to close lead"}
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
@@ -285,7 +299,7 @@ async def close_lead(lead_id: int,alias_name:str,username:str):
         return {"message": "Lead not found"
                 }
     assigned_to = lead['assigned_to']
-    if assigned_to != username and role != 'Admin':
+    if assigned_to != username and role_user != 'Admin':
         return {"message": "Unauthorized to close this lead"}
     try:
         query = f"UPDATE {alias_name}_leads SET stage = %s WHERE id = %s"
@@ -299,7 +313,11 @@ async def close_lead(lead_id: int,alias_name:str,username:str):
         return {"message": "Failed to close lead"}
     
 @router.get("/count_leads")
-async def count_leads(alias_name:str, username:str):
+async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    alias_name = request.state.user[2]
+    role_user = request.state.user[1]
+    if role_user.lower() not in ["admin"]:
+        return {"error":"Only admin and HR can access lead counts."}
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
 
