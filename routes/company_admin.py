@@ -3,7 +3,8 @@ import pandas as pd
 import io
 import numpy as np
 import asyncio
-from fastapi import APIRouter,File, UploadFile,Form
+from fastapi import APIRouter,File, UploadFile,Form,Depends,Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import  base64
 # from conn import mydb, cursor
 # from util.face_match import face_encoding,incert
@@ -17,48 +18,37 @@ from fastapi.encoders import jsonable_encoder
 from typing import List
 import requests
 from util.mailer import send_mail
+from util.auth import verify_token, authenticate_user
 
 router = APIRouter()
+security = HTTPBearer()
 
 from .vector_store import process_registration_object, create_embedding_for_file
 
 @router.get("/login")
-async def companyadmin_login(username: str, password: str):
-    try:
-        # cursor.execute("SELECT * FROM company_admin WHERE username = %s AND password = %s", (username, password))
-        # result = cursor.fetchone()
-
-        connection = get_connection()
-
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT username, role,company_id,active FROM ed_employees WHERE username = %s AND password = %s", (username, password))
-        result = cursor.fetchone()
-        cursor.execute("SELECT alias_name FROM company_details WHERE id = %s",(result["company_id"],))
-        name = cursor.fetchone()
-
-        cursor.close()
-        connection.close()
-        if not result:
-            return {"message": "Invalid credentials"}
-        return {"message": "Company Admin Login Successful",
-                "data":result,
-                "alias_name":name["alias_name"]}
-    except Exception as e:
-        return {"error": str(e)}
-    
-@router.get("/employees")
-async def get_employees(username:str,alias_name:str,salesman_list:bool = False):
+async def companyadmin_login(username:str,password:str,alias_name:str):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     try:
-        query = f"""SELECT role FROM  {alias_name}_employees WHERE username = %s"""
-        cursor.execute(query,(username,))
-        result = cursor.fetchone()
-        if salesman_list and result["role"].lower() == "admin":
+        # cursor.execute("SELECT * FROM company_admin WHERE username = %s AND password = %s", (username, password))
+        tokken = await authenticate_user( username, password,alias_name)
+        return tokken
+    except Exception as e:
+        return {"message": "Error during login", "error": str(e)}
+    
+@router.get("/employees")
+async def get_employees(request:Request,salesman_list:bool = False,credentials: HTTPAuthorizationCredentials = Depends(security) ):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True ,buffered=True)
+    username = request.state.user[0]
+    role = request.state.user[1]
+    alias_name = request.state.user[2]
+    try:
+        if salesman_list and role.lower()not in ["admin","hr"]:
             query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role = 'Salesman'"""
-        elif not salesman_list and result["role"].lower() == "admin":
+        elif not salesman_list and role.lower() in ["admin","hr"]:
             query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role != 'Admin'"""
-        elif salesman_list and result["role"].lower() != "admin":
+        elif salesman_list and role.lower()not in ["admin","hr"]:
             return {"error":"Only admin can access salesman list."}
         else:
             return {"error":"Only admin can access employee list11."}
@@ -74,12 +64,18 @@ async def get_employees(username:str,alias_name:str,salesman_list:bool = False):
     return result
 
 @router.post("/update_employee")
-async def update_employee(name:str,username:str,role:str,id:int,alias_name:str,updated_by:str):
-    query = f"UPDATE {alias_name}_employees SET name = %s,username=%s , role = %s , modified_by = %s,modified_at= CURRENT_TIMESTAMP() WHERE id = %s "
+async def update_employee(request:Request,name:str,username:str,role:str,id:int,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    updated_by = request.state.user[0]
+    role = request.state.user[1]
+    alias_name = request.state.user[2]
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
+    if role.lower() not in ["admin","hr"]:
+        return {"error":"Only admin can update employee details."}
     try:
+        query = f"UPDATE {alias_name}_employees SET name = %s,username=%s , role = %s , modified_by = %s,modified_at= CURRENT_TIMESTAMP() WHERE id = %s "
         cursor.execute(query,(name,username,role,updated_by,id ))
+        connection.commit()
         cursor.close()
         connection.close()
         return {"message":"updated"}
@@ -88,18 +84,30 @@ async def update_employee(name:str,username:str,role:str,id:int,alias_name:str,u
 
 @router.post("/employee")
 async def add_employee(
-    Company_alias: str ,
+    request:Request,
     name: str ,
     username: str ,
     password: str ,
     role: str ,
     created_by: str ,
     photos: List[UploadFile] = File(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Add an employee, save photos to disk, insert record in DB,
     and generate face embeddings for each uploaded photo.
     """
+    username = request.state.user[0]
+    role_user = request.state.user[1]
+    Company_alias = request.state.user[2]
+
+    if role_user.lower() not in ["admin","hr"]:
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Only admin users can add employees."}
+        )
+
+
     try:
         base_path = r"C:\Users\edquestofficial\Desktop\Yogi\embeddingface\data"
         os.makedirs(base_path, exist_ok=True)
@@ -192,7 +200,14 @@ async def add_employee(
         )
 
 @router.get("/role")
-async def get_role():
+async def get_role(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security) ):
+    username = request.state.user[0]
+    role = request.state.user[1]
+    alias_name = request.state.user[2]
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True ,buffered=True)
+    if role.lower() not in ["admin","hr"]:
+        return {"error":"Only admin and HR can access roles."}
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     query = f"""SELECT * FROM  roles"""
@@ -201,14 +216,18 @@ async def get_role():
     return result
 
 @router.delete("/employee")
-async def delete_employee(Company_alias: str, username: str):
-
-    table_name = f"{Company_alias}_employees"
+async def delete_employee(employee_id:int,request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    username = request.state.user[0]
+    role_user = request.state.user[1]   
+    alias_name = request.state.user[2]
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    if role_user.lower() not in ["admin","hr"]:
+        return {"error":"Only admin can delete employee."}
+    
     try:
-        connection = get_connection()
-
-        cursor = connection.cursor(dictionary=True)
-        cursor.execute(f"UPDATE {table_name} SET active=0 WHERE username = %s", (username,))
+        cursor.execute(f"UPDATE {alias_name}_employees SET modified_by = %s,modified_at= CURRENT_TIMESTAMP(),active = 0 WHERE id = %s ", (username,employee_id))
+        connection.commit()
         cursor.close()
         connection.close()
         return {"message": "Employee deleted successfully"}
@@ -437,3 +456,4 @@ async def import_excel_data(file: UploadFile = File(...)):
 #     finally:
 #         if connection:
 #             connection.close()
+ 
