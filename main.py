@@ -24,7 +24,7 @@ open_access = [
     "/secure-data"
 ]
 admin_access = ["*"]
-HR_access = ["companyadmin/employees","companyadmin/employee","companyadmin/update_emoloyee","companyadmin/role", "attendence/attendence", "attendence/employee_attendence"]
+HR_access = ["companyadmin/employees","companyadmin/employee","companyadmin/update_employee","companyadmin/role", "attendence/attendence", "attendence/employee_attendence"]
 
 @app.middleware("http")
 async def get_request_headers(request, call_next):
