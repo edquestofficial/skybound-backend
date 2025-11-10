@@ -1,7 +1,9 @@
-from fastapi import APIRouter, UploadFile, File,Request,Depends
+from fastapi import APIRouter, UploadFile, Form,File,Request,Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import random
 from db_config import get_connection
+from util.config import response
+
 router = APIRouter()
 security = HTTPBearer()
 
@@ -14,17 +16,27 @@ async def get_attendence(request:Request,credentials: HTTPAuthorizationCredentia
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     if role_user.lower() not in ["admin","hr"]:
-        return {"error":"Only admin can delete employee."}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin and HR can access all employee attendence.",
+            error="NOt authorized"
+        )
     # Read the uploaded image (optional — you can ignore if not needed)
     cursor.execute("SELECT * FROM attendence")
     result = cursor.fetchall()
     
     cursor.close()
     connection.close()
-    return result
+    return response(
+            status="success",
+            code=200,
+            message="Roles",
+            data=result
+            )
 
-@router.get("/employee_attendence")
-async def employee_attendence(request:Request,username:str = None,credentials: HTTPAuthorizationCredentials = Depends(security)):
+@router.post("/employee_attendence")
+async def employee_attendence(request:Request,username:str = Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
     if (username == None):
         username = request.state.user[0]
     role_user = request.state.user[1]
@@ -34,6 +46,12 @@ async def employee_attendence(request:Request,username:str = None,credentials: H
     cursor = connection.cursor(dictionary=True)
     cursor.execute("SELECT * FROM attendence WHERE username = %s",(username,))
     result = cursor.fetchall()
+    print(result)
     cursor.close()
     connection.close()
-    return result
+    return response(
+            status="success",
+            code=200,
+            message="Roles",
+            data=result
+            )

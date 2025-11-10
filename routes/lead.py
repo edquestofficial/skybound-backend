@@ -1,41 +1,56 @@
-from fastapi import APIRouter, Request,Depends
+from fastapi import APIRouter,Form,Request,Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from db_config import get_connection
 from datetime import datetime
+from util.config import response
 
 router = APIRouter()
 security = HTTPBearer()
 
-connection = get_connection()
-cursor = connection.cursor(dictionary=True)
 
 @router.post("/lead")
 async def add_lead(
     request:Request,
-                name: str,
-                   company_name: str,
-                   city: str,
-                   state: str,
-                   contect_1:int,
-                   inquery_type:str,
-                   email: str,
-                requirement: str,
-                        progress: str,
-                        stage: str="open",
-                        next_followup:str=None,
-                     status: str =None,
-                        assigned_to: str= None,
-                        credentials: HTTPAuthorizationCredentials = Depends(security)
-                   ):
+    name: str = Form(...),
+    company_name: str = Form(...),
+    city: str = Form(...),
+    state: str = Form(...),
+    contect_1:int = Form(...),
+    inquery_type:str = Form(...),
+    email: str = Form(...),
+    requirement: str = Form(...),
+    progress: str = Form(...),
+    stage: str = Form("open"),
+    next_followup:str = Form(None),
+    status: str = Form(None),
+    assigned_to: str= Form(None),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+    ):
+
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
-    if role_user.lower() not in ["admin","hr"]:
-        return {"error":"Only admin,hr and salesman can add lead."}
+    if role_user.lower() not in ["admin"]:
+        return response(
+            status="error",
+            code=401,
+            message="Only admin can add lead.",
+            error="NOt authorized"
+        )
     
     if stage and stage not in ("open","closed","in progress"):
-        return {"message": "Invalid progress value provided. Must be 'open', 'closed', or 'in progress'."}
+        return response(
+            status="error",
+            code=422,
+            message="Invalid stage value provided. Must be 'open', 'closed', or 'in progress'.",
+            error="Invalid stage"
+        )
     if progress and progress not in ("warm","hot","cold","po raised"):
-        return {"message": "Invalid progress value provided. Must be 'Warm', 'Hot', 'Cold', or 'PO Raised'."}
+        return response(
+            status="error",
+            code=422,
+            message="Invalid progress value provided. Must be 'Warm', 'Hot', 'Cold', or 'PO Raised'",
+            error="Invalid progress"
+        )
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     query = f"""
@@ -46,13 +61,21 @@ async def add_lead(
         connection.commit() 
         cursor.close()
         connection.close()
-        return {"message": "Lead added successfully"}
+        return response(
+            status="success",
+            code=200,
+            message="lead added successfully",
+            )
     except Exception as e:
         print("Error while inserting lead details:", e)
-        return {"message": "Failed to add lead"}
+        return response(
+            status="error",
+            code=500,
+            message="Failed to add lead",
+            error=str(e)
+        )
     
 
-# alias_name = "tq"  # Example alias name; in practice, this would come from the request
 # # @router.post("/leads")
 # async def get_leads(request:Request):
 #     data = await request.json()
@@ -85,24 +108,78 @@ async def add_lead(
 
 
 @router.put("/assign_lead")
-async def assign_leads(request:Request, lead_id:int, assiged_to:str,credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def assign_leads(request:Request, lead_id:int=Form(...), assiged_to:str=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     
     if role_user.lower() != "admin":
-        return {'staus':'error',"error":"Only admin can assign lead."}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin can assign lead.",
+            error="NOt authorized"
+        )
     try:
-        cursor.execute(f"UPDATE {alias_name}_leads SET stage = 'in progress', assigned_to = %s WHERE id = %s", (assiged_to, lead_id))
+        
+        cursor.execute(f"UPDATE {alias_name}_leads SET stage = 'in progress', assigned_to = %s WHERE id = %s", (assiged_to, lead_id[0]))
         connection.commit()
-        return {'staus':'success',"message": "leads assigned successfully"}
+        return response(
+            status="success",
+            code=200,
+            message="lead assigned successfully",
+            )
     except Exception as e:
-        return {"error": str(e)}
+        return response(
+            status="error",
+            code=500,
+            message="Failed to assign lead",
+            error=str(e)
+
+        )
+@router.put("/assign_bulk_lead")
+async def assign_bulk_leads(request:Request, lead_id:list=Form(...), assiged_to:str=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    username = request.state.user[0]
+    role_user = request.state.user[1]
+    alias_name = request.state.user[2]
+    
+    if role_user.lower() != "admin":
+        return response(
+            status="error",
+            code=401,
+            message="Only admin can assign lead.",
+            error="NOt authorized"
+        )
+    try:
+        if len(lead_id)==1:
+            cursor.execute(f"UPDATE {alias_name}_leads SET stage = 'in progress', assigned_to = %s WHERE id = %s", (assiged_to, lead_id[0]))
+        else:
+            query = f"""UPDATE {alias_name}_leads SET stage = 'in progress', assigned_to = %s WHERE id IN ({','.join(['%s'] * len(lead_id))})"""
+            cursor.execute(query, (assiged_to,*lead_id))
+        connection.commit()
+        return response(
+            status="success",
+            code=200,
+            message="lead assigned successfully",
+            )
+    except Exception as e:
+        return response(
+            status="error",
+            code=500,
+            message="Failed to assign lead",
+            error=str(e)
+        )
     
     
 
-@router.get("/get_leads")
-async def fetch_leads(request:Request,stage:str=None,credentials: HTTPAuthorizationCredentials = Depends(security)):
+@router.patch("/get_leads")
+async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -111,52 +188,62 @@ async def fetch_leads(request:Request,stage:str=None,credentials: HTTPAuthorizat
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
-        query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
-        cursor.execute(query, (username,))
-        result = cursor.fetchone()  
-        if not result:
-            return {"message": "User not found"}
-        role = result['role']
-        if role not in ['Admin']:
+        if role_user not in ['Admin']:
             if stage:
                 query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s AND stage = %s "
                 cursor.execute(query, (username,stage))
             else:
                 query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
                 cursor.execute(query, (username,))
-            leads = cursor.fetchall()
-            if leads is None:
-                return {"message": "No leads found for the user"}
-            cursor.close()
-            connection.close()
-            return {"leads": leads}
-        
-        if stage:
-            query  = f"SELECT * FROM {alias_name}_leads WHERE stage = %s"
-            cursor.execute(query,(stage,))
         else:
-            query = f"SELECT * FROM {alias_name}_leads"
-            cursor.execute(query)
+            if stage:
+                query  = f"SELECT * FROM {alias_name}_leads WHERE stage = %s"
+                cursor.execute(query,(stage,))
+            else:
+                query = f"SELECT * FROM {alias_name}_leads"
+                cursor.execute(query)
 
         leads = cursor.fetchall()
         if leads is None:
-            return {"message": "No leads found"}
+            return  response(
+                status="error",
+                code=404,
+                message="No leads found for the use"
+            )
         cursor.close()
         connection.close()
-        return {"leads": leads}
+        return response(
+            status="success",
+            code=200,
+            message="Leads feached successfully.",
+            data=leads
+            )
             
     except Exception as e:
         print("Error while fetching leads:", e)
-        return {"message": "Failed to fetch leads"}
+        return response(
+            status="error",
+            code=500,
+            message="Failed to fetch leads",
+            error=str(e)
+        )
     
 @router.get("/filter_leads")
-async def filter_leads(username:str,alias_name:str,stage:str=None ,state:str=None,city :str = None,Enquiry_type:str=None,assigned_to:str=None):
+async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None),city :str = Form(None),Enquiry_type:str=Form(None),assigned_to:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    username = request.state.user[0]
+    role_user = request.state.user[1]
+    alias_name = request.state.user[2]
     parameters = []
     values = []
     if stage == "all":
         stage = None
     if stage and stage not in ("open","closed","in progress"):
-        return {"message": "Invalid progress value provided. Must be 'open', 'closed', or 'in progress'."}
+        return response(
+            status="error",
+            code=422,
+            message="Invalid stage value provided. Must be 'open', 'closed', or 'in progress'.",
+            error="Invalid stage"
+        )
     if stage:
         parameters.append("stage = %s")
         values.append(stage)
@@ -172,81 +259,97 @@ async def filter_leads(username:str,alias_name:str,stage:str=None ,state:str=Non
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
-        query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
-        cursor.execute(query, (username,))
-        result = cursor.fetchone()  
-        if not result:
-            return {"message": "User not found"}
-        role = result['role']
-        if role not in ['Admin',"HR"]:
-            query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
-            cursor.execute(query, (username,))
-            leads = cursor.fetchall()
-            if leads is None:
-                return {"message": "No leads found for the user"}
-            cursor.close()
-            connection.close()
-            return {"leads": leads}
-        if len(parameters) ==0 :
-            filter = ""
-            query = f"SELECT * FROM {alias_name}_leads"
-            cursor.execute(query)
+        if role_user not in ['Admin',"HR"]:
+            if len(parameters) == 0 :
+                query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
+                cursor.execute(query, (username,))
+            else:
+                filter  = " AND ".join(parameters)
+                query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s"+filter
+                cursor.execute(query,(username,).append(tuple(values)))
         else:
-            filter  = " AND ".join(parameters)
-            query = f"SELECT * FROM {alias_name}_leads WHERE "+filter
-            cursor.execute(query,tuple(values))
+            if len(parameters) ==0 :
+                filter = ""
+                query = f"SELECT * FROM {alias_name}_leads"
+                cursor.execute(query)
+            else:
+                filter  = " AND ".join(parameters)
+                query = f"SELECT * FROM {alias_name}_leads WHERE "+filter
+                cursor.execute(query,tuple(values))
         print(query)
         leads = cursor.fetchall()
         if leads is None:
-            return {"message": "No leads found"}
+            return response(
+                status="error",
+                code=404,
+                message="No leads found for the use"
+            )
         cursor.close()
         connection.close()
-        return {"leads": leads}
+        return response(
+            status="success",
+            code=200,
+            message="Leads feached successfully.",
+            data=leads
+            )
             
     except Exception as e:
         print("Error while fetching leads:", e)
-        return {"message": "Failed to fetch leads"}
+        return response(
+            status="error",
+            code=500,
+            message="Failed to fetch leads",
+            error=str(e)
+        )
     
 @router.put("/update_lead")
 async def update_lead(
     request:Request,
-    lead_id: int,
-                   name: str,
-                   company_name: str = None,
-                   city: str = None,
-                   state: str = None,
-                   contect_1:int = None,
-                   inquery_type:str = None,
-                   email: str = None,
-                requirement: str = None,
-                     status: str    = None,
-                        assigned_to: str        = None,
-                        progress: str      = None,
-                        stage: str     = None,
-                        next_followup:str   = None,
-                     credentials: HTTPAuthorizationCredentials = Depends(security)):
+    lead_id: int=Form(...),
+    name: str = Form(...),
+    company_name: str =Form(None),
+    city: str = Form(None),
+    state: str = Form(None),
+    contect_1:int = Form(None),
+    inquery_type:str = Form(None),
+    email: str = Form(None),
+    requirement: str = Form(None),
+    status: str    = Form(None),
+    assigned_to: str  = Form(None),
+    progress: str = Form(None),
+    stage: str =Form(None),
+    next_followup:str = Form(None),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+    ):
+
     username = request.state.user[0]
     alias_name = request.state.user[2]
     role_user = request.state.user[1]
     if role_user.lower() not in ["admin",]:
-        return {"error":"Only admin can update lead."}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin can update lead.",
+            error="NOt authorized"
+        )
     
     if stage and stage not in ("open","closed","in progress"):
-        return {"message": "Invalid progress value provided. Must be 'Open', 'Closed', or 'In Progress'."}
+        return response(
+            status="error",
+            code=422,
+            message="Invalid stage value provided. Must be 'open', 'closed', or 'in progress'.",
+            error="Invalid stage"
+        )
     if progress and  progress not in ("warm","hot","cold","po raised"):
-        return {"message": "Invalid progress value provided. Must be 'Warm', 'Hot','Cold', or 'PO Raised'."}
+        return response(
+            status="error",
+            code=422,
+            message="Invalid progress value provided. Must be 'Warm', 'Hot', 'Cold', or 'PO Raised'",
+            error="Invalid progress"
+        )
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
-        query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
-        cursor.execute(query, (username,))
-        result = cursor.fetchone()  
-        if not result:
-            return {"message": "User not found"}
-        role = result['role']
-        if role not in ['Admin',"HR"]:
-            return {"message": "Unauthorized to update lead"}
-        
         update_fields = []
         params = []
         
@@ -291,7 +394,11 @@ async def update_lead(
             params.append(next_followup)
         
         if not update_fields:
-            return {"message": "No fields to update"}
+            return response(
+            status="error",
+            code=404,
+            message="No fields to update",
+        )
         
         params.append(lead_id)
         query = f"UPDATE {alias_name}_leads SET {', '.join(update_fields)} WHERE id = %s"
@@ -299,21 +406,39 @@ async def update_lead(
         connection.commit()
         cursor.close()
         connection.close()
-        return {"message": "Lead updated successfully"}
+        return response(
+            status="success",
+            code=200,
+            message="Lead updated successfully",
+            )
     except Exception as e:
         print("Error while updating lead:", e)
-        return {"message": "Failed to update lead"}
-
-@router.put("/lead_status/{lead_id}")
-async def update_lead_status(request:Request,lead_id: int, status: str,progress: str= None,credentials: HTTPAuthorizationCredentials = Depends(security)):
+        return response(
+            status="error",
+            code=500,
+            message="Failed to fetch lead",
+            error=str(e)
+        )
+@router.put("/lead_status/}")
+async def update_lead_status(request:Request,lead_id: int=Form(...), status: str = Form(...),progress: str= Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     if role_user.lower() not in ["admin","salesman"]:
-        return {"error":"Only admin and salesman can update lead status."}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin and salesman can update lead status.",
+            error="NOt authorized"
+        )
     
     if progress and progress not in ("warm","hot","cold","po raised"):
-        return {"message": "Invalid progress value provided. Must be 'Warm', 'Hot','Cold', or 'PO Raised'."}
+        return response(
+            status="error",
+            code=422,
+            message="Invalid progress value provided. Must be 'Warm', 'Hot', 'Cold', or 'PO Raised'",
+            error="Invalid progress"
+        )
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     update_fields = []
@@ -329,17 +454,31 @@ async def update_lead_status(request:Request,lead_id: int, status: str,progress:
             cursor.execute(query, (lead_id,))
             lead = cursor.fetchone()
             if not lead:
-                return {"message": "Lead not found"}
+                return response(
+                    status="error",
+                    code=404,
+                    message="Lead not fount in the database",
+                    error="lead not found"
+                )
             query = f"INSERT INTO {alias_name}_projects (id) VALUES (%s)"
 
             if lead['assigned_to'] != username and role_user != 'Admin':
-                return {"message": "Unauthorized to update this lead"}
+                return response(
+            status="error",
+            code=401,
+            message="Only admin and assigned salesman can update lead status.",
+            error="NOt authorized"
+        )
             cursor.execute(query, (lead['id'],))
             connection.commit()
 
         except Exception as e:
             print("Error while fetching lead details:", e)
-            raise {"message": f"Failed to fetch lead details {e}"}
+            return response(
+            status="error",
+            code=500,
+            message="Failed to fetch lead detailsd",
+            error=str(e))
 
 
         update_fields.append("progress = %s")
@@ -355,18 +494,31 @@ async def update_lead_status(request:Request,lead_id: int, status: str,progress:
         connection.commit()
         cursor.close()
         connection.close()
-        return {"message": "Lead status updated successfully"}
+        return response(
+            status="success",
+            code=200,
+            message="Leads status updated  successfully."
+            )
     except Exception as e:
         print("Error while updating lead status:", e)
-        return {"message": "Failed to update lead status"}
+        return response(
+            status="error",
+            code=500,
+            message="Failed to fetch lead detailsd",
+            error=str(e))
     
-@router.delete("/lead/{lead_id}")
-async def close_lead(request:Request,lead_id: int,credentials: HTTPAuthorizationCredentials = Depends(security)):
+@router.delete("/lead/")
+async def close_lead(request:Request,lead_id: int = Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     if role_user not in ['Admin',"Salesman"]:
-        return {"message": "Unauthorized to close lead"}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin and salesman can update lead status.",
+            error="NOt authorized"
+        )
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
 
@@ -374,46 +526,78 @@ async def close_lead(request:Request,lead_id: int,credentials: HTTPAuthorization
     cursor.execute(query, (lead_id,))
     lead = cursor.fetchone()
     if not lead:
-        return {"message": "Lead not found"
-                }
+        return response(
+            status="error",
+            code=404,
+            message="Lead not fount in the database",
+            error="lead not found"
+        )
+                
     assigned_to = lead['assigned_to']
     if assigned_to != username and role_user != 'Admin':
-        return {"message": "Unauthorized to close this lead"}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin and assigned salesman can update lead status.",
+            error="NOt authorized"
+        )
     try:
         query = f"UPDATE {alias_name}_leads SET stage = %s WHERE id = %s"
         cursor.execute(query, ("closed", lead_id))
         connection.commit()
         cursor.close()
         connection.close()
-        return {"message": "Lead closed successfully"}
+        return response(
+            status="success",
+            code=200,
+            message="Leads closed successfully."
+            )
     except Exception as e:
         print("Error while closing lead:", e)
-        return {"message": "Failed to close lead"}
+        return response(
+            status="error",
+            code=500,
+            message="Failed to fetch lead detailsd",
+            error=str(e))
     
 @router.get("/count_leads")
 async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
     alias_name = request.state.user[2]
     role_user = request.state.user[1]
     if role_user.lower() not in ["admin"]:
-        return {"error":"Only admin and HR can access lead counts."}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin can get lead counts.",
+            error="NOt authorized"
+        )
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
 
     query = f"""SELECT 
     COUNT(*) as total_leads,
-    COUNT(CASE WHEN stage = 'open' THEN 1 END) as open_leads,
-    COUNT(CASE WHEN stage = 'closed' THEN 1 END) as closed_leads,
-    COUNT(CASE WHEN stage = 'in progress' THEN 1 END) as in_progress_leads
+    SUM(CASE WHEN stage = 'open' THEN 1 END) as open_leads,
+    SUM(CASE WHEN stage = 'closed' THEN 1 END) as closed_leads,
+    SUM(CASE WHEN stage = 'in progress' THEN 1 END) as in_progress_leads
     FROM {alias_name}_leads"""
     try:
         cursor.execute(query)
         result = cursor.fetchone()
         cursor.close()
         connection.close()
-        return result
+        return response(
+            status="success",
+            code=200,
+            message="lead count feched successfully.",
+            data=result
+        )
     except Exception as e:
         print("Error while counting leads:", e)
-        return {"message": f"Failed to count leads {e}"}
+        return response(
+            status="error",
+            code=500,
+            message="Failed to fetch lead count",
+            error=str(e))
 
 
     # try:

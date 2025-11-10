@@ -3,7 +3,7 @@ import pandas as pd
 import io
 import numpy as np
 import asyncio
-from fastapi import APIRouter,File, UploadFile,Form,Depends,Request
+from fastapi import APIRouter,File, UploadFile,Form,Depends,Request,Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import  base64
 # from conn import mydb, cursor
@@ -19,25 +19,27 @@ from typing import List
 import requests
 from util.mailer import send_mail
 from util.auth import verify_token, authenticate_user
-
+from util.config import response
 router = APIRouter()
 security = HTTPBearer()
 
 from .vector_store import process_registration_object, create_embedding_for_file
 
 @router.post("/login")
-async def companyadmin_login(username:str,password:str,alias_name:str):
-    connection = get_connection()
-    cursor = connection.cursor(dictionary=True ,buffered=True)
+async def companyadmin_login(username: str = Form(...),password: str =Form(...),alias_name:str=Form(...)):
     try:
-        # cursor.execute("SELECT * FROM company_admin WHERE username = %s AND password = %s", (username, password))
-        tokken = await authenticate_user( username, password,alias_name)
+        tokken =  authenticate_user(username, password, alias_name)
         return tokken
     except Exception as e:
-        return {"message": "Error during login", "error": str(e)}
+        return response(
+            status="error",
+            code=500,
+            message="There is an error in companyadmin_login.",
+            error=str(e)
+        )
     
-@router.get("/employees")
-async def get_employees(request:Request,salesman_list:bool = False,credentials: HTTPAuthorizationCredentials = Depends(security) ):
+@router.patch("/employees")
+async def get_employees(request:Request,salesman_list:bool|None = Form(False),credentials: HTTPAuthorizationCredentials = Depends(security) ):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     username = request.state.user[0]
@@ -49,11 +51,26 @@ async def get_employees(request:Request,salesman_list:bool = False,credentials: 
         elif not salesman_list and role.lower() in ["admin","hr"]:
             query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role != 'Admin'"""
         elif salesman_list and role.lower()not in ["admin","hr"]:
-            return {"error":"Only admin can access salesman list."}
+            return response(
+            status="error",
+            code=401,
+            message="Only admin can access employee list",
+            error="NOt authorized"
+        )
         else:
-            return {"error":"Only admin can access employee list11."}
+            return response(
+            status="error",
+            code=401,
+            message="Only admin can access employee list",
+            error="NOt authorized"
+        )
     except Exception as e :
-        return {"error":str(e)}
+        return response(
+            status="error",
+            code=500,
+            message="There is an error in companyadmin_login.",
+            error=str(e)
+        )
     cursor.execute(query)
     result = cursor.fetchall()
     cursor.close()
@@ -61,34 +78,54 @@ async def get_employees(request:Request,salesman_list:bool = False,credentials: 
     details = []
     for data in result:
         data["photo"] = ""
-    return result
+    print(result)
+    return response(
+            status="success",
+            code=200,
+            message="Employee List feched successfully.",
+            data=result
+        )
 
 @router.post("/update_employee")
-async def update_employee(request:Request,name:str,username:str,role:str,id:int,credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def update_employee(request:Request,name:str=Form(...),username:str=Form(...),role:str=Form(...),id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
     updated_by = request.state.user[0]
     role = request.state.user[1]
     alias_name = request.state.user[2]
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     if role.lower() not in ["admin","hr"]:
-        return {"error":"Only admin can update employee details."}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin and hr can update employee details",
+            error="NOt authorized"
+        )
     try:
         query = f"UPDATE {alias_name}_employees SET name = %s,username=%s , role = %s , modified_by = %s,modified_at= CURRENT_TIMESTAMP() WHERE id = %s "
         cursor.execute(query,(name,username,role,updated_by,id ))
         connection.commit()
         cursor.close()
         connection.close()
-        return {"message":"updated"}
+        return response(
+            status="success",
+            code=200,
+            message="Employee details updated Successfully."
+        )
     except Exception as e :
-        return {"error":str(e)}
+        return response(
+            status="error",
+            code=500,
+            message="There is some error while Updating the employee",
+            error=str(e)
+        )
 
 @router.post("/employee")
 async def add_employee(
     request:Request,
-    name: str ,
-    username: str ,
-    password: str ,
-    role: str ,
+    name: str= Form(...) ,
+    username: str = Form(...) ,
+    password: str = Form(...) ,
+    role: str = Form(...),
     photos: List[UploadFile] = File(...),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
@@ -99,24 +136,28 @@ async def add_employee(
     created_by = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
+    company_id = request.state.user[3]
 
     if role_user.lower() not in ["admin","hr"]:
-        return JSONResponse(
-            status_code=403,
-            content={"error": "Only admin users can add employees."}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin and hr can add employee",
+            error="NOt authorized"
         )
 
 
     try:
-        base_path = r"C:\Users\edquestofficial\Desktop\Yogi\embeddingface\data"
+        base_path = r"D:\Skybound\skybound-backend\embeddingface\data"
         os.makedirs(base_path, exist_ok=True)
 
         # Ensure exactly 4 photos are provided
         if len(photos) != 4:
-            return JSONResponse(
-                status_code=400,
-                content={"error": "Exactly 4 photos are required."}
-            )
+            return response(
+            status="error",
+            code=400,
+            message="Exactly 4 photos are required."
+        )
 
         saved_paths = []
         for photo in photos:
@@ -132,24 +173,12 @@ async def add_employee(
         cursor = connection.cursor(dictionary=True)
 
         if role.lower() == "admin":
-            return JSONResponse(
-                status_code=403,
-                content={"error": "Cannot add Admin. Only Edquest can add Admin users."}
-            )
-
-        # Get company ID
-        cursor.execute(
-            "SELECT id FROM company_details WHERE alias_name = %s", 
-            (alias_name,)
+            return response(
+            status="error",
+            code=401,
+            message="Cannot add Admin. Only Edquest can add Admin users.",
+            error="NOt authorized"
         )
-        company = cursor.fetchone()
-        if not company:
-            return JSONResponse(
-                status_code=404,
-                content={"error": "Company not found."}
-            )
-
-        company_id = company["id"]
 
         # Store one representative photo (e.g., first one)
         with open(saved_paths[0], "rb") as f:
@@ -182,10 +211,11 @@ async def add_employee(
         cursor.close()
         connection.close()
 
-        return JSONResponse(
-            status_code=201,
-            content={
-                "message": "Employee added successfully.",
+        return response(
+            status="success",
+            code=200,
+            message="Employee added Successfully.",
+            data={
                 "photos_saved": saved_paths,
                 "embedding_results": result
             }
@@ -193,9 +223,11 @@ async def add_employee(
 
     except Exception as e:
         print("Error:", str(e))
-        return JSONResponse(
-            status_code=500,
-            content={"error": str(e)}
+        return response(
+            status="error",
+            code=500,
+            message="There is some error while adding the employee",
+            error=str(e)
         )
 
 @router.get("/role")
@@ -206,32 +238,56 @@ async def get_role(request:Request,credentials: HTTPAuthorizationCredentials = D
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     if role.lower() not in ["admin","hr"]:
-        return {"error":"Only admin and HR can access roles."}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin and HR can access roles.",
+            error="NOt authorized"
+        )
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     query = f"""SELECT * FROM  roles"""
     cursor.execute(query)
     result = cursor.fetchall()
-    return result
+    return response(
+            status="success",
+            code=200,
+            message="Roles",
+            data=result
+            )
 
 @router.delete("/employee")
-async def delete_employee(employee_id:int,request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def delete_employee(request:Request,employee_id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
     username = request.state.user[0]
     role_user = request.state.user[1]   
     alias_name = request.state.user[2]
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     if role_user.lower() not in ["admin","hr"]:
-        return {"error":"Only admin can delete employee."}
+        return response(
+            status="error",
+            code=401,
+            message="Only admin and hr can delete employee",
+            error="NOt authorized"
+        )
     
     try:
         cursor.execute(f"UPDATE {alias_name}_employees SET modified_by = %s,modified_at= CURRENT_TIMESTAMP(),active = 0 WHERE id = %s ", (username,employee_id))
         connection.commit()
         cursor.close()
         connection.close()
-        return {"message": "Employee deleted successfully"}
+        return response(
+            status="success",
+            code=200,
+            message="Employee Deleted Successfully.",
+        )
     except Exception as e:
-        return {"error": str(e)}
+        return response(
+            status="error",
+            code=500,
+            message="There is some error while Deleting the employee",
+            error=str(e)
+        )
     
 
 
@@ -415,44 +471,3 @@ async def import_excel_data(file: UploadFile = File(...)):
         if connection:
             connection.close()
         await file.close()
-  
-
-# @router.post("/fix-status-column")
-# async def fix_status_column():
-#     """
-#     This is a one-time endpoint to alter the 'status' column
-#     from VARCHAR to TEXT to allow longer data.
-#     """
-    
-#     # ! IMPORTANT: Make sure this is your real table name
-#     table_name = "excel" 
-    
-#     alter_query = f"""
-#     ALTER TABLE `{table_name}` 
-#     MODIFY COLUMN `status` TEXT;
-#     """
-    
-#     connection = None
-#     try:
-#         connection = get_connection()
-#         if not connection:
-#             return JSONResponse(status_code=500, content={"error": "Database connection failed."})
-        
-#         cursor = connection.cursor()
-#         cursor.execute(alter_query)
-#         connection.commit()
-#         cursor.close()
-        
-#         return {"message": f"Table '{table_name}' status column successfully changed to TEXT."}
-
-#     except Exception as e:
-#         if connection:
-#             connection.rollback()
-#         return JSONResponse(
-#             status_code=500,
-#             content={"error": f"An error occurred: {str(e)}"}
-#         )
-#     finally:
-#         if connection:
-#             connection.close()
- 
