@@ -25,7 +25,7 @@ security = HTTPBearer()
 
 from .vector_store import process_registration_object, create_embedding_for_file
 
-@router.get("/login")
+@router.post("/login")
 async def companyadmin_login(username:str,password:str,alias_name:str):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
@@ -44,7 +44,7 @@ async def get_employees(request:Request,salesman_list:bool = False,credentials: 
     role = request.state.user[1]
     alias_name = request.state.user[2]
     try:
-        if salesman_list and role.lower()not in ["admin","hr"]:
+        if salesman_list and role.lower() in ["admin","hr"]:
             query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role = 'Salesman'"""
         elif not salesman_list and role.lower() in ["admin","hr"]:
             query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role != 'Admin'"""
@@ -89,7 +89,6 @@ async def add_employee(
     username: str ,
     password: str ,
     role: str ,
-    created_by: str ,
     photos: List[UploadFile] = File(...),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
@@ -97,9 +96,9 @@ async def add_employee(
     Add an employee, save photos to disk, insert record in DB,
     and generate face embeddings for each uploaded photo.
     """
-    username = request.state.user[0]
+    created_by = request.state.user[0]
     role_user = request.state.user[1]
-    Company_alias = request.state.user[2]
+    alias_name = request.state.user[2]
 
     if role_user.lower() not in ["admin","hr"]:
         return JSONResponse(
@@ -141,7 +140,7 @@ async def add_employee(
         # Get company ID
         cursor.execute(
             "SELECT id FROM company_details WHERE alias_name = %s", 
-            (Company_alias,)
+            (alias_name,)
         )
         company = cursor.fetchone()
         if not company:
@@ -157,7 +156,7 @@ async def add_employee(
             photo_data = f.read()
 
         insert_query = f"""
-            INSERT INTO {Company_alias}_employees 
+            INSERT INTO {alias_name}_employees 
             (company_id, name, photo, username, password, role, created_by)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """

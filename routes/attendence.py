@@ -24,8 +24,9 @@ async def get_attendence(request:Request,credentials: HTTPAuthorizationCredentia
     return result
 
 @router.get("/employee_attendence")
-async def employee_attendence(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
-    username = request.state.user[0]
+async def employee_attendence(request:Request,username:str = None,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if (username == None):
+        username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     

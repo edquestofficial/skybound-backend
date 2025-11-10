@@ -85,18 +85,27 @@ async def add_lead(
 
 
 @router.put("/assign_lead")
-async def assign_leads(username:str,company_alise:str, lead_id:int, assiged_to:str):
-    table_name = f"{company_alise}_leads"
+async def assign_leads(request:Request, lead_id:int, assiged_to:str,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    username = request.state.user[0]
+    role_user = request.state.user[1]
+    alias_name = request.state.user[2]
+    
+    if role_user.lower() != "admin":
+        return {'staus':'error',"error":"Only admin can assign lead."}
     try:
-        cursor.execute(f"UPDATE {table_name} SET assigned_to = %s WHERE id = %s", (assiged_to, lead_id))
+        cursor.execute(f"UPDATE {alias_name}_leads SET stage = 'in progress', assigned_to = %s WHERE id = %s", (assiged_to, lead_id))
         connection.commit()
-        return {"message": "leads assigned successfully"}
+        return {'staus':'success',"message": "leads assigned successfully"}
     except Exception as e:
         return {"error": str(e)}
     
+    
 
 @router.get("/get_leads")
-async def fetch_leads(username:str,alias_name:str,stage:str=None):
+async def fetch_leads(request:Request,stage:str=None,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    username = request.state.user[0]
+    role_user = request.state.user[1]
+    alias_name = request.state.user[2]
     if stage == "all":
         stage = None
     connection = get_connection()
@@ -108,61 +117,13 @@ async def fetch_leads(username:str,alias_name:str,stage:str=None):
         if not result:
             return {"message": "User not found"}
         role = result['role']
-        if role not in ['Admin',"HR"]:
-            query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
-            cursor.execute(query, (username,))
-            leads = cursor.fetchall()
-            if leads is None:
-                return {"message": "No leads found for the user"}
-            cursor.close()
-            connection.close()
-            return {"leads": leads}
-        
-        if stage:
-            query  = f"SELECT * FROM {alias_name}_leads WHERE stage = %s"
-            cursor.execute(query,(stage,))
-        else:
-            query = f"SELECT * FROM {alias_name}_leads"
-            cursor.execute(query)
-
-        leads = cursor.fetchall()
-        if leads is None:
-            return {"message": "No leads found"}
-        cursor.close()
-        connection.close()
-        return {"leads": leads}
-            
-    except Exception as e:
-        return {"error": "Invalid JSON data"}
-
-
-@router.put("/assign_lead")
-async def assign_leads(username:str,company_alise:str, lead_id:int, assiged_to:str):
-    table_name = f"{company_alise}_leads"
-    try:
-        cursor.execute(f"UPDATE {table_name} SET assigned_to = %s WHERE id = %s", (assiged_to, lead_id))
-        connection.commit()
-        return {"message": "leads assigned successfully"}
-    except Exception as e:
-        return {"error": str(e)}
-    
-
-@router.get("/get_leads")
-async def fetch_leads(username:str,alias_name:str,stage:str=None):
-    if stage == "all":
-        stage = None
-    connection = get_connection()
-    cursor = connection.cursor(dictionary=True)
-    try:
-        query  = f"SELECT role FROM {alias_name}_employees WHERE username = %s"
-        cursor.execute(query, (username,))
-        result = cursor.fetchone()  
-        if not result:
-            return {"message": "User not found"}
-        role = result['role']
-        if role not in ['Admin',"HR"]:
-            query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
-            cursor.execute(query, (username,))
+        if role not in ['Admin']:
+            if stage:
+                query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s AND stage = %s "
+                cursor.execute(query, (username,stage))
+            else:
+                query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
+                cursor.execute(query, (username,))
             leads = cursor.fetchall()
             if leads is None:
                 return {"message": "No leads found for the user"}
@@ -251,7 +212,6 @@ async def update_lead(
     request:Request,
     lead_id: int,
                    name: str,
-                        alias_name:str, 
                    company_name: str = None,
                    city: str = None,
                    state: str = None,

@@ -26,7 +26,10 @@ async def authenticate_user(username: str, password: str, alias_name: str):
     
     token = jwt.encode({'data': user_data}, 'secret_key', algorithm='HS256')
     return {"message": "Authentication successful",
-            "data": token}
+            "token": token,
+            "username":user_data[0],
+            "role":user_data[1],
+            "alias_name": user_data[2]}
 
 async def verify_token(token: str):
     try:
