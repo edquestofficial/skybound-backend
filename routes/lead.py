@@ -1,8 +1,13 @@
-from fastapi import APIRouter,Form,Request,Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from db_config import get_connection
 from datetime import datetime
 from util.config import response
+import csv
+from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, File, UploadFile, Form, Depends, Request
+import pandas as pd
+import numpy as np
+import io
 
 router = APIRouter()
 security = HTTPBearer()
@@ -611,3 +616,172 @@ async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials 
     # except Exception as e:
     #     print("Error while counting leads:", e)
     #     return {"message": "Failed to count leads"}
+
+    
+EXPECTED_HEADERS = [
+    "s no.", "date", "name", "company name", "city", "state", "contact 1",
+    "inquiry type", "e mail", "requirements", "status", "skybound person",
+    "cold/hot/warm", "open/closed", "next follow up"
+]
+# -----------------------------
+
+@router.post("/import-excel/")
+async def import_excel_data(file: UploadFile = File(...)):
+    """
+    This endpoint validates an Excel file's headers (case-insensitive)and, if valid, inserts the data into a MySQL database.
+    """
+    connection = None  # Initialize connection to None
+    try:
+        # Read the file's content into memory
+        contents = await file.read()
+        buffer = io.BytesIO(contents)
+        df = pd.read_excel(buffer)
+
+        # --- 1. Header Validation ---
+        header_map = {col: str(col).strip().lower() for col in df.columns}
+        
+        # Get a set of the standardized headers from the file
+        standardized_file_headers = set(header_map.values())
+        required_set = set(EXPECTED_HEADERS)
+
+        # Check if all required headers are present in the file
+        if not required_set.issubset(standardized_file_headers):
+            missing_headers = list(required_set - standardized_file_headers)
+            return response(
+                status="error",
+                code=400,
+                message="Invalid file format. Missing required headers.",
+                error=missing_headers
+            )
+# --- 2. Data Processing (ALL FIXES APPLIED) ---        
+        # Rename the DataFrame columns to your standardized lowercase names
+        df = df.rename(columns=header_map)
+        
+        # --- FIX 1: Handle NaN, empty strings, and single spaces ---
+        # This replaces all of them with None, which becomes NULL in MySQL
+        df = df.replace({np.nan: None, '': None, ' ': None})
+        
+        # --- FIX 2: Handle bad DATE columns ---
+        # 'errors=coerce' turns any bad date (like 'pending') into 'NaT'
+        df['date'] = pd.to_datetime(df['date'], errors='coerce')
+        df['next follow up'] = pd.to_datetime(df['next follow up'], errors='coerce')
+        
+        # --- FIX 3: Handle bad NUMBER columns ---
+        # This fixes errors like "Incorrect integer value: ' ' for column 's no.'"
+        # It turns any bad number (like 'N/A' or text) into 'NaN' (Not a Number)
+        df['s no.'] = pd.to_numeric(df['s no.'], errors='coerce')
+        
+        # --- FIX 4: Convert all 'NaT' and 'NaN' into None ---
+        
+        df = df.replace({pd.NaT: None, np.nan: None})        
+        # Convert the DataFrame to a list of dictionaries
+        data_rows = df.to_dict(orient="records")
+
+        # --- 3. Database Insertion ---   
+        # ! IMPORTANT: Change this to your actual table name
+        table_name = "excel"         
+        connection = get_connection()
+        if not connection:
+            return response(
+                status="error",
+                code=500,
+                message="Database connection failed.",
+                error="Connection unavailable"
+            )
+        
+        cursor = connection.cursor()
+
+        # Build the SQL query dynamically
+        # The backticks `` are important for names with spaces or symbols
+        sql_columns = ", ".join([f"`{h}`" for h in EXPECTED_HEADERS])
+        
+        # This creates `(%s, %s, %s, ...)`
+        sql_placeholders = ", ".join(["%s"] * len(EXPECTED_HEADERS))
+        
+        insert_query = f"INSERT INTO {table_name} ({sql_columns}) VALUES ({sql_placeholders})"
+        
+        # Prepare all rows for batch insertion
+        rows_to_insert = []
+        for row in data_rows:
+            # Create a tuple of values *in the correct order*
+            values_tuple = tuple(row[h] for h in EXPECTED_HEADERS)
+            rows_to_insert.append(values_tuple)
+
+        # Execute all inserts in a single, efficient transaction
+        if rows_to_insert:
+            cursor.executemany(insert_query, rows_to_insert)
+            connection.commit()
+            
+        cursor.close()
+        return response(
+            status="success",
+            code=200,
+            message="File validated and data saved successfully!",
+            data={"filename": file.filename, "records_saved": len(rows_to_insert)}
+        )
+
+    except Exception as e:
+        # If anything goes wrong, roll back any changes
+        if connection:
+            connection.rollback()
+        return response(
+            status="error",
+            code=500,
+            message="An error occurred while processing the file.",
+            error=str(e)
+        )
+    finally:
+        # Ensure the file and database connection are always closed
+        if connection:
+            connection.close()
+
+        await file.close()
+
+
+@router.get("/leads/csv")
+async def get_all_leads():
+    """
+    Return a downloadable CSV template containing the expected headers
+    and one sample row with example values so users can download,
+    edit and re-upload via `/import-excel/`.
+    """
+    try:
+        # Example sample values for some columns — adjust as needed
+        sample_values = {
+            "s no.": 1,
+            "date": "2025-11-10",
+            "name": "John Doe",
+            "company name": "Acme Corp",
+            "city": "Mumbai",
+            "state": "MH",
+            "contact 1": "+919876543210",
+            "inquiry type": "Product Demo",
+            "e mail": "john.doe@example.com",
+            "requirements": "Interested in pricing and timeline",
+            "status": "open",
+            "skybound person": "Alice",
+            "cold/hot/warm": "warm",
+            "open/closed": "open",
+            "next follow up": "2025-11-20",
+        }
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # Write headers
+        writer.writerow(EXPECTED_HEADERS)
+
+        # Build a sample row in the same order as EXPECTED_HEADERS
+        sample_row = [sample_values.get(h, "") for h in EXPECTED_HEADERS]
+        writer.writerow(sample_row)
+
+        output.seek(0)
+        headers = {"Content-Disposition": "attachment; filename=leads_template.csv"}
+        return StreamingResponse(output, media_type="text/csv", headers=headers)
+    except Exception as e:
+        return response(
+            status="error",
+            code=500,
+            message="Failed to generate CSV template.",
+            error=str(e)
+        )
