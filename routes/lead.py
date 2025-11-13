@@ -31,9 +31,49 @@ async def add_lead(
     assigned_to: str= Form(None),
     credentials: HTTPAuthorizationCredentials = Depends(security)
     ):
+    """
+    Add a new lead to the system.
+
+    **Description:**
+    This endpoint allows an **Admin** user to add a new lead into the system.
+    It validates certain fields like `stage` and `progress` to ensure data consistency
+    before inserting into the database.
+
+    **Mandatory Parameters:**
+    - `request` (Request): Provides user context.
+    - `name` (str): Lead's name.
+    - `company_name` (str): Company name of the lead.
+    - `city` (str): City name.
+    - `state` (str): State name.
+    - `contect_1` (int): Contact number.
+    - `inquery_type` (str): Type of inquiry.
+    - `email` (str): Lead’s email address.
+    - `requirement` (str): Requirements provided by the lead.
+    - `progress` (str): Lead progress; must be one of `warm`, `hot`, `cold`, or `po raised`.
+
+    **Optional Parameters:**
+    - `stage` (str): Default `"open"`. Allowed values: `open`, `closed`, `in progress`.
+    - `next_followup` (str): Optional next follow-up date.
+    - `status` (str): Optional lead status.
+    - `assigned_to` (str): Optional user the lead is assigned to.
+
+    **Returns:**
+    - `200`: Lead added successfully.
+    - `401`: Unauthorized access.
+    - `422`: Invalid data validation.
+    - `500`: Server/database error.
+    """
 
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
+    if not all([name, company_name, city, state, contect_1, inquery_type, email, requirement, progress]):
+        return response(
+            status="error",
+            code=400,
+            message="All mandatory fields (name, company_name, city, state, contect_1, inquery_type, email, requirement, progress) are required.",
+            error="Bad Request"
+        )
+
     if role_user.lower() not in ["admin"]:
         return response(
             status="error",
@@ -114,12 +154,32 @@ async def add_lead(
 
 @router.put("/assign_lead")
 async def assign_leads(request:Request, lead_id:int=Form(...), assiged_to:str=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Assign a single lead to an employee.
+
+    **Description:**
+    Allows only **Admin** users to assign an existing lead to a specific employee.
+    Automatically updates the lead’s stage to `"in progress"`.
+
+    **Mandatory Parameters:**
+    - `request` (Request): Provides user context.
+    - `lead_id` (int): ID of the lead to assign.
+    - `assiged_to` (str): Username of the employee.
+    - `credentials` (HTTPAuthorizationCredentials): Authentication token.
+
+    **Returns:**
+    - `200`: Lead assigned successfully.
+    - `401`: Unauthorized (non-admin user).
+    - `500`: Database or query error.
+    """
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
 
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
+    if not all([lead_id, assiged_to]):
+        return response(status="error", code=400, message="All mandatory fields (lead_id, assiged_to) are required.", error="Bad Request")
     
     if role_user.lower() != "admin":
         return response(
@@ -147,12 +207,37 @@ async def assign_leads(request:Request, lead_id:int=Form(...), assiged_to:str=Fo
         )
 @router.put("/assign_bulk_lead")
 async def assign_bulk_leads(request:Request, lead_id:list=Form(...), assiged_to:str=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Assign multiple leads at once.
+
+    **Description:**
+    Allows an **Admin** to bulk assign multiple leads to an employee.
+    Automatically sets the `stage` to `"in progress"` for all assigned leads.
+
+    **Mandatory Parameters:**
+    - `request` (Request): Provides user context.
+    - `lead_id` (list[int]): List of lead IDs to assign.
+    - `assiged_to` (str): Username of employee.
+    - `credentials`: Authentication token.
+
+    **Returns:**
+    - `200`: Bulk assignment successful.
+    - `401`: Unauthorized access.
+    - `500`: Database error.
+    """
+
+
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
 
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
+
+    if not all([lead_id, assiged_to]):
+        return response(status="error", code=400, message="All mandatory fields (lead_id, assiged_to) are required.", error="Bad Request")
+
+ 
     
     if role_user.lower() != "admin":
         return response(
@@ -185,6 +270,26 @@ async def assign_bulk_leads(request:Request, lead_id:list=Form(...), assiged_to:
 
 @router.patch("/get_leads")
 async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Fetch leads filtered by stage and user role.
+
+    **Description:**
+    - Admin users can view all leads.
+    - Non-admin users can only view their assigned leads.
+    - Supports filtering by `stage` (open/closed/in progress/all).
+
+    **Mandatory Parameters:**
+    - `request` (Request): Provides user context.
+
+    **Optional Parameters:**
+    - `stage` (str): Lead stage filter. Use `"all"` to get all leads.
+    - `credentials`: Authentication token.
+
+    **Returns:**
+    - `200`: List of leads matching filters.
+    - `401`: Unauthorized access.
+    - `500`: Server error.
+    """
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -235,6 +340,29 @@ async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuth
     
 @router.get("/filter_leads")
 async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None),city :str = Form(None),Enquiry_type:str=Form(None),assigned_to:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Filter leads based on multiple criteria.
+
+    **Description:**
+    Filters leads by parameters like stage, city, state, assigned_to, or inquiry type.
+    Admin and HR can view all leads, while others can only view assigned ones.
+
+    **Mandatory Parameters:**
+    - `request` (Request): User context.
+
+    **Optional Parameters:**
+    - `stage` (str): One of `open`, `closed`, `in progress`.
+    - `state` (str): Filter by state.
+    - `city` (str): Filter by city.
+    - `Enquiry_type` (str): Type of inquiry.
+    - `assigned_to` (str): Username filter.
+    - `credentials`: Authentication token.
+
+    **Returns:**
+    - `200`: Filtered list of leads.
+    - `422`: Invalid filter input.
+    - `500`: Database or server error.
+    """
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -326,10 +454,37 @@ async def update_lead(
     next_followup:str = Form(None),
     credentials: HTTPAuthorizationCredentials = Depends(security)
     ):
+    """
+    Update an existing lead record.
+
+    **Description:**
+    Allows **Admin** users to update any field of an existing lead.
+    Accepts both partial and full updates.
+
+    **Mandatory Parameters:**
+    - `request` (Request): Provides user context.
+    - `lead_id` (int): ID of the lead to update.
+    - `name` (str): Lead name (required, even for partial update).
+
+    **Optional Parameters:**
+    - Any other field (city, state, progress, stage, etc.) can be provided optionally.
+    - `credentials`: Authentication token.
+
+    **Returns:**
+    - `200`: Lead updated successfully.
+    - `401`: Unauthorized user.
+    - `422`: Invalid value for progress/stage.
+    - `500`: Internal server error.
+    """
 
     username = request.state.user[0]
     alias_name = request.state.user[2]
     role_user = request.state.user[1]
+
+    if not all([lead_id, name]):
+        return response(status="error", code=400, message="All mandatory fields (lead_id, name) are required.", error="Bad Request")
+
+
     if role_user.lower() not in ["admin",]:
         return response(
             status="error",
@@ -426,6 +581,27 @@ async def update_lead(
         )
 @router.put("/lead_status/}")
 async def update_lead_status(request:Request,lead_id: int=Form(...), status: str = Form(...),progress: str= Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Update the lead's status or progress.
+
+    **Description:**
+    Allows both **Admin** and **Salesman** to update the status or progress of a lead.
+    When progress is `"po raised"`, automatically adds the lead to the projects table.
+
+    **Mandatory Parameters:**
+    - `lead_id` (int): Lead ID.
+    - `status` (str): New status value.
+    - `request`: User context.
+
+    **Optional Parameters:**
+    - `progress` (str): One of `warm`, `hot`, `cold`, or `po raised`.
+    - `credentials`: Authentication token.
+
+    **Returns:**
+    - `200`: Lead status updated successfully.
+    - `401`: Unauthorized user.
+    - `500`: Error during database operation.
+    """
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -514,9 +690,30 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
     
 @router.delete("/lead/")
 async def close_lead(request:Request,lead_id: int = Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Close a lead by marking its stage as 'closed'.
+
+    **Description:**
+    Allows **Admin** or assigned **Salesman** to mark a lead as closed.
+
+    **Mandatory Parameters:**
+    - `lead_id` (int): Lead ID.
+    - `request`: User context.
+    - `credentials`: Token for authentication.
+
+    **Returns:**
+    - `200`: Lead closed successfully.
+    - `401`: Unauthorized.
+    - `404`: Lead not found.
+    - `500`: Database or connection error.
+    """
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
+    if not all([lead_id]):
+        return response(status="error", code=400, message="Lead ID is required.", error="Bad Request")
+
+
     if role_user not in ['Admin',"Salesman"]:
         return response(
             status="error",
@@ -567,6 +764,22 @@ async def close_lead(request:Request,lead_id: int = Form(...),credentials: HTTPA
     
 @router.get("/count_leads")
 async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Retrieve count statistics for all leads.
+
+    **Description:**
+    Provides total leads count and counts by stage (open, closed, in progress).
+    Accessible only to **Admin** users.
+
+    **Mandatory Parameters:**
+    - `request`: Provides context for alias name.
+    - `credentials`: Authorization token.
+
+    **Returns:**
+    - `200`: Counts for each stage.
+    - `401`: Unauthorized user.
+    - `500`: Database or query error.
+    """
     alias_name = request.state.user[2]
     role_user = request.state.user[1]
     if role_user.lower() not in ["admin"]:
@@ -631,6 +844,13 @@ async def import_excel_data(file: UploadFile = File(...)):
     This endpoint validates an Excel file's headers (case-insensitive)and, if valid, inserts the data into a MySQL database.
     """
     connection = None  # Initialize connection to None
+    if not file:
+        return response(
+            status="error",
+            code=400,
+            message="Excel file is mandatory.",
+            error="Bad Request"
+        )
     try:
         # Read the file's content into memory
         contents = await file.read()

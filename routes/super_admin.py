@@ -26,6 +26,10 @@ async def add_company(
     created_by: str,
     logo: UploadFile
 ):
+    if not all([name, alias_name, location, created_by, logo]):
+        return {"error": "All mandatory fields (name, alias_name, location, created_by, logo) are required."}
+
+
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     logo_data = await logo.read()
@@ -70,6 +74,8 @@ async def add_company(
     
 @router.delete("/company")
 async def delete_company(Company_alias: str):
+    if not all([Company_alias]):
+        return {"error": "Company_alias is required."}
     try:
         cursor.execute("UPDATE company_details SET active=0 WHERE alias_name = %s", (Company_alias,))
         connection.commit()
@@ -92,6 +98,10 @@ async def add_employee(Company_alias: str,
         INSERT INTO {table_name} (company_id, name, username, password, role, created_by)
         VALUES ((SELECT id FROM company_details WHERE alias_name = %s), %s, %s, %s, %s, %s)
     """
+    if not all([Company_alias, name, username, password, created_by]):
+        return {"error": "All mandatory fields (Company_alias, name, username, password, created_by) are required."}
+
+
     try:
         cursor.execute("SELECT id FROM company_details WHERE alias_name = %s", (Company_alias,))
         company = cursor.fetchone()
@@ -106,6 +116,8 @@ async def add_employee(Company_alias: str,
 @router.delete("/employee")
 async def delete_employee(Company_alias: str, username: str):
     table_name = f"{Company_alias}_employees"
+    if not all([Company_alias, username]):
+        return {"error": "Both Company_alias and username are required."}
     try:
         cursor.execute(f"UPDATE {table_name} SET active=0 WHERE username = %s", (username,))
         connection.commit()

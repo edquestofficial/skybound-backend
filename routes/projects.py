@@ -11,6 +11,13 @@ async def assign_project(request:Request, project_id:int=Form(...), assiged_to:s
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     table_name = f"{alias_name}_projects"
+    if not all([project_id, assiged_to]):
+        return response(
+            status="error",
+            code=400,
+            message="All mandatory fields (project_id, assiged_to) are required.",
+            error="Bad Request"
+        )
     if role_user.lower() not in ["admin"]:
         return response(
             status="error",
@@ -44,6 +51,13 @@ async def update_project_status(request:Request, project_id:int=Form(...), statu
     table_name = f"{alias_name}_projects"
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
+    if not all([project_id, status]):
+        return response(
+            status="error",
+            code=400,
+            message="All mandatory fields (project_id, status) are required.",
+            error="Bad Request"
+        )
     if role_user.lower() not in ["admin","consultant"]:
         return response(
             status="error",
@@ -91,6 +105,13 @@ async def raise_review_request(request:Request,project_id:int=Form(...),credenti
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     table_name = f"{alias_name}_projects"
+    if not all([project_id]):
+        return response(
+            status="error",
+            code=400,
+            message="Project ID is required.",
+            error="Bad Request"
+        )
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     if role_user.lower() not in ["admin","consultant"]:
@@ -139,6 +160,13 @@ async def close_project(request:Request,project_id:int=Form(...),credentials: HT
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     table_name = f"{alias_name}_projects"
+    if not all([project_id]):
+        return response(
+            status="error",
+            code=400,
+            message="Project ID is required.",
+            error="Bad Request"
+        )
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     if role_user.lower() not in ["admin"]:

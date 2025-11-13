@@ -1,34 +1,41 @@
 # Make sure these imports are at the top of your routes/company.py file
-import pandas as pd
-import io
-import numpy as np
 import asyncio
-from fastapi import APIRouter,File, UploadFile,Form,Depends,Request,Body
+from fastapi import APIRouter, File, UploadFile, Form, Depends, Request, HTTPException,Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import  base64
 # from conn import mydb, cursor
 # from util.face_match import face_encoding,incert
 from db_config import get_connection
 # from embedding_operation import facegenerating_embedding, face_embedding_search
 import os
-import shutil
-import pandas as pd
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
 from typing import List
 import requests
 from util.mailer import send_mail
 from util.auth import verify_token, authenticate_user
 from util.config import response
+from model.user import User
 router = APIRouter()
 security = HTTPBearer()
 
 from .vector_store import process_registration_object, create_embedding_for_file
 
 @router.post("/login")
-async def companyadmin_login(username: str = Form(...),password: str =Form(...),alias_name:str=Form(...)):
+async def companyadmin_login(user: User):
+    """
+    Authenticate a company administrator and generate an authentication token.
+
+    **Description:**
+    Validates user credentials (username and password) using the `authenticate_user` function.
+    On success, returns an authentication token to be used for protected routes.
+
+    **Parameters:**
+    - `user` (User) — **Mandatory**. A Pydantic model containing `username` and `password`.
+
+    **Returns:**
+    - Success → JSON containing authentication token.
+    - Failure → Error JSON if login fails or an exception occurs.
+    """
     try:
-        tokken =  authenticate_user(username, password, alias_name)
+        tokken =  authenticate_user(user)
         return tokken
     except Exception as e:
         return response(
@@ -40,6 +47,23 @@ async def companyadmin_login(username: str = Form(...),password: str =Form(...),
     
 @router.patch("/employees")
 async def get_employees(request:Request,salesman_list:bool|None = Form(False),credentials: HTTPAuthorizationCredentials = Depends(security) ):
+    """
+    Fetch the list of employees based on role filters.
+
+    **Description:**
+    - Admins and HR can view all employees or only salesmen depending on `salesman_list`.
+    - Other users are restricted from accessing this data.
+
+    **Parameters:**
+    - `request` (Request) — **Mandatory**. Used to access logged-in user details.
+    - `salesman_list` (bool) — **Optional**. If `True`, returns only salesmen; defaults to `False` for all employees.
+    - `credentials` (HTTPAuthorizationCredentials) — **Mandatory**. For authorization validation.
+
+    **Returns:**
+    - Success → List of employee records.
+    - Failure → Unauthorized or error response.
+    """
+
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     username = request.state.user[0]
@@ -88,12 +112,40 @@ async def get_employees(request:Request,salesman_list:bool|None = Form(False),cr
 
 @router.post("/update_employee")
 async def update_employee(request:Request,name:str=Form(...),username:str=Form(...),role:str=Form(...),id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Update employee details in the database.
+
+    **Description:**
+    Allows Admin or HR to update employee information such as name, username, and role.
+
+    **Parameters:**
+    - `request` (Request) — **Mandatory**. Provides context for logged-in user (updater).
+    - `name` (str) — **Mandatory**. Updated name of the employee.
+    - `username` (str) — **Mandatory**. Updated username of the employee.
+    - `role` (str) — **Mandatory**. Updated role of the employee.
+    - `id` (int) — **Mandatory**. Employee ID to be updated.
+    - `credentials` (HTTPAuthorizationCredentials) — **Mandatory**. Used for authentication.
+
+    **Returns:**
+    - Success → Confirmation of successful update.
+    - Failure → Error message if unauthorized or database issue occurs.
+    """
     updated_by = request.state.user[0]
-    role = request.state.user[1]
+    role_user = request.state.user[1]
     alias_name = request.state.user[2]
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
-    if role.lower() not in ["admin","hr"]:
+
+    if not all([name, username, role, id]):
+        return response(
+            status="error",
+            code=400,
+            message="All mandatory fields (name, username, role, id) are required.",
+            error="Bad Request"
+        )
+
+
+    if role_user.lower() not in ["admin","hr"]:
         return response(
             status="error",
             code=401,
@@ -130,13 +182,39 @@ async def add_employee(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
-    Add an employee, save photos to disk, insert record in DB,
-    and generate face embeddings for each uploaded photo.
+    Add a new employee, upload their photos, and generate face embeddings.
+
+    **Description:**
+    - Saves 4 uploaded employee photos locally.
+    - Inserts employee details into the database.
+    - Sends login credentials via email.
+    - Generates face embeddings in the background.
+
+    **Parameters:**
+    - `request` (Request) — **Mandatory**. Used to identify creator and company context.
+    - `name` (str) — **Mandatory**. Employee's full name.
+    - `username` (str) — **Mandatory**. Unique username for login.
+    - `password` (str) — **Mandatory**. Password for the new employee.
+    - `role` (str) — **Mandatory**. Role assigned to the employee.
+    - `photos` (List[UploadFile]) — **Mandatory**. Exactly 4 photos of the employee for embedding.
+    - `credentials` (HTTPAuthorizationCredentials) — **Mandatory**. Token for authentication.
+
+    **Returns:**
+    - Success → JSON with saved photo paths and embedding results.
+    - Failure → Error message for invalid permissions or upload issues.
     """
     created_by = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     company_id = request.state.user[3]
+
+    if not all([name, username, password, role, photos]):
+        return response(
+            status="error",
+            code=400,
+            message="All mandatory fields (name, username, password, role, photos) are required.",
+            error="Bad Request"
+        )
 
     if role_user.lower() not in ["admin","hr"]:
         return response(
@@ -179,7 +257,6 @@ async def add_employee(
             message="Cannot add Admin. Only Edquest can add Admin users.",
             error="NOt authorized"
         )
-
         # Store one representative photo (e.g., first one)
         with open(saved_paths[0], "rb") as f:
             photo_data = f.read()
@@ -232,6 +309,20 @@ async def add_employee(
 
 @router.get("/role")
 async def get_role(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security) ):
+    """
+    Fetch all available roles.
+
+    **Description:**
+    Returns a list of all roles. Access restricted to Admin and HR users.
+
+    **Parameters:**
+    - `request` (Request) — **Mandatory**. Used to extract user role and company alias.
+    - `credentials` (HTTPAuthorizationCredentials) — **Mandatory**. Used for token authentication.
+
+    **Returns:**
+    - Success → List of roles.
+    - Failure → Error response if unauthorized.
+    """
     username = request.state.user[0]
     role = request.state.user[1]
     alias_name = request.state.user[2]
@@ -258,9 +349,33 @@ async def get_role(request:Request,credentials: HTTPAuthorizationCredentials = D
 
 @router.delete("/employee")
 async def delete_employee(request:Request,employee_id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Soft delete an employee by deactivating their record.
+
+    **Description:**
+    Updates the `active` status to `0` for the specified employee.
+    Only Admin or HR can perform this action.
+
+    **Parameters:**
+    - `request` (Request) — **Mandatory**. Used to get username, role, and alias.
+    - `employee_id` (int) — **Mandatory**. ID of the employee to be deleted.
+    - `credentials` (HTTPAuthorizationCredentials) — **Mandatory**. Authentication token.
+
+    **Returns:**
+    - Success → Confirmation message for deletion.
+    - Failure → Unauthorized or error response.
+    """
     username = request.state.user[0]
     role_user = request.state.user[1]   
     alias_name = request.state.user[2]
+
+    if not all([employee_id]):
+        return response(
+            status="error",
+            code=400,
+            message="Employee ID is required.",
+            error="Bad Request"
+        )
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     if role_user.lower() not in ["admin","hr"]:
@@ -294,12 +409,6 @@ async def delete_employee(request:Request,employee_id:int=Form(...),credentials:
 
 
 # --- YOUR REQUIRED HEADERS ---
-EXPECTED_HEADERS = [
-    "s no.", "date", "name", "company name", "city", "state", "contact 1",
-    "inquiry type", "e mail", "requirements", "status", "skybound person",
-    "cold/hot/warm", "open/closed", "next follow up"
-]
-# -----------------------------
 # @router.post("/setup-database")
 # async def setup_database():
 #     """
@@ -355,119 +464,44 @@ EXPECTED_HEADERS = [
 #             connection.close()
 
 
+  
 
-@router.post("/import-excel/")
-async def import_excel_data(file: UploadFile = File(...)):
-    """
-    This endpoint validates an Excel file's headers (case-insensitive)
-    and, if valid, inserts the data into a MySQL database.
-    """
-    connection = None  # Initialize connection to None
-    try:
-        # Read the file's content into memory
-        contents = await file.read()
-        buffer = io.BytesIO(contents)
-        df = pd.read_excel(buffer)
+# @router.post("/fix-status-column")
+# async def fix_status_column():
+#     """
+#     This is a one-time endpoint to alter the 'status' column
+#     from VARCHAR to TEXT to allow longer data.
+#     """
+    
+#     # ! IMPORTANT: Make sure this is your real table name
+#     table_name = "excel" 
+    
+#     alter_query = f"""
+#     ALTER TABLE `{table_name}` 
+#     MODIFY COLUMN `status` TEXT;
+#     """
+    
+#     connection = None
+#     try:
+#         connection = get_connection()
+#         if not connection:
+#             return JSONResponse(status_code=500, content={"error": "Database connection failed."})
+        
+#         cursor = connection.cursor()
+#         cursor.execute(alter_query)
+#         connection.commit()
+#         cursor.close()
+        
+#         return {"message": f"Table '{table_name}' status column successfully changed to TEXT."}
 
-        # --- 1. Header Validation ---
-        
-        # Create a mapping of {Original Header: lowercase_header}
-        header_map = {col: str(col).strip().lower() for col in df.columns}
-        
-        # Get a set of the standardized headers from the file
-        standardized_file_headers = set(header_map.values())
-        
-        # Get a set of your required headers
-        required_set = set(EXPECTED_HEADERS)
-
-        # Check if all required headers are present in the file
-        if not required_set.issubset(standardized_file_headers):
-            missing_headers = list(required_set - standardized_file_headers)
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "error": "Invalid file format. Missing required headers.",
-                    "missing": missing_headers
-                }
-            )
-
-# --- 2. Data Processing (ALL FIXES APPLIED) ---
-        
-        # Rename the DataFrame columns to your standardized lowercase names
-        df = df.rename(columns=header_map)
-        
-        # --- FIX 1: Handle NaN, empty strings, and single spaces ---
-        # This replaces all of them with None, which becomes NULL in MySQL
-        df = df.replace({np.nan: None, '': None, ' ': None})
-        
-        # --- FIX 2: Handle bad DATE columns ---
-        # 'errors=coerce' turns any bad date (like 'pending') into 'NaT'
-        df['date'] = pd.to_datetime(df['date'], errors='coerce')
-        df['next follow up'] = pd.to_datetime(df['next follow up'], errors='coerce')
-        
-        # --- FIX 3: Handle bad NUMBER columns ---
-        # This fixes errors like "Incorrect integer value: ' ' for column 's no.'"
-        # It turns any bad number (like 'N/A' or text) into 'NaN' (Not a Number)
-        df['s no.'] = pd.to_numeric(df['s no.'], errors='coerce')
-        
-        # --- FIX 4: Convert all 'NaT' and 'NaN' into None ---
-        # This final step makes the data safe for MySQL, which accepts NULL.
-        # This single line replaces BOTH the old .replace({np.nan: None})
-        # and .replace({pd.NaT: None})
-        df = df.replace({pd.NaT: None, np.nan: None})        
-        # Convert the DataFrame to a list of dictionaries
-        data_rows = df.to_dict(orient="records")
-
-        # --- 3. Database Insertion ---
-        
-        # ! IMPORTANT: Change this to your actual table name
-        table_name = "excel" 
-        
-        connection = get_connection()
-        if not connection:
-            return JSONResponse(status_code=500, content={"error": "Database connection failed."})
-        
-        cursor = connection.cursor()
-
-        # Build the SQL query dynamically
-        # The backticks `` are important for names with spaces or symbols
-        sql_columns = ", ".join([f"`{h}`" for h in EXPECTED_HEADERS])
-        
-        # This creates `(%s, %s, %s, ...)`
-        sql_placeholders = ", ".join(["%s"] * len(EXPECTED_HEADERS))
-        
-        insert_query = f"INSERT INTO {table_name} ({sql_columns}) VALUES ({sql_placeholders})"
-        
-        # Prepare all rows for batch insertion
-        rows_to_insert = []
-        for row in data_rows:
-            # Create a tuple of values *in the correct order*
-            values_tuple = tuple(row[h] for h in EXPECTED_HEADERS)
-            rows_to_insert.append(values_tuple)
-
-        # Execute all inserts in a single, efficient transaction
-        if rows_to_insert:
-            cursor.executemany(insert_query, rows_to_insert)
-            connection.commit()
-            
-        cursor.close()
-
-        return {
-            "message": "File validated and data saved successfully!",
-            "filename": file.filename,
-            "records_saved": len(rows_to_insert)
-        }
-
-    except Exception as e:
-        # If anything goes wrong, roll back any changes
-        if connection:
-            connection.rollback()
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"An error occurred: {str(e)}"}
-        )
-    finally:
-        # Ensure the file and database connection are always closed
-        if connection:
-            connection.close()
-        await file.close()
+#     except Exception as e:
+#         if connection:
+#             connection.rollback()
+#         return JSONResponse(
+#             status_code=500,
+#             content={"error": f"An error occurred: {str(e)}"}
+#         )
+#     finally:
+#         if connection:
+#             connection.close()
+ 
