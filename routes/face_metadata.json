@@ -194,5 +194,12 @@
     "name": "Dinesh",
     "image_index": 3,
     "timestamp": "2025-11-03T11:28:44.716268"
+  },
+  {
+    "faiss_id": 28,
+    "username": "test111",
+    "name": "test1",
+    "image_index": 0,
+    "timestamp": "2025-11-10T09:53:32.651548"
   }
 ]

@@ -3,13 +3,13 @@ from db_config import get_connection
 from util.config import response
 import json
 
-def get_user(username: str, password: str, alias_name: str):
+def get_user(userdata):
     conn =  get_connection()
     cursor = conn.cursor()
-    tabel_name = alias_name + "_employees"
+    tabel_name = userdata.alias_name + "_employees"
     query = f"SELECT {tabel_name}.username,{tabel_name}.role,company_details.alias_name,company_details.id FROM {tabel_name} LEFT JOIN company_details ON {tabel_name}.company_id = company_details.id WHERE {tabel_name}.username=%s AND {tabel_name}.password=%s"
     try:    
-        cursor.execute(query, (username, password))
+        cursor.execute(query, (userdata.username, userdata.password))
         result = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -36,8 +36,8 @@ def get_user(username: str, password: str, alias_name: str):
             error=str(e),
             )
 
-def authenticate_user(username: str, password: str, alias_name: str):
-    user_data = get_user(username,password ,alias_name)
+def authenticate_user(userdata):
+    user_data = get_user(userdata)
 
     print(user_data)
     if user_data.status == "error":

@@ -3,13 +3,12 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import random
 from db_config import get_connection
 from util.config import response
-
+from util.api_parameters import Attendence
 router = APIRouter()
 security = HTTPBearer()
 
 @router.get("/attendence")
 async def get_attendence(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
-
     username = request.state.user[0]
     role_user = request.state.user[1]   
     alias_name = request.state.user[2]
@@ -36,7 +35,13 @@ async def get_attendence(request:Request,credentials: HTTPAuthorizationCredentia
             )
 
 @router.post("/employee_attendence")
-async def employee_attendence(request:Request,username:str = Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def employee_attendence(request:Request,attendence:Attendence,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """This API is used to get the attendence of all employees
+    optinal parameter :
+    username:str,username of the employees whose addendence we want to see.
+    
+    """
+    username = attendence.username
     if (username == None):
         username = request.state.user[0]
     role_user = request.state.user[1]
@@ -52,6 +57,6 @@ async def employee_attendence(request:Request,username:str = Form(None),credenti
     return response(
             status="success",
             code=200,
-            message="Roles",
+            message="Attendence fetched successfully.",
             data=result
             )

@@ -2,6 +2,7 @@ from fastapi import APIRouter,Form,Request,Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from db_config import get_connection
 from datetime import datetime
+from util.api_parameters import Leads
 from util.config import response
 
 router = APIRouter()
@@ -10,25 +11,44 @@ security = HTTPBearer()
 
 @router.post("/lead")
 async def add_lead(
-    request:Request,
-    name: str = Form(...),
-    company_name: str = Form(...),
-    city: str = Form(...),
-    state: str = Form(...),
-    contect_1:int = Form(...),
-    inquery_type:str = Form(...),
-    email: str = Form(...),
-    requirement: str = Form(...),
-    progress: str = Form(...),
-    stage: str = Form("open"),
-    next_followup:str = Form(None),
-    status: str = Form(None),
-    assigned_to: str= Form(None),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    request:Request,leads:Leads,credentials: HTTPAuthorizationCredentials = Depends(security)
     ):
+    """
+    This API is used to add new lead.
+    Required parameters :-
+        name:str,name of the lead.
+        comany_name:str,
+        city:str,
+        state:str,
+        contect:int,
+        inquery_type:str
+        email:str,
+        requirement:str,
+        progress:str,
+    Optional parameters:-
+        status:str,
+        stage:str,
+        next_followup:str,
+        assigned_to:str,
 
+    """
+    
+    name = leads.name
+    company_name = leads.company_name
+    city = leads.city
+    state = leads.state
+    contect_1 = leads.contect
+    inquery_type = leads.inquery_type
+    email = leads.email
+    requirement = leads.requirement
+    progress = leads.progress
+    stage  = leads.stage
+    next_followup = leads.next_followup
+    status = leads.status
+    assigned_to = leads.assigned_to
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
+
     if role_user.lower() not in ["admin"]:
         return response(
             status="error",
@@ -108,10 +128,16 @@ async def add_lead(
 
 
 @router.put("/assign_lead")
-async def assign_leads(request:Request, lead_id:int=Form(...), assiged_to:str=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def assign_leads(request:Request,leads :Leads,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """This API is used to assign lead.
+    Required parameters :-
+        lead_id:str,
+        assigned_to:str,
+    """
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
-
+    lead_id = leads.lead_id
+    assiged_to = leads.assigned_to
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -125,7 +151,7 @@ async def assign_leads(request:Request, lead_id:int=Form(...), assiged_to:str=Fo
         )
     try:
         
-        cursor.execute(f"UPDATE {alias_name}_leads SET stage = 'in progress', assigned_to = %s WHERE id = %s", (assiged_to, lead_id[0]))
+        cursor.execute(f"UPDATE {alias_name}_leads SET stage = 'in progress', assigned_to = %s WHERE id = %s", (assiged_to, lead_id))
         connection.commit()
         return response(
             status="success",
@@ -141,10 +167,16 @@ async def assign_leads(request:Request, lead_id:int=Form(...), assiged_to:str=Fo
 
         )
 @router.put("/assign_bulk_lead")
-async def assign_bulk_leads(request:Request, lead_id:list=Form(...), assiged_to:str=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def assign_bulk_leads(request:Request,leads:Leads,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """This API is used to bulk assign lead.
+    Required parameters :-
+        lead_ids:list,
+        assigned_to:str,
+    """
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
-
+    lead_id = leads.lead_ids
+    assiged_to = leads.assigned_to
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -179,10 +211,11 @@ async def assign_bulk_leads(request:Request, lead_id:list=Form(...), assiged_to:
     
 
 @router.patch("/get_leads")
-async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def fetch_leads(request:Request,leads:Leads,credentials: HTTPAuthorizationCredentials = Depends(security)):
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
+    stage = leads.stage
     if stage == "all":
         stage = None
     connection = get_connection()
@@ -229,10 +262,24 @@ async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuth
         )
     
 @router.get("/filter_leads")
-async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None),city :str = Form(None),Enquiry_type:str=Form(None),assigned_to:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def filter_leads(request:Request,leads:Leads,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    This api is used to filter leads.
+    optinal parameters :-
+        stage:str,
+        state:str,
+        city:str,
+        inquery_type:str,
+        assigned_to:str
+    """
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
+    stage = leads.stage
+    state = leads.state
+    city = leads.city
+    Enquiry_type = leads.inquery_type
+    assigned_to = leads.assigned_to
     parameters = []
     values = []
     if stage == "all":
@@ -303,24 +350,42 @@ async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None
         )
     
 @router.put("/update_lead")
-async def update_lead(
-    request:Request,
-    lead_id: int=Form(...),
-    name: str = Form(...),
-    company_name: str =Form(None),
-    city: str = Form(None),
-    state: str = Form(None),
-    contect_1:int = Form(None),
-    inquery_type:str = Form(None),
-    email: str = Form(None),
-    requirement: str = Form(None),
-    status: str    = Form(None),
-    assigned_to: str  = Form(None),
-    progress: str = Form(None),
-    stage: str =Form(None),
-    next_followup:str = Form(None),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+async def update_lead(request:Request,leads:Leads,credentials: HTTPAuthorizationCredentials = Depends(security)
     ):
+    """
+    This API is used to update lead.
+    Required parameters :-
+        lead_id:int.
+    Optional parameters:-
+        name:str,name of the lead.
+        comany_name:str,
+        city:str,
+        state:str,
+        contect:int,
+        inquery_type:str
+        email:str,
+        requirement:str,
+        progress:str,
+        status:str,
+        stage:str,
+        next_followup:str,
+        assigned_to:str,
+
+    """
+    lead_id = leads.lead_id
+    name = leads.name
+    company_name = leads.company_name
+    city = leads.city
+    state = leads.contect_1
+    contect_1 = leads.contect_1
+    inquery_type = leads.inquery_type
+    email = leads.email
+    requirement = leads.requirement
+    progress = leads.progress
+    stage  = leads.stage
+    next_followup = leads.next_followup
+    status = leads.status
+    assigned_to = leads.assigned_to
 
     username = request.state.user[0]
     alias_name = request.state.user[2]
@@ -420,7 +485,18 @@ async def update_lead(
             error=str(e)
         )
 @router.put("/lead_status/}")
-async def update_lead_status(request:Request,lead_id: int=Form(...), status: str = Form(...),progress: str= Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def update_lead_status(request:Request,leads:Leads,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    This api used to update lead status.
+    required parameter:
+        lead_id:str,
+        status:str,
+    optional parameter:
+        progress:str
+    """
+    lead_id = leads.lead_id
+    status = leads.status
+    progress = leads.progress
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -508,7 +584,13 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
             error=str(e))
     
 @router.delete("/lead/")
-async def close_lead(request:Request,lead_id: int = Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def close_lead(request:Request,leads:Leads,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    this API is used to close a lead.
+    required parameter:
+        lead_id:int
+    """
+    lead_id = leads.lead_id
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]

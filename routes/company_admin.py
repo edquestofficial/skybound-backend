@@ -22,13 +22,20 @@ from util.auth import verify_token, authenticate_user
 from util.config import response
 router = APIRouter()
 security = HTTPBearer()
-
 from .vector_store import process_registration_object, create_embedding_for_file
+from  util.api_parameters import UserData
+
 
 @router.post("/login")
-async def companyadmin_login(username: str = Form(...),password: str =Form(...),alias_name:str=Form(...)):
+async def companyadmin_login(userdata:UserData):
+    """This API used for user log in.
+        required parameters : 
+            username:str,
+            password:str,
+            alias_name:str,
+    """
     try:
-        tokken =  authenticate_user(username, password, alias_name)
+        tokken =  authenticate_user(userdata)
         return tokken
     except Exception as e:
         return response(
@@ -39,7 +46,13 @@ async def companyadmin_login(username: str = Form(...),password: str =Form(...),
         )
     
 @router.patch("/employees")
-async def get_employees(request:Request,salesman_list:bool|None = Form(False),credentials: HTTPAuthorizationCredentials = Depends(security) ):
+async def get_employees(request:Request,userdata:UserData,credentials: HTTPAuthorizationCredentials = Depends(security) ):
+    """
+    This api is used to get the employees list.
+    optional parameter :
+        salesman_list:bool
+    """
+    salesman_list = userdata.salesman_list
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     username = request.state.user[0]
@@ -87,13 +100,24 @@ async def get_employees(request:Request,salesman_list:bool|None = Form(False),cr
         )
 
 @router.post("/update_employee")
-async def update_employee(request:Request,name:str=Form(...),username:str=Form(...),role:str=Form(...),id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def update_employee(request:Request,userdata:UserData,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """This Api is used to Update the employee data.
+        required parametrs:
+            id:int , employee id whose data to be updated.
+            name:str , employee name updated or old.
+            username:str , employee username updayed or old.
+            role :str , employee role updated or old.
+        """
+    name = userdata.name
+    username = userdata.username
+    role = userdata.role
+    id = userdata.id
     updated_by = request.state.user[0]
-    role = request.state.user[1]
+    user_role = request.state.user[1]
     alias_name = request.state.user[2]
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
-    if role.lower() not in ["admin","hr"]:
+    if user_role.lower() not in ["admin","hr"]:
         return response(
             status="error",
             code=401,
@@ -257,7 +281,13 @@ async def get_role(request:Request,credentials: HTTPAuthorizationCredentials = D
             )
 
 @router.delete("/employee")
-async def delete_employee(request:Request,employee_id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def delete_employee(request:Request,userdata:UserData,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """This API is used to Delete the employee.
+    Required Parameter:
+        id:int, Employee id to be deleted.
+    
+    """
+    id = userdata.id
     username = request.state.user[0]
     role_user = request.state.user[1]   
     alias_name = request.state.user[2]
@@ -272,7 +302,7 @@ async def delete_employee(request:Request,employee_id:int=Form(...),credentials:
         )
     
     try:
-        cursor.execute(f"UPDATE {alias_name}_employees SET modified_by = %s,modified_at= CURRENT_TIMESTAMP(),active = 0 WHERE id = %s ", (username,employee_id))
+        cursor.execute(f"UPDATE {alias_name}_employees SET modified_by = %s,modified_at= CURRENT_TIMESTAMP(),active = 0 WHERE id = %s ", (username,id))
         connection.commit()
         cursor.close()
         connection.close()
