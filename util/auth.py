@@ -1,7 +1,6 @@
 from jose import jwt 
 from db_config import get_connection
 from util.config import response, MESSAGES
-from model.user import User
 import json
 
 def get_user(userdata):

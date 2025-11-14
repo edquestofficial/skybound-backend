@@ -12,7 +12,6 @@ import requests
 from util.mailer import send_mail
 from util.auth import verify_token, authenticate_user
 from util.config import response, MESSAGES
-from model.user import User
 router = APIRouter()
 security = HTTPBearer()
 from .vector_store import process_registration_object, create_embedding_for_file
@@ -54,31 +53,20 @@ async def get_employees(request:Request,userdata:UserData,credentials: HTTPAutho
     optional parameter :
         salesman_list:bool
     """
-    salesman_list = userdata.salesman_list
+    role_type = userdata.role_type
+    print("Role type received:", role_type)
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     username = request.state.user[0]
     role = request.state.user[1]
     alias_name = request.state.user[2]
     try:
-        if salesman_list and role.lower() in ["admin","hr"]:
-            query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role = 'Salesman'"""
-        elif not salesman_list and role.lower() in ["admin","hr"]:
-            query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role != 'Admin'"""
-        elif salesman_list and role.lower()not in ["admin","hr"]:
-            return response(
-            status="error",
-            code=401,
-            message=MESSAGES["EMPLOYEE_LIST_UNAUTHORIZED"],
-            error="NOt authorized"
-        )
+        if role_type is None:
+            query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role != 'Admin' """
+            cursor.execute(query)
         else:
-            return response(
-            status="error",
-            code=401,
-            message=MESSAGES["EMPLOYEE_LIST_UNAUTHORIZED"],
-            error="NOt authorized"
-        )
+            query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role = %s """
+            cursor.execute(query,(role_type,))
     except Exception as e :
         return response(
             status="error",
@@ -86,7 +74,6 @@ async def get_employees(request:Request,userdata:UserData,credentials: HTTPAutho
             message=MESSAGES["LOGIN_ERROR"],
             error=str(e)
         )
-    cursor.execute(query)
     result = cursor.fetchall()
     cursor.close()
     connection.close()

@@ -43,7 +43,7 @@ async def add_lead(
     company_name = leads.company_name
     city = leads.city
     state = leads.state
-    contect_1 = leads.contect
+    contect = leads.contect
     inquery_type = leads.inquery_type
     email = leads.email
     requirement = leads.requirement
@@ -54,7 +54,7 @@ async def add_lead(
     assigned_to = leads.assigned_to
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
-    if not all([name, company_name, city, state, contect_1, inquery_type, email, requirement, progress]):
+    if not all([name, company_name, city, state, contect, inquery_type, email, requirement, progress]):
         return response(
             status="error",
             code=400,
@@ -90,7 +90,7 @@ async def add_lead(
         INSERT INTO {alias_name}_leads (date, name, company_name, city, state, contact_1, inquiry_type, email, requirement, status, assigned_to, progress, stage, next_followup) VALUES (CURDATE(),%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""" 
     try:
 
-        cursor.execute(query, (name, company_name, city, state, contect_1, inquery_type, email, requirement, status, assigned_to, progress, stage, next_followup))
+        cursor.execute(query, (name, company_name, city, state, contect, inquery_type, email, requirement, status, assigned_to, progress, stage, next_followup))
         connection.commit() 
         cursor.close()
         connection.close()
@@ -433,8 +433,8 @@ async def update_lead(request:Request,leads:Leads,credentials: HTTPAuthorization
     name = leads.name
     company_name = leads.company_name
     city = leads.city
-    state = leads.contect_1
-    contect_1 = leads.contect_1
+    state = leads.state
+    contect = leads.contect
     inquery_type = leads.inquery_type
     email = leads.email
     requirement = leads.requirement
@@ -492,9 +492,9 @@ async def update_lead(request:Request,leads:Leads,credentials: HTTPAuthorization
         if state is not None:
             update_fields.append("state = %s")
             params.append(state)
-        if contect_1 is not None:
+        if contect is not None:
             update_fields.append("contact_1 = %s")
-            params.append(contect_1)
+            params.append(contect)
         if inquery_type is not None:
             update_fields.append("inquiry_type = %s")
             params.append(inquery_type)

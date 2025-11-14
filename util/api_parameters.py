@@ -7,7 +7,7 @@ class UserData(BaseModel):
     username:str|None = None
     password : str | None = None
     alias_name :str |None = None
-    salesman_list : bool = False
+    role_type : str | None = None
 
 class Leads(BaseModel):
     lead_id : int | None = None
