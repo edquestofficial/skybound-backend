@@ -4,13 +4,13 @@ from util.config import response, MESSAGES
 from model.user import User
 import json
 
-def get_user(user: User):
+def get_user(userdata):
     conn =  get_connection()
     cursor = conn.cursor()
-    tabel_name = user.alias_name + "_employees"
+    tabel_name = userdata.alias_name + "_employees"
     query = f"SELECT {tabel_name}.username,{tabel_name}.role,company_details.alias_name,company_details.id FROM {tabel_name} LEFT JOIN company_details ON {tabel_name}.company_id = company_details.id WHERE {tabel_name}.username=%s AND {tabel_name}.password=%s"
     try:    
-        cursor.execute(query, (user.username, user.password))
+        cursor.execute(query, (userdata.username, userdata.password))
         result = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -37,8 +37,8 @@ def get_user(user: User):
             error=str(e),
             )
 
-def authenticate_user(user: User):
-    user_data = get_user(user)
+def authenticate_user(userdata):
+    user_data = get_user(userdata)
 
     print(user_data)
     if user_data.status == "error":

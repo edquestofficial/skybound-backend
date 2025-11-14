@@ -3,11 +3,34 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from db_config import get_connection
 from datetime import datetime
 from util.config import response, MESSAGES
+from util.config import response
+from util.api_parameters import Project
+
 router = APIRouter()
 security = HTTPBearer()
 
 @router.put("/assign_project")
-async def assign_project(request:Request, project_id:int=Form(...), assiged_to:str= Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def assign_project(request:Request,project:Project,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Assign a project to a consultant.
+
+    **Access:** Admin only.
+
+    **Request Body:**
+    - `project_id` (int): The unique ID of the project.
+    - `assigned_to` (str): The username of the consultant to assign the project to.
+
+    **Behavior:**
+    - Updates the `assigned_to` field of the specified project record.
+    - Only users with the `admin` role can perform this action.
+
+    **Responses:**
+    - `200`: Project assigned successfully.
+    - `401`: Unauthorized access (user not admin).
+    - `500`: Database or server error.
+    """
+    project_id = project.project_id
+    assiged_to = project.assiged_to
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     table_name = f"{alias_name}_projects"
@@ -44,7 +67,28 @@ async def assign_project(request:Request, project_id:int=Form(...), assiged_to:s
         )
     
 @router.put("/update_project_status")
-async def update_project_status(request:Request, project_id:int=Form(...), status:str=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def update_project_status(request:Request,project:Project,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Update the status of a project.
+
+    **Access:** Admin or Consultant.
+
+    **Request Body:**
+    - `project_id` (int): The project ID.
+    - `status` (str): The new status (e.g., "in progress", "completed", etc.).
+
+    **Behavior:**
+    - Admins can update any project status.
+    - Consultants can only update status for projects assigned to them.
+
+    **Responses:**
+    - `200`: Project status updated successfully.
+    - `401`: Unauthorized (consultant not assigned or insufficient role).
+    - `404`: Project not found.
+    - `500`: Database or server error.
+    """
+    project_id = project.project_id
+    status = project.status
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -100,7 +144,26 @@ async def update_project_status(request:Request, project_id:int=Form(...), statu
     
     
 @router.put("/raise_review_request")
-async def raise_review_request(request:Request,project_id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def raise_review_request(request:Request,project : Project,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Raise a review request for a project.
+
+    **Access:** Admin or Consultant.
+
+    **Request Body:**
+    - `project_id` (int): The project ID.
+
+    **Behavior:**
+    - Marks the project’s `progress` as `"raised review"`.
+    - Consultants can only raise review requests for their own projects.
+
+    **Responses:**
+    - `200`: Review request raised successfully.
+    - `401`: Unauthorized.
+    - `404`: Project not found.
+    - `500`: Database or server error.
+    """
+    project_id = project.project_id
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -155,7 +218,25 @@ async def raise_review_request(request:Request,project_id:int=Form(...),credenti
             )
     
 @router.delete("/close_project")
-async def close_project(request:Request,project_id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def close_project(request:Request,project : Project,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Close an existing project.
+
+    **Access:** Admin only.
+
+    **Request Body:**
+    - `project_id` (int): The project ID.
+
+    **Behavior:**
+    - Marks the project as `"closed"`.
+    - Sets the `active` flag to `False`.
+
+    **Responses:**
+    - `200`: Project closed successfully.
+    - `401`: Unauthorized (not admin).
+    - `500`: Database or server error.
+    """ 
+    project_id = project.project_id
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -194,7 +275,29 @@ async def close_project(request:Request,project_id:int=Form(...),credentials: HT
             )
     
 @router.patch("/fillter_projects")
-async def filter_projects(request:Request,assigned_to: bool=Form(None),progress: str = Form(None),active: bool = Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def filter_projects(request:Request,project : Project,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Filter projects based on provided parameters.
+
+    **Access:** Admin or Consultant.
+
+    **Optional Query/Body Parameters:**
+    - `assigned_to` (str, optional): Filter by consultant username.
+    - `progress` (str, optional): Filter by progress (e.g., "po raised", "review raised").
+
+    **Behavior:**
+    - Admins can view all projects with filters applied.
+    - Consultants can view only projects assigned to them.
+
+    **Responses:**
+    - `200`: Projects fetched successfully.
+    - `401`: Unauthorized.
+    - `422`: Invalid filter parameter.
+    - `500`: Server or database error.
+    """
+    assigned_to = project.assiged_to
+    progress = project.progress
+    active  = None
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
@@ -264,6 +367,22 @@ async def filter_projects(request:Request,assigned_to: bool=Form(None),progress:
 
 @router.get("/count_projects")
 async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Get summarized counts of projects.
+
+    **Access:** Admin only.
+
+    **Behavior:**
+    - Counts total projects.
+    - Counts unassigned projects (`progress = 'po raised'` and `assigned_to IS NULL`).
+    - Counts closed projects (`progress = 'closed'`).
+    - Counts review-requested projects (`progress = 'review request'`).
+
+    **Responses:**
+    - `200`: Project counts fetched successfully.
+    - `401`: Unauthorized (not admin).
+    - `500`: Database or server error.
+    """
     alias_name = request.state.user[2]
     role_user = request.state.user[1]
     if role_user.lower() not in ["admin"]:

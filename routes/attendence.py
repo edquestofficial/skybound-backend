@@ -4,27 +4,13 @@ import random
 from db_config import get_connection
 from util.config import response, MESSAGES
 
+from util.config import response
+from util.api_parameters import Attendence
 router = APIRouter()
 security = HTTPBearer()
 
 @router.get("/attendence")
 async def get_attendence(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """
-    Retrieve all employee attendance records.
-
-    **Description:**
-    - This route can only be accessed by users with the role `admin` or `hr`.
-    - Fetches all attendance records from the database.
-
-    **Parameters:**
-    - `request` (Request) — **Mandatory**. Used to extract user details (username, role, alias) from request state.
-    - `credentials` (HTTPAuthorizationCredentials) — **Mandatory**. Automatically handled by `Depends(security)` for authentication.
-
-    **Returns:**
-    - JSON response containing all attendance records if authorized.
-    - Error response if the user is not authorized.
-    """
-
     username = request.state.user[0]
     role_user = request.state.user[1]   
     alias_name = request.state.user[2]
@@ -53,24 +39,13 @@ async def get_attendence(request:Request,credentials: HTTPAuthorizationCredentia
             )
 
 @router.post("/employee_attendence")
-async def employee_attendence(request:Request,username:str = Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def employee_attendence(request:Request,attendence:Attendence,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """This API is used to get the attendence of all employees
+    optinal parameter :
+    username:str,username of the employees whose addendence we want to see.
+    
     """
-    Retrieve attendance records for a specific employee.
-
-    **Description:**
-    - Returns attendance data for the given username.
-    - If no username is provided, the authenticated user's attendance is returned.
-
-    **Parameters:**
-    - `request` (Request) — **Mandatory**. Contains user details like username, role, and alias.
-    - `username` (str, optional) — **Optional**. If provided, fetches attendance for that username.  
-      If omitted, defaults to the username from the authenticated request.
-    - `credentials` (HTTPAuthorizationCredentials) — **Mandatory**. Automatically handled by `Depends(security)` for authentication.
-
-    **Returns:**
-    - JSON response with attendance records of the specified or logged-in user.
-    """
-
+    username = attendence.username
     if (username == None):
         username = request.state.user[0]
     role_user = request.state.user[1]

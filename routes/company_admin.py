@@ -15,11 +15,12 @@ from util.config import response, MESSAGES
 from model.user import User
 router = APIRouter()
 security = HTTPBearer()
-
 from .vector_store import process_registration_object, create_embedding_for_file
+from  util.api_parameters import UserData
+
 
 @router.post("/login")
-async def companyadmin_login(user: User):
+async def companyadmin_login(userdata:UserData):
     """
     Authenticate a company administrator and generate an authentication token.
 
@@ -34,8 +35,9 @@ async def companyadmin_login(user: User):
     - Success → JSON containing authentication token.
     - Failure → Error JSON if login fails or an exception occurs.
     """
+    
     try:
-        tokken =  authenticate_user(user)
+        tokken =  authenticate_user(userdata)
         return tokken
     except Exception as e:
         return response(
@@ -46,24 +48,13 @@ async def companyadmin_login(user: User):
         )
     
 @router.patch("/employees")
-async def get_employees(request:Request,salesman_list:bool|None = Form(False),credentials: HTTPAuthorizationCredentials = Depends(security) ):
+async def get_employees(request:Request,userdata:UserData,credentials: HTTPAuthorizationCredentials = Depends(security) ):
     """
-    Fetch the list of employees based on role filters.
-
-    **Description:**
-    - Admins and HR can view all employees or only salesmen depending on `salesman_list`.
-    - Other users are restricted from accessing this data.
-
-    **Parameters:**
-    - `request` (Request) — **Mandatory**. Used to access logged-in user details.
-    - `salesman_list` (bool) — **Optional**. If `True`, returns only salesmen; defaults to `False` for all employees.
-    - `credentials` (HTTPAuthorizationCredentials) — **Mandatory**. For authorization validation.
-
-    **Returns:**
-    - Success → List of employee records.
-    - Failure → Unauthorized or error response.
+    This api is used to get the employees list.
+    optional parameter :
+        salesman_list:bool
     """
-
+    salesman_list = userdata.salesman_list
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     username = request.state.user[0]
@@ -111,31 +102,21 @@ async def get_employees(request:Request,salesman_list:bool|None = Form(False),cr
         )
 
 @router.post("/update_employee")
-async def update_employee(request:Request,name:str=Form(...),username:str=Form(...),role:str=Form(...),id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """
-    Update employee details in the database.
-
-    **Description:**
-    Allows Admin or HR to update employee information such as name, username, and role.
-
-    **Parameters:**
-    - `request` (Request) — **Mandatory**. Provides context for logged-in user (updater).
-    - `name` (str) — **Mandatory**. Updated name of the employee.
-    - `username` (str) — **Mandatory**. Updated username of the employee.
-    - `role` (str) — **Mandatory**. Updated role of the employee.
-    - `id` (int) — **Mandatory**. Employee ID to be updated.
-    - `credentials` (HTTPAuthorizationCredentials) — **Mandatory**. Used for authentication.
-
-    **Returns:**
-    - Success → Confirmation of successful update.
-    - Failure → Error message if unauthorized or database issue occurs.
-    """
+async def update_employee(request:Request,userdata:UserData,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """This Api is used to Update the employee data.
+        required parametrs:
+            id:int , employee id whose data to be updated.
+            name:str , employee name updated or old.
+            username:str , employee username updayed or old.
+            role :str , employee role updated or old.
+        """
+    name = userdata.name
+    username = userdata.username
+    role = userdata.role
+    id = userdata.id
     updated_by = request.state.user[0]
-    role_user = request.state.user[1]
+    user_role = request.state.user[1]
     alias_name = request.state.user[2]
-    connection = get_connection()
-    cursor = connection.cursor(dictionary=True ,buffered=True)
-
     if not all([name, username, role, id]):
         return response(
             status="error",
@@ -143,9 +124,9 @@ async def update_employee(request:Request,name:str=Form(...),username:str=Form(.
             message=MESSAGES["EMPLOYEE_UPDATE_MISSING_FIELDS"],
             error="Bad Request"
         )
-
-
-    if role_user.lower() not in ["admin","hr"]:
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True ,buffered=True)
+    if user_role.lower() not in ["admin","hr"]:
         return response(
             status="error",
             code=401,
@@ -348,28 +329,18 @@ async def get_role(request:Request,credentials: HTTPAuthorizationCredentials = D
             )
 
 @router.delete("/employee")
-async def delete_employee(request:Request,employee_id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def delete_employee(request:Request,userdata:UserData,credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """This API is used to Delete the employee.
+    Required Parameter:
+        id:int, Employee id to be deleted.
+    
     """
-    Soft delete an employee by deactivating their record.
-
-    **Description:**
-    Updates the `active` status to `0` for the specified employee.
-    Only Admin or HR can perform this action.
-
-    **Parameters:**
-    - `request` (Request) — **Mandatory**. Used to get username, role, and alias.
-    - `employee_id` (int) — **Mandatory**. ID of the employee to be deleted.
-    - `credentials` (HTTPAuthorizationCredentials) — **Mandatory**. Authentication token.
-
-    **Returns:**
-    - Success → Confirmation message for deletion.
-    - Failure → Unauthorized or error response.
-    """
+    id = userdata.id
     username = request.state.user[0]
     role_user = request.state.user[1]   
     alias_name = request.state.user[2]
 
-    if not all([employee_id]):
+    if not all([id]):
         return response(
             status="error",
             code=400,
@@ -387,7 +358,7 @@ async def delete_employee(request:Request,employee_id:int=Form(...),credentials:
         )
     
     try:
-        cursor.execute(f"UPDATE {alias_name}_employees SET modified_by = %s,modified_at= CURRENT_TIMESTAMP(),active = 0 WHERE id = %s ", (username,employee_id))
+        cursor.execute(f"UPDATE {alias_name}_employees SET modified_by = %s,modified_at= CURRENT_TIMESTAMP(),active = 0 WHERE id = %s ", (username,id))
         connection.commit()
         cursor.close()
         connection.close()
@@ -404,104 +375,3 @@ async def delete_employee(request:Request,employee_id:int=Form(...),credentials:
             error=str(e)
         )
     
-
-
-
-
-# --- YOUR REQUIRED HEADERS ---
-# @router.post("/setup-database")
-# async def setup_database():
-#     """
-#     This is a one-time endpoint to create the inquiries table.
-#     """
-    
-#     # ! IMPORTANT: Make sure this matches the table_name in your other function
-#     table_name = "excel" 
-    
-#     # This is the SQL query from above
-#     create_table_query = f"""
-#     CREATE TABLE IF NOT EXISTS `{table_name}` (
-#         `id` INT AUTO_INCREMENT PRIMARY KEY,
-#         `date` DATETIME,
-#         `name` VARCHAR(255),
-#         `company name` VARCHAR(255),
-#         `city` VARCHAR(255),
-#         `state` VARCHAR(255),
-#         `contact 1` VARCHAR(100),
-#         `inquiry type` VARCHAR(255),
-#         `e mail` VARCHAR(255),
-#         `requirements` TEXT,
-#         `status` VARCHAR(100),
-#         `skybound person` VARCHAR(255),
-#         `cold/hot/warm` VARCHAR(50),
-#         `open/closed` VARCHAR(50),
-#         `next follow up` DATETIME
-#     );
-#     """
-    
-#     connection = None
-#     try:
-#         connection = get_connection()
-#         if not connection:
-#             return JSONResponse(status_code=500, content={"error": "Database connection failed."})
-        
-#         cursor = connection.cursor()
-#         cursor.execute(create_table_query)
-#         connection.commit()
-#         cursor.close()
-        
-#         return {"message": f"Table '{table_name}' created successfully (or already exists)."}
-
-#     except Exception as e:
-#         if connection:
-#             connection.rollback()
-#         return JSONResponse(
-#             status_code=500,
-#             content={"error": f"An error occurred: {str(e)}"}
-#         )
-#     finally:
-#         if connection:
-#             connection.close()
-
-
-  
-
-# @router.post("/fix-status-column")
-# async def fix_status_column():
-#     """
-#     This is a one-time endpoint to alter the 'status' column
-#     from VARCHAR to TEXT to allow longer data.
-#     """
-    
-#     # ! IMPORTANT: Make sure this is your real table name
-#     table_name = "excel" 
-    
-#     alter_query = f"""
-#     ALTER TABLE `{table_name}` 
-#     MODIFY COLUMN `status` TEXT;
-#     """
-    
-#     connection = None
-#     try:
-#         connection = get_connection()
-#         if not connection:
-#             return JSONResponse(status_code=500, content={"error": "Database connection failed."})
-        
-#         cursor = connection.cursor()
-#         cursor.execute(alter_query)
-#         connection.commit()
-#         cursor.close()
-        
-#         return {"message": f"Table '{table_name}' status column successfully changed to TEXT."}
-
-#     except Exception as e:
-#         if connection:
-#             connection.rollback()
-#         return JSONResponse(
-#             status_code=500,
-#             content={"error": f"An error occurred: {str(e)}"}
-#         )
-#     finally:
-#         if connection:
-#             connection.close()
- 
