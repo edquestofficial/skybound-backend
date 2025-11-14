@@ -320,11 +320,11 @@ async def filter_projects(request:Request,project : Project,credentials: HTTPAut
             message=MESSAGES["PROJECT_INVALID_PROGRESS"],
             error="Invalid progress"
         )
-    if assigned_to  :
-        parameters.append(f"{table_name}.assigned_to IS %s")
+    if assigned_to == True :
+        parameters.append(f"{table_name}.assigned_to IS NOT %s")
         values.append(None)
     elif assigned_to == False:
-        parameters.append(f"{table_name}.assigned_to IS NOT %s")
+        parameters.append(f"{table_name}.assigned_to IS %s")
         values.append(None)
     if progress:
         parameters.append(f"{table_name}.progress = %s")
