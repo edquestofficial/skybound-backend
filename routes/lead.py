@@ -1,7 +1,7 @@
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from db_config import get_connection
 from datetime import datetime
-from util.config import response
+from util.config import response, MESSAGES
 import csv
 from fastapi.responses import StreamingResponse
 from fastapi import APIRouter, File, UploadFile, Form, Depends, Request
@@ -70,7 +70,7 @@ async def add_lead(
         return response(
             status="error",
             code=400,
-            message="All mandatory fields (name, company_name, city, state, contect_1, inquery_type, email, requirement, progress) are required.",
+            message=MESSAGES["LEAD_MISSING_FIELDS"],
             error="Bad Request"
         )
 
@@ -78,7 +78,7 @@ async def add_lead(
         return response(
             status="error",
             code=401,
-            message="Only admin can add lead.",
+            message=MESSAGES["LEAD_ADD_UNAUTHORIZED"],
             error="NOt authorized"
         )
     
@@ -86,14 +86,14 @@ async def add_lead(
         return response(
             status="error",
             code=422,
-            message="Invalid stage value provided. Must be 'open', 'closed', or 'in progress'.",
+            message=MESSAGES["INVALID_STAGE"],
             error="Invalid stage"
         )
     if progress and progress not in ("warm","hot","cold","po raised"):
         return response(
             status="error",
             code=422,
-            message="Invalid progress value provided. Must be 'Warm', 'Hot', 'Cold', or 'PO Raised'",
+            message=MESSAGES["INVALID_PROGRESS"],
             error="Invalid progress"
         )
     connection = get_connection()
@@ -109,14 +109,14 @@ async def add_lead(
         return response(
             status="success",
             code=200,
-            message="lead added successfully",
+            message=MESSAGES["LEAD_ADDED_SUCCESS"],
             )
     except Exception as e:
         print("Error while inserting lead details:", e)
         return response(
             status="error",
             code=500,
-            message="Failed to add lead",
+            message=MESSAGES["LEAD_ADD_FAILED"],
             error=str(e)
         )
     
@@ -179,13 +179,13 @@ async def assign_leads(request:Request, lead_id:int=Form(...), assiged_to:str=Fo
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     if not all([lead_id, assiged_to]):
-        return response(status="error", code=400, message="All mandatory fields (lead_id, assiged_to) are required.", error="Bad Request")
+        return response(status="error", code=400, message=MESSAGES["ASSIGN_MISSING_FIELDS"], error="Bad Request")
     
     if role_user.lower() != "admin":
         return response(
             status="error",
             code=401,
-            message="Only admin can assign lead.",
+            message=MESSAGES["ASSIGN_UNAUTHORIZED"],
             error="NOt authorized"
         )
     try:
@@ -195,13 +195,13 @@ async def assign_leads(request:Request, lead_id:int=Form(...), assiged_to:str=Fo
         return response(
             status="success",
             code=200,
-            message="lead assigned successfully",
+            message=MESSAGES["LEAD_ASSIGNED_SUCCESS"],
             )
     except Exception as e:
         return response(
             status="error",
             code=500,
-            message="Failed to assign lead",
+            message=MESSAGES["LEAD_ASSIGN_FAILED"],
             error=str(e)
 
         )
@@ -235,7 +235,7 @@ async def assign_bulk_leads(request:Request, lead_id:list=Form(...), assiged_to:
     alias_name = request.state.user[2]
 
     if not all([lead_id, assiged_to]):
-        return response(status="error", code=400, message="All mandatory fields (lead_id, assiged_to) are required.", error="Bad Request")
+        return response(status="error", code=400, message=MESSAGES["ASSIGN_MISSING_FIELDS"], error="Bad Request")
 
  
     
@@ -243,7 +243,7 @@ async def assign_bulk_leads(request:Request, lead_id:list=Form(...), assiged_to:
         return response(
             status="error",
             code=401,
-            message="Only admin can assign lead.",
+            message=MESSAGES["ASSIGN_UNAUTHORIZED"],
             error="NOt authorized"
         )
     try:
@@ -256,13 +256,13 @@ async def assign_bulk_leads(request:Request, lead_id:list=Form(...), assiged_to:
         return response(
             status="success",
             code=200,
-            message="lead assigned successfully",
+            message=MESSAGES["LEAD_ASSIGNED_SUCCESS"],
             )
     except Exception as e:
         return response(
             status="error",
             code=500,
-            message="Failed to assign lead",
+            message=MESSAGES["LEAD_ASSIGN_FAILED"],
             error=str(e)
         )
     
@@ -318,14 +318,14 @@ async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuth
             return  response(
                 status="error",
                 code=404,
-                message="No leads found for the use"
+                message=MESSAGES["NO_LEADS_FOR_USER"]
             )
         cursor.close()
         connection.close()
         return response(
             status="success",
             code=200,
-            message="Leads feached successfully.",
+            message=MESSAGES["LEADS_FETCHED_SUCCESS"],
             data=leads
             )
             
@@ -334,11 +334,11 @@ async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuth
         return response(
             status="error",
             code=500,
-            message="Failed to fetch leads",
+            message=MESSAGES["LEADS_FETCH_FAILED"],
             error=str(e)
         )
     
-@router.get("/filter_leads")
+@router.post("/filter_leads")
 async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None),city :str = Form(None),Enquiry_type:str=Form(None),assigned_to:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Filter leads based on multiple criteria.
@@ -368,13 +368,19 @@ async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None
     alias_name = request.state.user[2]
     parameters = []
     values = []
-    if stage == "all":
+    if stage == "all" or stage == "string":
         stage = None
+    if city == "string":
+        city = None
+    if Enquiry_type == "string":
+        Enquiry_type = None
+    if assigned_to == "string":
+        assigned_to = None
     if stage and stage not in ("open","closed","in progress"):
         return response(
             status="error",
             code=422,
-            message="Invalid stage value provided. Must be 'open', 'closed', or 'in progress'.",
+            message=MESSAGES["INVALID_STAGE"],
             error="Invalid stage"
         )
     if stage:
@@ -392,37 +398,48 @@ async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
-        if role_user not in ['Admin',"HR"]:
+        # BUG 1 FIX: Check against lowercase roles
+        if role_user.lower() not in ['admin', 'hr']:
+            # This is the Non-Admin (Salesman, etc.) block
             if len(parameters) == 0 :
                 query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
                 cursor.execute(query, (username,))
             else:
-                filter  = " AND ".join(parameters)
-                query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s"+filter
-                cursor.execute(query,(username,).append(tuple(values)))
+                filter_string = " AND ".join(parameters)
+                
+                # BUG 2 FIX: Add the missing " AND "
+                query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s AND " + filter_string
+                
+                # (You already fixed the tuple.append bug, good job)
+                params = (username,) + tuple(values)
+                cursor.execute(query, params)
         else:
-            if len(parameters) ==0 :
-                filter = ""
+            # This is the Admin/HR block (this part was correct)
+            if len(parameters) == 0 :
                 query = f"SELECT * FROM {alias_name}_leads"
                 cursor.execute(query)
             else:
-                filter  = " AND ".join(parameters)
-                query = f"SELECT * FROM {alias_name}_leads WHERE "+filter
-                cursor.execute(query,tuple(values))
-        print(query)
+                filter_string = " AND ".join(parameters)
+                query = f"SELECT * FROM {alias_name}_leads WHERE " + filter_string
+                cursor.execute(query, tuple(values))
+        
+        print(query) # For debugging
         leads = cursor.fetchall()
-        if leads is None:
+
+        # Changed this to check for empty list as well
+        if leads is None or len(leads) == 0:
             return response(
-                status="error",
-                code=404,
-                message="No leads found for the use"
+                status="success", # Still a success, just no data
+                code=200, 
+                message=MESSAGES["NO_LEADS_FOUND"],
+                data=[] # Return an empty list
             )
         cursor.close()
         connection.close()
         return response(
             status="success",
             code=200,
-            message="Leads feached successfully.",
+            message=MESSAGES["LEADS_FETCHED_SUCCESS"],
             data=leads
             )
             
@@ -431,7 +448,7 @@ async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None
         return response(
             status="error",
             code=500,
-            message="Failed to fetch leads",
+            message=MESSAGES["LEADS_FETCH_FAILED"],
             error=str(e)
         )
     
@@ -482,14 +499,14 @@ async def update_lead(
     role_user = request.state.user[1]
 
     if not all([lead_id, name]):
-        return response(status="error", code=400, message="All mandatory fields (lead_id, name) are required.", error="Bad Request")
+        return response(status="error", code=400, message=MESSAGES["UPDATE_MISSING_FIELDS"], error="Bad Request")
 
 
     if role_user.lower() not in ["admin",]:
         return response(
             status="error",
             code=401,
-            message="Only admin can update lead.",
+            message=MESSAGES["UPDATE_UNAUTHORIZED"],
             error="NOt authorized"
         )
     
@@ -497,14 +514,14 @@ async def update_lead(
         return response(
             status="error",
             code=422,
-            message="Invalid stage value provided. Must be 'open', 'closed', or 'in progress'.",
+            message=MESSAGES["INVALID_STAGE"],
             error="Invalid stage"
         )
     if progress and  progress not in ("warm","hot","cold","po raised"):
         return response(
             status="error",
             code=422,
-            message="Invalid progress value provided. Must be 'Warm', 'Hot', 'Cold', or 'PO Raised'",
+            message=MESSAGES["INVALID_PROGRESS"],
             error="Invalid progress"
         )
     connection = get_connection()
@@ -557,7 +574,7 @@ async def update_lead(
             return response(
             status="error",
             code=404,
-            message="No fields to update",
+            message=MESSAGES["NO_FIELDS_TO_UPDATE"],
         )
         
         params.append(lead_id)
@@ -569,14 +586,14 @@ async def update_lead(
         return response(
             status="success",
             code=200,
-            message="Lead updated successfully",
+            message=MESSAGES["LEAD_UPDATED_SUCCESS"],
             )
     except Exception as e:
         print("Error while updating lead:", e)
         return response(
             status="error",
             code=500,
-            message="Failed to fetch lead",
+            message=MESSAGES["LEAD_UPDATE_FAILED"],
             error=str(e)
         )
 @router.put("/lead_status/}")
@@ -609,7 +626,7 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
         return response(
             status="error",
             code=401,
-            message="Only admin and salesman can update lead status.",
+            message=MESSAGES["STATUS_UPDATE_UNAUTHORIZED"],
             error="NOt authorized"
         )
     
@@ -617,7 +634,7 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
         return response(
             status="error",
             code=422,
-            message="Invalid progress value provided. Must be 'Warm', 'Hot', 'Cold', or 'PO Raised'",
+            message=MESSAGES["INVALID_PROGRESS"],
             error="Invalid progress"
         )
     connection = get_connection()
@@ -638,7 +655,7 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
                 return response(
                     status="error",
                     code=404,
-                    message="Lead not fount in the database",
+                    message=MESSAGES["LEAD_NOT_FOUND"],
                     error="lead not found"
                 )
             query = f"INSERT INTO {alias_name}_projects (id) VALUES (%s)"
@@ -647,7 +664,7 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
                 return response(
             status="error",
             code=401,
-            message="Only admin and assigned salesman can update lead status.",
+            message=MESSAGES["STATUS_UPDATE_UNAUTHORIZED_ASSIGNED"],
             error="NOt authorized"
         )
             cursor.execute(query, (lead['id'],))
@@ -658,7 +675,7 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
             return response(
             status="error",
             code=500,
-            message="Failed to fetch lead detailsd",
+            message=MESSAGES["LEAD_STATUS_UPDATE_FAILED"],
             error=str(e))
 
 
@@ -678,14 +695,14 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
         return response(
             status="success",
             code=200,
-            message="Leads status updated  successfully."
+            message=MESSAGES["LEAD_STATUS_UPDATED_SUCCESS"]
             )
     except Exception as e:
         print("Error while updating lead status:", e)
         return response(
             status="error",
             code=500,
-            message="Failed to fetch lead detailsd",
+            message=MESSAGES["LEAD_STATUS_UPDATE_FAILED"],
             error=str(e))
     
 @router.delete("/lead/")
@@ -711,14 +728,14 @@ async def close_lead(request:Request,lead_id: int = Form(...),credentials: HTTPA
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     if not all([lead_id]):
-        return response(status="error", code=400, message="Lead ID is required.", error="Bad Request")
+        return response(status="error", code=400, message=MESSAGES["LEAD_ID_REQUIRED"], error="Bad Request")
 
 
     if role_user not in ['Admin',"Salesman"]:
         return response(
             status="error",
             code=401,
-            message="Only admin and salesman can update lead status.",
+            message=MESSAGES["STATUS_UPDATE_UNAUTHORIZED"],
             error="NOt authorized"
         )
     connection = get_connection()
@@ -731,7 +748,7 @@ async def close_lead(request:Request,lead_id: int = Form(...),credentials: HTTPA
         return response(
             status="error",
             code=404,
-            message="Lead not fount in the database",
+            message=MESSAGES["LEAD_NOT_FOUND"],
             error="lead not found"
         )
                 
@@ -740,7 +757,7 @@ async def close_lead(request:Request,lead_id: int = Form(...),credentials: HTTPA
         return response(
             status="error",
             code=401,
-            message="Only admin and assigned salesman can update lead status.",
+            message=MESSAGES["STATUS_UPDATE_UNAUTHORIZED_ASSIGNED"],
             error="NOt authorized"
         )
     try:
@@ -752,14 +769,14 @@ async def close_lead(request:Request,lead_id: int = Form(...),credentials: HTTPA
         return response(
             status="success",
             code=200,
-            message="Leads closed successfully."
+            message=MESSAGES["LEAD_CLOSED_SUCCESS"]
             )
     except Exception as e:
         print("Error while closing lead:", e)
         return response(
             status="error",
             code=500,
-            message="Failed to fetch lead detailsd",
+            message=MESSAGES["LEAD_CLOSE_FAILED"],
             error=str(e))
     
 @router.get("/count_leads")
@@ -786,7 +803,7 @@ async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials 
         return response(
             status="error",
             code=401,
-            message="Only admin can get lead counts.",
+            message=MESSAGES["COUNT_UNAUTHORIZED"],
             error="NOt authorized"
         )
     connection = get_connection()
@@ -806,7 +823,7 @@ async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials 
         return response(
             status="success",
             code=200,
-            message="lead count feched successfully.",
+            message=MESSAGES["LEAD_COUNT_SUCCESS"],
             data=result
         )
     except Exception as e:
@@ -814,7 +831,7 @@ async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials 
         return response(
             status="error",
             code=500,
-            message="Failed to fetch lead count",
+            message=MESSAGES["LEAD_COUNT_FAILED"],
             error=str(e))
 
 
@@ -839,7 +856,7 @@ EXPECTED_HEADERS = [
 # -----------------------------
 
 @router.post("/import-excel/")
-async def import_excel_data(file: UploadFile = File(...)):
+async def import_excel_data(file: UploadFile = File(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     This endpoint validates an Excel file's headers (case-insensitive)and, if valid, inserts the data into a MySQL database.
     """
@@ -848,7 +865,7 @@ async def import_excel_data(file: UploadFile = File(...)):
         return response(
             status="error",
             code=400,
-            message="Excel file is mandatory.",
+            message=MESSAGES["EXCEL_FILE_MANDATORY"],
             error="Bad Request"
         )
     try:
@@ -870,7 +887,7 @@ async def import_excel_data(file: UploadFile = File(...)):
             return response(
                 status="error",
                 code=400,
-                message="Invalid file format. Missing required headers.",
+                message=MESSAGES["INVALID_FILE_FORMAT"],
                 error=missing_headers
             )
 # --- 2. Data Processing (ALL FIXES APPLIED) ---        
@@ -905,7 +922,7 @@ async def import_excel_data(file: UploadFile = File(...)):
             return response(
                 status="error",
                 code=500,
-                message="Database connection failed.",
+                message=MESSAGES["DB_CONNECTION_FAILED"],
                 error="Connection unavailable"
             )
         
@@ -936,7 +953,7 @@ async def import_excel_data(file: UploadFile = File(...)):
         return response(
             status="success",
             code=200,
-            message="File validated and data saved successfully!",
+            message=MESSAGES["FILE_IMPORT_SUCCESS"],
             data={"filename": file.filename, "records_saved": len(rows_to_insert)}
         )
 
@@ -947,7 +964,7 @@ async def import_excel_data(file: UploadFile = File(...)):
         return response(
             status="error",
             code=500,
-            message="An error occurred while processing the file.",
+            message=MESSAGES["FILE_IMPORT_FAILED"],
             error=str(e)
         )
     finally:
@@ -959,7 +976,7 @@ async def import_excel_data(file: UploadFile = File(...)):
 
 
 @router.get("/leads/csv")
-async def get_all_leads():
+async def get_all_leads(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Return a downloadable CSV template containing the expected headers
     and one sample row with example values so users can download,
@@ -1002,6 +1019,6 @@ async def get_all_leads():
         return response(
             status="error",
             code=500,
-            message="Failed to generate CSV template.",
+            message=MESSAGES["CSV_TEMPLATE_FAILED"],
             error=str(e)
         )

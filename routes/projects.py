@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request,Form,Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from db_config import get_connection
 from datetime import datetime
-from util.config import response
+from util.config import response, MESSAGES
 router = APIRouter()
 security = HTTPBearer()
 
@@ -15,14 +15,14 @@ async def assign_project(request:Request, project_id:int=Form(...), assiged_to:s
         return response(
             status="error",
             code=400,
-            message="All mandatory fields (project_id, assiged_to) are required.",
+            message=MESSAGES["PROJECT_ASSIGN_REQUIRED_FIELDS"],
             error="Bad Request"
         )
     if role_user.lower() not in ["admin"]:
         return response(
             status="error",
             code=401,
-            message="Only admin can Assign Project.",
+            message=MESSAGES["PROJECT_ASSIGN_UNAUTHORIZED"],
             error="NOt authorized"
         )
     connection = get_connection()
@@ -33,13 +33,13 @@ async def assign_project(request:Request, project_id:int=Form(...), assiged_to:s
         return response(
             status="success",
             code=200,
-            message="Project assigned successfully",
+            message=MESSAGES["PROJECT_ASSIGNED_SUCCESS"],
             )
     except Exception as e:
         return response(
             status="error",
             code=500,
-            message="Failed to assign Project",
+            message=MESSAGES["PROJECT_ASSIGN_FAILED"],
             error=str(e)
         )
     
@@ -55,14 +55,14 @@ async def update_project_status(request:Request, project_id:int=Form(...), statu
         return response(
             status="error",
             code=400,
-            message="All mandatory fields (project_id, status) are required.",
+            message=MESSAGES["PROJECT_STATUS_REQUIRED_FIELDS"],
             error="Bad Request"
         )
     if role_user.lower() not in ["admin","consultant"]:
         return response(
             status="error",
             code=401,
-            message="Only admin and consultant can update Project status.",
+            message=MESSAGES["PROJECT_STATUS_UPDATE_UNAUTHORIZED"],
             error="NOt authorized"
         )
     if role_user.lower() == "consultant":
@@ -72,14 +72,14 @@ async def update_project_status(request:Request, project_id:int=Form(...), statu
             return response(
                     status="error",
                     code=404,
-                    message="Project not fount in the database",
+                    message=MESSAGES["PROJECT_NOT_FOUND"],
                     error="Project not found"
                 )
         if username != project["assigned_to"]:
             return response(
                     status="error",
                     code=401,
-                    message="Only admin and assigned Consultant can update Project status.",
+                    message=MESSAGES["PROJECT_STATUS_UPDATE_UNAUTHORIZED_ASSIGNED"],
                     error="NOt authorized"
                     )
     try:
@@ -88,13 +88,13 @@ async def update_project_status(request:Request, project_id:int=Form(...), statu
         return response(
             status="success",
             code=200,
-            message="Project Status Updated"
+            message=MESSAGES["PROJECT_STATUS_UPDATED"]
         )
     except Exception as e:
         return response(
             status="error",
             code=500,
-            message="Failed to update project status",
+            message=MESSAGES["PROJECT_STATUS_UPDATE_FAILED"],
             error=str(e)
             )
     
@@ -109,7 +109,7 @@ async def raise_review_request(request:Request,project_id:int=Form(...),credenti
         return response(
             status="error",
             code=400,
-            message="Project ID is required.",
+            message=MESSAGES["PROJECT_ID_REQUIRED"],
             error="Bad Request"
         )
     connection = get_connection()
@@ -118,7 +118,7 @@ async def raise_review_request(request:Request,project_id:int=Form(...),credenti
         return response(
             status="error",
             code=401,
-            message="Only admin and consultant can Raise Review request.",
+            message=MESSAGES["PROJECT_REVIEW_UNAUTHORIZED"],
             error="NOt authorized"
         )
     if role_user.lower() == "consultant":
@@ -128,14 +128,14 @@ async def raise_review_request(request:Request,project_id:int=Form(...),credenti
             return response(
                     status="error",
                     code=404,
-                    message="Project not fount in the database",
+                    message=MESSAGES["PROJECT_NOT_FOUND"],
                     error="Project not found"
                 )
         if username != project["assigned_to"]:
             return response(
                     status="error",
                     code=401,
-                    message="Only admin and assigned Consultant can Raise Review request..",
+                    message=MESSAGES["PROJECT_REVIEW_UNAUTHORIZED_ASSIGNED"],
                     error="NOt authorized"
                     )
     try:
@@ -144,13 +144,13 @@ async def raise_review_request(request:Request,project_id:int=Form(...),credenti
         return response(
             status="success",
             code=200,
-            message="Review request raised successfully"
+            message=MESSAGES["PROJECT_REVIEW_RAISED_SUCCESS"]
         )
     except Exception as e:
         return response(
             status="error",
             code=500,
-            message="Failed to update project status",
+            message=MESSAGES["PROJECT_STATUS_UPDATE_FAILED"],
             error=str(e)
             )
     
@@ -164,7 +164,7 @@ async def close_project(request:Request,project_id:int=Form(...),credentials: HT
         return response(
             status="error",
             code=400,
-            message="Project ID is required.",
+            message=MESSAGES["PROJECT_ID_REQUIRED"],
             error="Bad Request"
         )
     connection = get_connection()
@@ -173,7 +173,7 @@ async def close_project(request:Request,project_id:int=Form(...),credentials: HT
         return response(
             status="error",
             code=401,
-            message="Only admin and customer can Raise Review request.",
+            message=MESSAGES["PROJECT_CLOSE_UNAUTHORIZED"],
             error="NOt authorized"
         )
     
@@ -183,13 +183,13 @@ async def close_project(request:Request,project_id:int=Form(...),credentials: HT
         return response(
             status="success",
             code=200,
-            message="Project closed successfully"
+            message=MESSAGES["PROJECT_CLOSED_SUCCESS"]
         )
     except Exception as e:
         return response(
             status="error",
             code=500,
-            message="Failed to close project",
+            message=MESSAGES["PROJECT_CLOSE_FAILED"],
             error=str(e)
             )
     
@@ -207,14 +207,14 @@ async def filter_projects(request:Request,assigned_to: bool=Form(None),progress:
         return response(
             status="error",
             code=401,
-            message="Only admin and customer can view Projects.",
+            message=MESSAGES["PROJECT_VIEW_UNAUTHORIZED"],
             error="NOt authorized"
         )
     if progress and progress not in ("po raised","review raised"):
         return response(
             status="error",
             code=422,
-            message="Invalid progress value provided. Must be 'PO Raised' and 'review raised'",
+            message=MESSAGES["PROJECT_INVALID_PROGRESS"],
             error="Invalid progress"
         )
     if assigned_to  :
@@ -250,14 +250,14 @@ async def filter_projects(request:Request,assigned_to: bool=Form(None),progress:
         return response(
             status="success",
             code=200,
-            message="project feached successfully.",
+            message=MESSAGES["PROJECT_FETCHED_SUCCESS"],
             data=projects
             )
     except Exception as e:
         return response(
             status="error",
             code=500,
-            message="Failed to close project",
+            message=MESSAGES["PROJECT_FETCH_FAILED"],
             error=str(e)
             )
     
@@ -270,7 +270,7 @@ async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials 
         return response(
             status="error",
             code=401,
-            message="Only admin can get Project counts.",
+            message=MESSAGES["PROJECT_COUNT_UNAUTHORIZED"],
             error="NOt authorized"
         )
     connection = get_connection()
@@ -292,7 +292,7 @@ async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials 
         return response(
             status="success",
             code=200,
-            message="projects count feched successfully.",
+            message=MESSAGES["PROJECT_COUNT_SUCCESS"],
             data=result
         )
     except Exception as e:
@@ -300,5 +300,5 @@ async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials 
         return response(
             status="error",
             code=500,
-            message="Failed to fetch project count",
+            message=MESSAGES["PROJECT_COUNT_FAILED"],
             error=str(e))

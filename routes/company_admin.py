@@ -11,7 +11,7 @@ from typing import List
 import requests
 from util.mailer import send_mail
 from util.auth import verify_token, authenticate_user
-from util.config import response
+from util.config import response, MESSAGES
 from model.user import User
 router = APIRouter()
 security = HTTPBearer()
@@ -41,7 +41,7 @@ async def companyadmin_login(user: User):
         return response(
             status="error",
             code=500,
-            message="There is an error in companyadmin_login.",
+            message=MESSAGES["LOGIN_ERROR"],
             error=str(e)
         )
     
@@ -78,21 +78,21 @@ async def get_employees(request:Request,salesman_list:bool|None = Form(False),cr
             return response(
             status="error",
             code=401,
-            message="Only admin can access employee list",
+            message=MESSAGES["EMPLOYEE_LIST_UNAUTHORIZED"],
             error="NOt authorized"
         )
         else:
             return response(
             status="error",
             code=401,
-            message="Only admin can access employee list",
+            message=MESSAGES["EMPLOYEE_LIST_UNAUTHORIZED"],
             error="NOt authorized"
         )
     except Exception as e :
         return response(
             status="error",
             code=500,
-            message="There is an error in companyadmin_login.",
+            message=MESSAGES["LOGIN_ERROR"],
             error=str(e)
         )
     cursor.execute(query)
@@ -106,7 +106,7 @@ async def get_employees(request:Request,salesman_list:bool|None = Form(False),cr
     return response(
             status="success",
             code=200,
-            message="Employee List feched successfully.",
+            message=MESSAGES["EMPLOYEE_LIST_SUCCESS"],
             data=result
         )
 
@@ -140,7 +140,7 @@ async def update_employee(request:Request,name:str=Form(...),username:str=Form(.
         return response(
             status="error",
             code=400,
-            message="All mandatory fields (name, username, role, id) are required.",
+            message=MESSAGES["EMPLOYEE_UPDATE_MISSING_FIELDS"],
             error="Bad Request"
         )
 
@@ -149,7 +149,7 @@ async def update_employee(request:Request,name:str=Form(...),username:str=Form(.
         return response(
             status="error",
             code=401,
-            message="Only admin and hr can update employee details",
+            message=MESSAGES["EMPLOYEE_UPDATE_UNAUTHORIZED"],
             error="NOt authorized"
         )
     try:
@@ -161,13 +161,13 @@ async def update_employee(request:Request,name:str=Form(...),username:str=Form(.
         return response(
             status="success",
             code=200,
-            message="Employee details updated Successfully."
+            message=MESSAGES["EMPLOYEE_UPDATED_SUCCESS"]
         )
     except Exception as e :
         return response(
             status="error",
             code=500,
-            message="There is some error while Updating the employee",
+            message=MESSAGES["EMPLOYEE_UPDATE_FAILED"],
             error=str(e)
         )
 
@@ -212,7 +212,7 @@ async def add_employee(
         return response(
             status="error",
             code=400,
-            message="All mandatory fields (name, username, password, role, photos) are required.",
+            message=MESSAGES["EMPLOYEE_ADD_MISSING_FIELDS"],
             error="Bad Request"
         )
 
@@ -220,7 +220,7 @@ async def add_employee(
         return response(
             status="error",
             code=401,
-            message="Only admin and hr can add employee",
+            message=MESSAGES["EMPLOYEE_ADD_UNAUTHORIZED"],
             error="NOt authorized"
         )
 
@@ -234,7 +234,7 @@ async def add_employee(
             return response(
             status="error",
             code=400,
-            message="Exactly 4 photos are required."
+            message=MESSAGES["EMPLOYEE_PHOTOS_REQUIRED"]
         )
 
         saved_paths = []
@@ -254,7 +254,7 @@ async def add_employee(
             return response(
             status="error",
             code=401,
-            message="Cannot add Admin. Only Edquest can add Admin users.",
+            message=MESSAGES["EMPLOYEE_ADMIN_RESTRICTION"],
             error="NOt authorized"
         )
         # Store one representative photo (e.g., first one)
@@ -291,7 +291,7 @@ async def add_employee(
         return response(
             status="success",
             code=200,
-            message="Employee added Successfully.",
+            message=MESSAGES["EMPLOYEE_ADDED_SUCCESS"],
             data={
                 "photos_saved": saved_paths,
                 "embedding_results": result
@@ -303,7 +303,7 @@ async def add_employee(
         return response(
             status="error",
             code=500,
-            message="There is some error while adding the employee",
+            message=MESSAGES["EMPLOYEE_ADD_FAILED"],
             error=str(e)
         )
 
@@ -332,7 +332,7 @@ async def get_role(request:Request,credentials: HTTPAuthorizationCredentials = D
         return response(
             status="error",
             code=401,
-            message="Only admin and HR can access roles.",
+            message=MESSAGES["ROLES_UNAUTHORIZED"],
             error="NOt authorized"
         )
     connection = get_connection()
@@ -343,7 +343,7 @@ async def get_role(request:Request,credentials: HTTPAuthorizationCredentials = D
     return response(
             status="success",
             code=200,
-            message="Roles",
+            message=MESSAGES["ROLES_SUCCESS"],
             data=result
             )
 
@@ -373,7 +373,7 @@ async def delete_employee(request:Request,employee_id:int=Form(...),credentials:
         return response(
             status="error",
             code=400,
-            message="Employee ID is required.",
+            message=MESSAGES["EMPLOYEE_ID_REQUIRED"],
             error="Bad Request"
         )
     connection = get_connection()
@@ -382,7 +382,7 @@ async def delete_employee(request:Request,employee_id:int=Form(...),credentials:
         return response(
             status="error",
             code=401,
-            message="Only admin and hr can delete employee",
+            message=MESSAGES["EMPLOYEE_DELETE_UNAUTHORIZED"],
             error="NOt authorized"
         )
     
@@ -394,13 +394,13 @@ async def delete_employee(request:Request,employee_id:int=Form(...),credentials:
         return response(
             status="success",
             code=200,
-            message="Employee Deleted Successfully.",
+            message=MESSAGES["EMPLOYEE_DELETED_SUCCESS"],
         )
     except Exception as e:
         return response(
             status="error",
             code=500,
-            message="There is some error while Deleting the employee",
+            message=MESSAGES["EMPLOYEE_DELETE_FAILED"],
             error=str(e)
         )
     

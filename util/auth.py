@@ -1,15 +1,16 @@
 from jose import jwt 
 from db_config import get_connection
-from util.config import response
+from util.config import response, MESSAGES
+from model.user import User
 import json
 
-def get_user(username: str, password: str, alias_name: str):
+def get_user(user: User):
     conn =  get_connection()
     cursor = conn.cursor()
-    tabel_name = alias_name + "_employees"
+    tabel_name = user.alias_name + "_employees"
     query = f"SELECT {tabel_name}.username,{tabel_name}.role,company_details.alias_name,company_details.id FROM {tabel_name} LEFT JOIN company_details ON {tabel_name}.company_id = company_details.id WHERE {tabel_name}.username=%s AND {tabel_name}.password=%s"
     try:    
-        cursor.execute(query, (username, password))
+        cursor.execute(query, (user.username, user.password))
         result = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -17,14 +18,14 @@ def get_user(username: str, password: str, alias_name: str):
             return response(
                 status="success",
                 code=200,
-                message="User data fetched.",
+                message=MESSAGES["USER_DATA_FETCHED"],
                 data=result,
                 )
         else:
             return response(
                 status="error",
                 code=404,
-                message="No user found.",
+                message=MESSAGES["NO_USER_FOUND"],
                 error="No user with the provided credentials."
             )
     except Exception as e:
@@ -32,12 +33,12 @@ def get_user(username: str, password: str, alias_name: str):
         return response(
             status="error",
             code=500,
-            message="Error while fetching user",
+            message=MESSAGES["USER_FETCH_ERROR"],
             error=str(e),
             )
 
-def authenticate_user(username: str, password: str, alias_name: str):
-    user_data = get_user(username,password ,alias_name)
+def authenticate_user(user: User):
+    user_data = get_user(user)
 
     print(user_data)
     if user_data.status == "error":
