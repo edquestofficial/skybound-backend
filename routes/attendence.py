@@ -11,32 +11,39 @@ security = HTTPBearer()
 
 @router.get("/attendence")
 async def get_attendence(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
-    username = request.state.user[0]
-    role_user = request.state.user[1]   
-    alias_name = request.state.user[2]
+    try:
+        username = request.state.user[0]
+        role_user = request.state.user[1]   
+        alias_name = request.state.user[2]
 
-
-    connection = get_connection()
-    cursor = connection.cursor(dictionary=True)
-    if role_user.lower() not in ["admin","hr"]:
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        if role_user.lower() not in ["admin","hr"]:
+            return response(
+                status="error",
+                code=401,
+                message=MESSAGES["ATTENDANCE_UNAUTHORIZED"],
+                error="NOt authorized"
+            )
+        # Read the uploaded image (optional — you can ignore if not needed)
+        cursor.execute("SELECT * FROM attendence")
+        result = cursor.fetchall()
+        
+        cursor.close()
+        connection.close()
+        return response(
+                status="success",
+                code=200,
+                message=MESSAGES["ATTENDANCE_FETCHED_SUCCESS"],
+                data=result
+                )
+    except Exception as e:
         return response(
             status="error",
-            code=401,
-            message=MESSAGES["ATTENDANCE_UNAUTHORIZED"],
-            error="NOt authorized"
+            code=500,
+            message=MESSAGES["ATTENDANCE_FETCH_ERROR"],
+            error=str(e)
         )
-    # Read the uploaded image (optional — you can ignore if not needed)
-    cursor.execute("SELECT * FROM attendence")
-    result = cursor.fetchall()
-    
-    cursor.close()
-    connection.close()
-    return response(
-            status="success",
-            code=200,
-            message=MESSAGES["ATTENDANCE_FETCHED_SUCCESS"],
-            data=result
-            )
 
 @router.post("/employee_attendence")
 async def employee_attendence(request:Request,attendence:Attendence,credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -45,22 +52,30 @@ async def employee_attendence(request:Request,attendence:Attendence,credentials:
     username:str,username of the employees whose addendence we want to see.
     
     """
-    username = attendence.username
-    if (username == None):
-        username = request.state.user[0]
-    role_user = request.state.user[1]
-    alias_name = request.state.user[2]
-    
-    connection = get_connection()
-    cursor = connection.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM attendence WHERE username = %s",(username,))
-    result = cursor.fetchall()
-    print(result)
-    cursor.close()
-    connection.close()
-    return response(
-            status="success",
-            code=200,
-            message=MESSAGES["ATTENDANCE_FETCHED_SUCCESS"],
-            data=result
-            )
+    try:
+        username = attendence.username
+        if (username == None):
+            username = request.state.user[0]
+        role_user = request.state.user[1]
+        alias_name = request.state.user[2]
+        
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM attendence WHERE username = %s",(username,))
+        result = cursor.fetchall()
+        print(result)
+        cursor.close()
+        connection.close()
+        return response(
+                status="success",
+                code=200,
+                message=MESSAGES["ATTENDANCE_FETCHED_SUCCESS"],
+                data=result
+                )
+    except Exception as e:
+        return response(
+            status="error",
+            code=500,
+            message=MESSAGES["EMPLOYEE_ATTENDANCE_FETCH_ERROR"],
+            error=str(e)
+        )

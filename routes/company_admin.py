@@ -291,29 +291,39 @@ async def get_role(request:Request,credentials: HTTPAuthorizationCredentials = D
     - Success → List of roles.
     - Failure → Error response if unauthorized.
     """
-    username = request.state.user[0]
-    role = request.state.user[1]
-    alias_name = request.state.user[2]
-    connection = get_connection()
-    cursor = connection.cursor(dictionary=True ,buffered=True)
-    if role.lower() not in ["admin","hr"]:
+    try:
+        username = request.state.user[0]
+        role = request.state.user[1]
+        alias_name = request.state.user[2]
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True ,buffered=True)
+        if role.lower() not in ["admin","hr"]:
+            return response(
+                status="error",
+                code=401,
+                message=MESSAGES["ROLES_UNAUTHORIZED"],
+                error="NOt authorized"
+            )
+        connection = get_connection()
+        cursor = connection.cursor(dictionary=True ,buffered=True)
+        query = f"""SELECT * FROM  roles"""
+        cursor.execute(query)
+        result = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return response(
+                status="success",
+                code=200,
+                message=MESSAGES["ROLES_SUCCESS"],
+                data=result
+                )
+    except Exception as e:
         return response(
             status="error",
-            code=401,
-            message=MESSAGES["ROLES_UNAUTHORIZED"],
-            error="NOt authorized"
+            code=500,
+            message=MESSAGES["ROLES_FETCH_ERROR"],
+            error=str(e)
         )
-    connection = get_connection()
-    cursor = connection.cursor(dictionary=True ,buffered=True)
-    query = f"""SELECT * FROM  roles"""
-    cursor.execute(query)
-    result = cursor.fetchall()
-    return response(
-            status="success",
-            code=200,
-            message=MESSAGES["ROLES_SUCCESS"],
-            data=result
-            )
 
 @router.delete("/employee")
 async def delete_employee(request:Request,userdata:UserData,credentials: HTTPAuthorizationCredentials = Depends(security)):

@@ -101,4 +101,8 @@ MESSAGES = {
     "USER_DATA_FETCHED": "User data fetched.",
     "NO_USER_FOUND": "No user found.",
     "USER_FETCH_ERROR": "Error while fetching user",
+    # Error Messages for Try-Except Blocks
+    "ATTENDANCE_FETCH_ERROR": "Error while fetching attendance",
+    "EMPLOYEE_ATTENDANCE_FETCH_ERROR": "Error while fetching employee attendance",
+    "ROLES_FETCH_ERROR": "Error while fetching roles",
 }
