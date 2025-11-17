@@ -38,7 +38,7 @@ async def companyadmin_login(username: str = Form(...),password: str =Form(...),
             error=str(e)
         )
     
-@router.patch("/employees")
+@router.post("/employees")
 async def get_employees(request:Request,salesman_list:bool|None = Form(False),credentials: HTTPAuthorizationCredentials = Depends(security) ):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
@@ -89,7 +89,7 @@ async def get_employees(request:Request,salesman_list:bool|None = Form(False),cr
 @router.post("/update_employee")
 async def update_employee(request:Request,name:str=Form(...),username:str=Form(...),role:str=Form(...),id:int=Form(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
     updated_by = request.state.user[0]
-    role = request.state.user[1]
+    role_user = request.state.user[1]
     alias_name = request.state.user[2]
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)

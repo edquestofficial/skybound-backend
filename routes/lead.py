@@ -130,7 +130,7 @@ async def assign_leads(request:Request, lead_id:int=Form(...), assiged_to:str=Fo
         )
     try:
         
-        cursor.execute(f"UPDATE {alias_name}_leads SET stage = 'in progress', assigned_to = %s WHERE id = %s", (assiged_to, lead_id[0]))
+        cursor.execute(f"UPDATE {alias_name}_leads SET stage = 'in progress', assigned_to = %s WHERE id = %s", (assiged_to, lead_id))
         connection.commit()
         return response(
             status="success",
@@ -183,7 +183,7 @@ async def assign_bulk_leads(request:Request, lead_id:list=Form(...), assiged_to:
     
     
 
-@router.patch("/get_leads")
+@router.post("/get_leads")
 async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
     username = request.state.user[0]
     role_user = request.state.user[1]
@@ -233,7 +233,7 @@ async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuth
             error=str(e)
         )
     
-@router.get("/filter_leads")
+@router.post("/filter_leads")
 async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None),city :str = Form(None),Enquiry_type:str=Form(None),assigned_to:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
     username = request.state.user[0]
     role_user = request.state.user[1]
@@ -424,7 +424,7 @@ async def update_lead(
             message="Failed to fetch lead",
             error=str(e)
         )
-@router.put("/lead_status/}")
+@router.put("/lead_status")
 async def update_lead_status(request:Request,lead_id: int=Form(...), status: str = Form(...),progress: str= Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
     username = request.state.user[0]
     role_user = request.state.user[1]
@@ -626,7 +626,7 @@ EXPECTED_HEADERS = [
 # -----------------------------
 
 @router.post("/import-excel/")
-async def import_excel_data(file: UploadFile = File(...)):
+async def import_excel_data(file: UploadFile = File(...),credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     This endpoint validates an Excel file's headers (case-insensitive)and, if valid, inserts the data into a MySQL database.
     """
@@ -739,7 +739,7 @@ async def import_excel_data(file: UploadFile = File(...)):
 
 
 @router.get("/leads/csv")
-async def get_all_leads():
+async def get_all_leads(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Return a downloadable CSV template containing the expected headers
     and one sample row with example values so users can download,

@@ -22,6 +22,8 @@ open_access = [
     "/docs/oauth2-redirect",
     "/redoc",
     "/secure-data"
+    "/lead/leads/csv"
+    "/projects/fillter_projects"
 ]
 admin_access = ["*"]
 HR_access = ["companyadmin/employees","companyadmin/employee","companyadmin/update_employee","companyadmin/role", "attendence/attendence", "attendence/employee_attendence"]
