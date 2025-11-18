@@ -215,6 +215,21 @@ async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuth
                 code=404,
                 message="No leads found for the use"
             )
+        
+        # Transform status column into array with single object
+        for lead in leads:
+            original_status = lead.get('status', '')
+            
+            # Create a single status object
+            lead['status'] = [
+                {
+                    "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "comment": original_status if original_status else "No status",
+                    "username": lead.get('assigned_to', 'Unknown'),
+                    "user_id": 1
+                }
+            ]
+        
         cursor.close()
         connection.close()
         return response(
