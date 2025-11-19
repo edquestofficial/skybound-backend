@@ -2,7 +2,7 @@ name: CI - Hello World
 
 on:
   push:         
-      branches: ["main", "develop"]
+      branches: ["main", "yogesh"]
 
 jobs:
   hello:
