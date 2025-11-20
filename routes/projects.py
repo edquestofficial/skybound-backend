@@ -165,247 +165,154 @@ async def close_project(request:Request,project_id:int=Form(...),credentials: HT
             error=str(e)
             )
     
-@router.post("/fillter_projects")
-async def filter_projects(request:Request,assigned_to: bool=Form(None),progress: str = Form(None),active: bool = Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
-    username = request.state.user[0]
-    role_user = request.state.user[1]
-    print("role>>>>>",role_user)
-    alias_name = request.state.user[2]
-    table_name = f"{alias_name}_projects"
-    connection = get_connection()
-    cursor = connection.cursor(dictionary=True)
-    parameters = []
-    values = []
-    print(assigned_to)
-    if role_user.lower() not in ["admin","consultant","implementation_engineer"]:
-        return response(
-            status="error",
-            code=401,
-            message="Only admin and customer can view Projects.",
-            error="NOt authorized"
-        )
-    if progress and progress not in ("po raised","review raised","closed"):
-        return response(
-            status="error",
-            code=422,
-            message="Invalid progress value provided. Must be 'PO Raised' and 'review raised'",
-            error="Invalid progress"
-        )
-    if assigned_to == True  :
-        parameters.append(f"{table_name}.assigned_to IS NOT %s")
-        values.append(None)
-    elif assigned_to == False:
-        parameters.append(f"{table_name}.assigned_to IS %s")
-        values.append(None)
-    if progress:
-        parameters.append(f"{table_name}.progress = %s")
-        values.append(progress)
-    if active is not None:
-        parameters.append(f"{table_name}.active = %s")
-        values.append(active)
-    filter  = " AND ".join(parameters)
-    print(parameters)
-    if role_user.lower() == "admin":
-        if len(parameters) == 0:
-            query = f"SELECT {table_name}.*,{alias_name}_leads.UNIQUE_QUERY_ID,{alias_name}_leads.name,{alias_name}_leads.company_name,{alias_name}_leads.city,{alias_name}_leads.state,{alias_name}_leads.contact_1,{alias_name}_leads.inquiry_type,{alias_name}_leads.requirement FROM {table_name} LEFT JOIN {alias_name}_leads ON {table_name}.id = {alias_name}_leads.id"
-            cursor.execute(query)
-        else:
-            query = f"SELECT {table_name}.*,{alias_name}_leads.UNIQUE_QUERY_ID,{alias_name}_leads.name,{alias_name}_leads.company_name,{alias_name}_leads.city,{alias_name}_leads.state,{alias_name}_leads.contact_1,{alias_name}_leads.inquiry_type,{alias_name}_leads.requirement FROM {table_name} LEFT JOIN {alias_name}_leads ON {table_name}.id = {alias_name}_leads.id WHERE "+ filter
-            cursor.execute(query,tuple(values))
-    else:
-        if len(parameters) == 0:
-                query = f"SELECT {table_name}.*,{alias_name}_leads.UNIQUE_QUERY_ID,{alias_name}_leads.name,{alias_name}_leads.company_name,{alias_name}_leads.city,{alias_name}_leads.state,{alias_name}_leads.contact_1,{alias_name}_leads.inquiry_type,{alias_name}_leads.requirement FROM {table_name} LEFT JOIN {alias_name}_leads ON {table_name}.id = {alias_name}_leads.id WHERE {table_name}.assigned_to = %s"
-                cursor.execute(query,(username,))
-        else:
-            query = f"SELECT {table_name}.*,{alias_name}_leads.UNIQUE_QUERY_ID,{alias_name}_leads.name,{alias_name}_leads.company_name,{alias_name}_leads.city,{alias_name}_leads.state,{alias_name}_leads.contact_1,{alias_name}_leads.inquiry_type,{alias_name}_leads.requirement FROM {table_name} LEFT JOIN {alias_name}_leads ON {table_name}.id = {alias_name}_leads.id WHERE {table_name}.assigned_to = %s AND " + filter
-            # cursor.execute(query,(username).append(tuple(values)))
-            # cursor.execute(query,(username,) + tuple(values))
-            params = (username,) + tuple(values)
-            cursor.execute(query, params)
 
-
-    try:
-        projects = cursor.fetchall()
-        return response(
-            status="success",
-            code=200,
-            message="project feached successfully.",
-            data=projects
-            )
-    except Exception as e:
-        return response(
-            status="error",
-            code=500,
-            message="Failed to close project",
-            error=str(e)
-            )
-    
-@router.post("/filter_projects_by_progress")
-async def filter_projects_by_progress(
+@router.post("/filter_projects")
+async def filter_projects(
     request: Request,
-    progress: str = Form(None),     # from project table
-    city: str = Form(None),         # from leads table
-    state: str = Form(None),        # from leads table
-    assigned_to: str = Form(None),  # from projects table
+    progress: str = Form(None),
+    active: bool = Form(None),
+    city: str = Form(None),
+    state: str = Form(None),
+    inquiry_type: str = Form(None),
+    assigned_to: str = Form(None),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
+ 
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
-
+    
     table_name = f"{alias_name}_projects"
     leads_table = f"{alias_name}_leads"
-
+    
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
-
+    
     parameters = []
     values = []
-
+    
     # ROLE VALIDATION
-    if role_user.lower() not in ["admin", "consultant","implementation_engineer"]:
+    if role_user.lower() not in ["admin", "hr", "consultant", "implementation_engineer"]:
         return response(
             status="error",
             code=401,
-            message="Only admin and consultant can view projects.",
+            message="Only admin, HR, consultant and implementation_engineer can view projects.",
             error="Not authorized"
         )
-
-    # OPTIONAL progress validation
-    valid_progress_values = ("open", "closed", "in progress", "review raised")
+    
+    # Validate progress value - support both old and new values
+    if progress == "all":
+        progress = None
+    
+    valid_progress_values = ("po raised", "review raised", "closed", "open", "in progress", "review raised")
     if progress and progress.lower() not in valid_progress_values:
         return response(
             status="error",
             code=422,
-            message="Invalid progress value.",
+            message="Invalid progress value provided.",
             error="Invalid progress"
         )
-
-    # ADD progress filter IF provided
-    if progress:
-        parameters.append(f"{table_name}.progress = %s")
-        values.append(progress)
-
-    # OPTIONAL filters
-    if city:
-        parameters.append(f"{leads_table}.city = %s")
-        values.append(city)
-
-    if state:
-        parameters.append(f"{leads_table}.state = %s")
-        values.append(state)
-
+    
+    # Build filter parameters (MySQL uses %s placeholders)
     if assigned_to:
         parameters.append(f"{table_name}.assigned_to = %s")
         values.append(assigned_to)
-    elif role_user.lower() == "consultant":
-        # consultant sees only their own projects
+    
+    if progress:
+        parameters.append(f"{leads_table}.progress = %s")
+        values.append(progress)
+    
+    if active is not None:
+        parameters.append(f"{table_name}.active = %s")
+        values.append(active)
+    
+    if city:
+        parameters.append(f"{leads_table}.city = %s")
+        values.append(city)
+    
+    if state:
+        parameters.append(f"{leads_table}.state = %s")
+        values.append(state)
+    
+    if inquiry_type:
+        parameters.append(f"{leads_table}.inquiry_type = %s")
+        values.append(inquiry_type)
+    
+    # Auto-filter for consultant role
+    if role_user.lower() == "consultant" and not assigned_to:
         parameters.append(f"{table_name}.assigned_to = %s")
         values.append(username)
-
-    filter_clause = " AND ".join(parameters)
-
-    # ADMIN QUERY
-    if role_user.lower() == "admin":
-        if not parameters:
-            query = f"""
-                SELECT 
-                    {table_name}.*,
-                    {leads_table}.UNIQUE_QUERY_ID,
-                    {leads_table}.name,
-                    {leads_table}.company_name,
-                    {leads_table}.city,
-                    {leads_table}.state,
-                    {leads_table}.contact_1,
-                    {leads_table}.inquiry_type,
-                    {leads_table}.requirement,
-                    {leads_table}.status AS lead_status,
-                    {leads_table}.stage
-                FROM {table_name}
-                LEFT JOIN {leads_table}
-                ON {table_name}.id = {leads_table}.id
-            """
-            cursor.execute(query)
-        else:
-            query = f"""
-                SELECT 
-                    {table_name}.*,
-                    {leads_table}.UNIQUE_QUERY_ID,
-                    {leads_table}.name,
-                    {leads_table}.company_name,
-                    {leads_table}.city,
-                    {leads_table}.state,
-                    {leads_table}.contact_1,
-                    {leads_table}.inquiry_type,
-                    {leads_table}.requirement,
-                    {leads_table}.status AS lead_status,
-                    {leads_table}.stage
-                FROM {table_name}
-                LEFT JOIN {leads_table}
-                ON {table_name}.id = {leads_table}.id
-                WHERE {filter_clause}
-            """
-            cursor.execute(query, tuple(values))
-
-    # CONSULTANT QUERY
-    else:
-        if not parameters:
-            query = f"""
-                SELECT 
-                    {table_name}.*,
-                    {leads_table}.UNIQUE_QUERY_ID,
-                    {leads_table}.name,
-                    {leads_table}.company_name,
-                    {leads_table}.city,
-                    {leads_table}.state,
-                    {leads_table}.contact_1,
-                    {leads_table}.inquiry_type,
-                    {leads_table}.requirement,
-                    {leads_table}.status AS lead_status,
-                    {leads_table}.stage
-                FROM {table_name}
-                LEFT JOIN {leads_table}
-                ON {table_name}.id = {leads_table}.id
-                WHERE {table_name}.assigned_to = %s
-            """
-            cursor.execute(query, (username,))
-        else:
-            query = f"""
-                SELECT 
-                    {table_name}.*,
-                    {leads_table}.UNIQUE_QUERY_ID,
-                    {leads_table}.name,
-                    {leads_table}.company_name,
-                    {leads_table}.city,
-                    {leads_table}.state,
-                    {leads_table}.contact_1,
-                    {leads_table}.inquiry_type,
-                    {leads_table}.requirement,
-                    {leads_table}.status AS lead_status,
-                    {leads_table}.stage
-                FROM {table_name}
-                LEFT JOIN {leads_table}
-                ON {table_name}.id = {leads_table}.id
-                WHERE {table_name}.assigned_to = %s AND {filter_clause}
-            """
-            cursor.execute(query, (username, *values))
-
+    
+    filter_clause = " AND ".join(parameters) if parameters else ""
+    
     try:
+        # Base query with JOIN to get complete lead data
+        base_query = f"""
+            SELECT 
+                {table_name}.*,
+                {leads_table}.UNIQUE_QUERY_ID,
+                {leads_table}.name,
+                {leads_table}.company_name,
+                {leads_table}.city,
+                {leads_table}.state,
+                {leads_table}.contact_1,
+                {leads_table}.inquiry_type,
+                {leads_table}.email,
+                {leads_table}.requirement,
+                {leads_table}.status AS lead_status,
+                {leads_table}.stage
+            FROM {table_name}
+            LEFT JOIN {leads_table}
+            ON {table_name}.id = {leads_table}.id
+        """
+        
+        # Role-based filtering
+        if role_user.lower() in ['admin', 'hr']:
+            # Admin/HR see all projects (with optional filters)
+            if filter_clause:
+                query = base_query + " WHERE " + filter_clause
+                cursor.execute(query, tuple(values))
+            else:
+                query = base_query
+                cursor.execute(query)
+        else:
+            # Consultant/Implementation Engineer see only assigned projects
+            if filter_clause:
+                query = base_query + " WHERE " + filter_clause
+                cursor.execute(query, tuple(values))
+            else:
+                # No filters but consultant must see only their projects
+                query = base_query + f" WHERE {table_name}.assigned_to = %s"
+                cursor.execute(query, (username,))
+        
+        print(query)
         projects = cursor.fetchall()
+        
+        if projects is None or len(projects) == 0:
+            return response(
+                status="error",
+                code=404,
+                message="No projects found"
+            )
+        
+        cursor.close()
+        connection.close()
+        
         return response(
             status="success",
             code=200,
-            message="Projects filtered successfully.",
+            message="Projects fetched successfully.",
             data=projects
         )
+        
     except Exception as e:
+        print("Error while filtering projects:", e)
         return response(
             status="error",
             code=500,
-            message="Failed to filter projects.",
+            message="Failed to filter projects",
             error=str(e)
         )
-
 @router.get("/count_projects")
 async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials = Depends(security)):
     alias_name = request.state.user[2]
