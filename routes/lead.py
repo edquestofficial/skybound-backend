@@ -274,6 +274,10 @@ async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None
     if stage:
         parameters.append(f"{alias_name}_leads.stage = %s")
         values.append(stage)
+    if state:
+        parameters.append(f"{alias_name}_leads.state = %s")
+        values.append(state)
+
     if city:
         parameters.append(f"{alias_name}_leads.city = %s")
         values.append(city)
