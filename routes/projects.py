@@ -169,7 +169,7 @@ async def close_project(request:Request,project_id:int=Form(...),credentials: HT
 @router.post("/filter_projects")
 async def filter_projects(
     request: Request,
-    progress: str = Form(None),
+    stage: str = Form(None),
     active: bool = Form(None),
     city: str = Form(None),
     state: str = Form(None),
@@ -200,27 +200,47 @@ async def filter_projects(
             error="Not authorized"
         )
     
-    # Validate progress value - support both old and new values
-    if progress == "all":
-        progress = None
+    # Validate progress value - support business logic filters
+    if stage == "all":
+        stage = None
     
-    valid_progress_values = ("po raised", "review raised", "closed", "open", "in progress", "review raised")
-    if progress and progress.lower() not in valid_progress_values:
+    # Normalize progress value (remove spaces for comparison)
+    if stage:
+        progress_normalized = stage.lower().replace(" ", "")
+    
+    valid_progress_values = ("inprogress", "open", "reviewraised", "closed")
+    if stage and progress_normalized not in valid_progress_values:
         return response(
             status="error",
             code=422,
-            message="Invalid progress value provided.",
+            message="Invalid progress value provided. Valid values: 'in progress', 'open', 'review raised', 'closed'",
             error="Invalid progress"
         )
     
-    # Build filter parameters (MySQL uses %s placeholders)
+    # Build filter parameters based on business logic
     if assigned_to:
         parameters.append(f"{table_name}.assigned_to = %s")
         values.append(assigned_to)
     
-    if progress:
-        parameters.append(f"{leads_table}.progress = %s")
-        values.append(progress)
+    if stage:
+        if progress_normalized == "inprogress":
+            # In progress = po raised AND assigned to someone
+            parameters.append(f"{table_name}.progress = %s")
+            values.append("po raised")
+            parameters.append(f"{table_name}.assigned_to IS NOT NULL")
+        elif progress_normalized == "open":
+            # open= po raised AND assigned_to is NULL
+            parameters.append(f"{table_name}.progress = %s")
+            values.append("po raised")
+            parameters.append(f"{table_name}.assigned_to IS NULL")
+        elif progress_normalized == "reviewraised":
+            # Review raised = raised review
+            parameters.append(f"{table_name}.progress = %s")
+            values.append("raised review")
+        elif progress_normalized == "closed":
+            # Closed = closed
+            parameters.append(f"{table_name}.progress = %s")
+            values.append("closed")
     
     if active is not None:
         parameters.append(f"{table_name}.active = %s")
