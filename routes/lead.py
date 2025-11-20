@@ -3,12 +3,13 @@ from db_config import get_connection
 from datetime import datetime
 from util.config import response
 import csv
+import json
 from fastapi.responses import StreamingResponse
 from fastapi import APIRouter, File, UploadFile, Form, Depends, Request
 import pandas as pd
 import numpy as np
 import io
-
+from zoneinfo import ZoneInfo
 router = APIRouter()
 security = HTTPBearer()
 
@@ -63,7 +64,13 @@ async def add_lead(
     try:
 
         cursor.execute(query, (name, company_name, city, state, contect_1, inquery_type, email, requirement, status, assigned_to, progress, stage, next_followup))
-        connection.commit() 
+        connection.commit()
+        lead_id = cursor.lastrowid
+        query= f"""INSERT INTO {alias_name}_leads_status (id,status) VALUES (%s,%s)
+
+"""     
+        cursor.execute(query,(lead_id,status))
+        connection.commit()
         cursor.close()
         connection.close()
         return response(
@@ -183,70 +190,70 @@ async def assign_bulk_leads(request:Request, lead_id:list=Form(...), assiged_to:
     
     
 
-@router.post("/get_leads")
-async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
-    username = request.state.user[0]
-    role_user = request.state.user[1]
-    alias_name = request.state.user[2]
-    if stage == "all":
-        stage = None
-    connection = get_connection()
-    cursor = connection.cursor(dictionary=True)
-    try:
-        if role_user not in ['Admin']:
-            if stage:
-                query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s AND stage = %s "
-                cursor.execute(query, (username,stage))
-            else:
-                query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
-                cursor.execute(query, (username,))
-        else:
-            if stage:
-                query  = f"SELECT * FROM {alias_name}_leads WHERE stage = %s"
-                cursor.execute(query,(stage,))
-            else:
-                query = f"SELECT * FROM {alias_name}_leads"
-                cursor.execute(query)
+# @router.post("/get_leads")
+# async def fetch_leads(request:Request,stage:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
+#     username = request.state.user[0]
+#     role_user = request.state.user[1]
+#     alias_name = request.state.user[2]
+#     if stage == "all":
+#         stage = None
+#     connection = get_connection()
+#     cursor = connection.cursor(dictionary=True)
+#     try:
+#         if role_user not in ['Admin']:
+#             if stage:
+#                 query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s AND stage = %s "
+#                 cursor.execute(query, (username,stage))
+#             else:
+#                 query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
+#                 cursor.execute(query, (username,))
+#         else:
+#             if stage:
+#                 query  = f"SELECT * FROM {alias_name}_leads WHERE stage = %s"
+#                 cursor.execute(query,(stage,))
+#             else:
+#                 query = f"SELECT * FROM {alias_name}_leads"
+#                 cursor.execute(query)
 
-        leads = cursor.fetchall()
-        if leads is None:
-            return  response(
-                status="error",
-                code=404,
-                message="No leads found for the use"
-            )
+#         leads = cursor.fetchall()
+#         if leads is None:
+#             return  response(
+#                 status="error",
+#                 code=404,
+#                 message="No leads found for the use"
+#             )
         
-        # Transform status column into array with single object
-        for lead in leads:
-            original_status = lead.get('status', '')
+#         # Transform status column into array with single object
+#         for lead in leads:
+#             original_status = lead.get('status', '')
             
-            # Create a single status object
-            lead['status'] = [
-                {
-                    "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "comment": original_status if original_status else "No status",
-                    "username": lead.get('assigned_to', 'Unknown'),
-                    "user_id": 1
-                }
-            ]
+#             # Create a single status object
+#             lead['status'] = [
+#                 {
+#                     "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+#                     "comment": original_status if original_status else "No status",
+#                     "username": lead.get('assigned_to', 'Unknown'),
+#                     "user_id": 1
+#                 }
+#             ]
         
-        cursor.close()
-        connection.close()
-        return response(
-            status="success",
-            code=200,
-            message="Leads feached successfully.",
-            data=leads
-            )
+#         cursor.close()
+#         connection.close()
+#         return response(
+#             status="success",
+#             code=200,
+#             message="Leads feached successfully.",
+#             data=leads
+#             )
             
-    except Exception as e:
-        print("Error while fetching leads:", e)
-        return response(
-            status="error",
-            code=500,
-            message="Failed to fetch leads",
-            error=str(e)
-        )
+#     except Exception as e:
+#         print("Error while fetching leads:", e)
+#         return response(
+#             status="error",
+#             code=500,
+#             message="Failed to fetch leads",
+#             error=str(e)
+#         )
     
 @router.post("/filter_leads")
 async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None),city :str = Form(None),Enquiry_type:str=Form(None),assigned_to:str=Form(None),credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -265,36 +272,37 @@ async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None
             error="Invalid stage"
         )
     if stage:
-        parameters.append("stage = %s")
+        parameters.append(f"{alias_name}_leads.stage = %s")
         values.append(stage)
     if city:
-        parameters.append("city = %s")
+        parameters.append(f"{alias_name}_leads.city = %s")
         values.append(city)
     if Enquiry_type:
-        parameters.append("inquiry_type=%s")
+        parameters.append(f"{alias_name}_leads.inquiry_type=%s")
         values.append(Enquiry_type)
     if assigned_to:
-        parameters.append("assigned_to=%s")
+        parameters.append(f"{alias_name}_leads.assigned_to=%s")
         values.append(assigned_to)
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
         if role_user not in ['Admin',"HR"]:
             if len(parameters) == 0 :
-                query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s "
+                query = f"SELECT {alias_name}_leads.*,{alias_name}_leads_status.status FROM {alias_name}_leads LEFT JOIN {alias_name}_leads_status ON {alias_name}_leads.id = {alias_name}_leads_status.id  WHERE {alias_name}_leads.assigned_to = %s "
                 cursor.execute(query, (username,))
             else:
                 filter  = " AND ".join(parameters)
-                query = f"SELECT * FROM {alias_name}_leads WHERE assigned_to = %s"+filter
-                cursor.execute(query,(username,).append(tuple(values)))
+                query = f"SELECT {alias_name}_leads.*,{alias_name}_leads_status.status FROM {alias_name}_leads LEFT JOIN {alias_name}_leads_status ON {alias_name}_leads.id = {alias_name}_leads_status.id WHERE {alias_name}_leads.assigned_to = %s"+filter
+                values.insert(0,username)
+                cursor.execute(query,tuple(values))
         else:
             if len(parameters) ==0 :
                 filter = ""
-                query = f"SELECT * FROM {alias_name}_leads"
+                query = f"SELECT {alias_name}_leads.*,{alias_name}_leads_status.status FROM {alias_name}_leads LEFT JOIN {alias_name}_leads_status ON {alias_name}_leads.id = {alias_name}_leads_status.id"
                 cursor.execute(query)
             else:
                 filter  = " AND ".join(parameters)
-                query = f"SELECT * FROM {alias_name}_leads WHERE "+filter
+                query = f"SELECT {alias_name}_leads.*,{alias_name}_leads_status.status FROM {alias_name}_leads LEFT JOIN {alias_name}_leads_status ON {alias_name}_leads.id = {alias_name}_leads_status.id WHERE "+filter
                 cursor.execute(query,tuple(values))
         print(query)
         leads = cursor.fetchall()
@@ -374,43 +382,43 @@ async def update_lead(
         params = []
         
         if name is not None:
-            update_fields.append("name = %s")
+            update_fields.append(f"{alias_name}_leads.name = %s")
             params.append(name)
         if company_name is not None:
-            update_fields.append("company_name = %s")
+            update_fields.append(f"{alias_name}_leads.company_name = %s")
             params.append(company_name)
         if city is not None:
-            update_fields.append("city = %s")
+            update_fields.append(f"{alias_name}_leads.city = %s")
             params.append(city)
         if state is not None:
-            update_fields.append("state = %s")
+            update_fields.append(f"{alias_name}_leads.state = %s")
             params.append(state)
         if contect_1 is not None:
-            update_fields.append("contact_1 = %s")
+            update_fields.append(f"{alias_name}_leads.contact_1 = %s")
             params.append(contect_1)
         if inquery_type is not None:
-            update_fields.append("inquiry_type = %s")
+            update_fields.append(f"{alias_name}_leads.inquiry_type = %s")
             params.append(inquery_type)
         if requirement is not None:
-            update_fields.append("requirement = %s")
+            update_fields.append(f"{alias_name}_leads.requirement = %s")
             params.append(requirement)
         if email is not None:
-            update_fields.append("email = %s")
+            update_fields.append(f"{alias_name}_leads.email = %s")
             params.append(email)
         if status is not None:
-            update_fields.append("status = %s")
+            update_fields.append(f"{alias_name}_leads_status.status = %s")
             params.append(status)
         if assigned_to is not None:
-            update_fields.append("assigned_to = %s")
+            update_fields.append(f"{alias_name}_leads.assigned_to = %s")
             params.append(assigned_to)
         if progress is not None:
-            update_fields.append("progress = %s")
+            update_fields.append(f"{alias_name}_leads.progress = %s")
             params.append(progress)
         if stage is not None:
-            update_fields.append("stage = %s")
+            update_fields.append(f"{alias_name}_leads.stage = %s")
             params.append(stage)
         if next_followup is not None:
-            update_fields.append("next_followup = %s")
+            update_fields.append(f"{alias_name}_leads.next_followup = %s")
             params.append(next_followup)
         
         if not update_fields:
@@ -421,7 +429,7 @@ async def update_lead(
         )
         
         params.append(lead_id)
-        query = f"UPDATE {alias_name}_leads SET {', '.join(update_fields)} WHERE id = %s"
+        query = f"UPDATE {alias_name}_leads JOIN {alias_name}_leads_status ON {alias_name}_leads.id = {alias_name}_leads_status.id SET {', '.join(update_fields)} WHERE  {alias_name}_leads.id = %s"
         cursor.execute(query, tuple(params))
         connection.commit()
         cursor.close()
@@ -463,10 +471,16 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
     cursor = connection.cursor(dictionary=True)
     update_fields = []
     params = []
-    update_fields.append("status = %s")
+    update_fields.append(f"{alias_name}_leads_status.status = %s")
+    tem = {
+        "status" : status,
+        "Date" : datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(),
+        "By":username
+    }
+    # params.append(json.dumps(tem))
     params.append(status)
     if progress is not None and progress != "po raised":
-        update_fields.append("progress = %s")
+        update_fields.append(f"{alias_name}_leads.progress = %s")
         params.append(progress)
     if progress is not None and progress == "po raised":
         try:
@@ -491,6 +505,9 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
         )
             cursor.execute(query, (lead['id'],))
             connection.commit()
+            query = f"INSERT INTO {alias_name}_projects_status (id) VALUES (%s)"
+            cursor.execute(query, (lead['id'],))
+            connection.commit()
 
         except Exception as e:
             print("Error while fetching lead details:", e)
@@ -501,15 +518,15 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
             error=str(e))
 
 
-        update_fields.append("progress = %s")
+        update_fields.append(f"{alias_name}_leads.progress = %s")
         params.append(progress)
-        update_fields.append("stage = %s")
+        update_fields.append(f"{alias_name}_leads.stage = %s")
         params.append("closed")
     params.append(lead_id)
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
     try:
-        query = f"UPDATE {alias_name}_leads SET {', '.join(update_fields)} WHERE id = %s"
+        query = f"UPDATE {alias_name}_leads JOIN {alias_name}_leads_status ON {alias_name}_leads.id = {alias_name}_leads_status.id SET {', '.join(update_fields)} WHERE {alias_name}_leads.id = %s"
         cursor.execute(query, tuple(params))
         connection.commit()
         cursor.close()

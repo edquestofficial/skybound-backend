@@ -5,7 +5,7 @@ from db_config import get_connection
 router = APIRouter()
 
 connection = get_connection()
-cursor = connection.cursor(dictionary=True)
+cursor = connection.cursor()
 
 @router.get("/login")
 async def superadmin_login(username: str, password: str):
@@ -27,7 +27,7 @@ async def add_company(
     logo: UploadFile
 ):
     connection = get_connection()
-    cursor = connection.cursor(dictionary=True)
+    cursor = connection.cursor()
     logo_data = await logo.read()
 
     query = """
@@ -44,12 +44,12 @@ async def add_company(
         cursor.close()
         connection.close()
     except Exception as e:
-        return {"error": str(e)}
+        return {"error1": str(e)}
     
     # Create company-specific employee table
     try:
         connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
         query = " CREATE TABLE IF NOT EXISTS `{}_employees` (id INT AUTO_INCREMENT PRIMARY KEY, company_id INT, name VARCHAR(50),photo LONGBLOB ,username VARCHAR(255) UNIQUE, password VARCHAR(255), role VARCHAR(50), created_by VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, modified_by VARCHAR(50), modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, active BOOLEAN DEFAULT TRUE)".format(alias_name)
         cursor.execute(query)
         connection.commit()
@@ -61,12 +61,21 @@ async def add_company(
         connection.commit()
 
         query = """CREATE TABLE IF NOT EXISTS {}_projects (id INT PRIMARY KEY,date DATE DEFAULT (CURRENT_DATE),
-        status VARCHAR(50) ,assigned_to VARCHAR(255),progress VARCHAR(100) DEFAULT 'PO Raised',active BOOLEAN DEFAULT True)""".format(alias_name)
+        status VARCHAR(50) ,assigned_to VARCHAR(255),progress VARCHAR(100) DEFAULT 'PO Raised',active BOOLEAN DEFAULT True,FOREIGN KEY (id) REFERENCES {}_leads(id))""".format(alias_name,alias_name)
         cursor.execute(query)
         connection.commit()
+
+        query  = f"""CREATE TABLE IF NOT EXISTS {alias_name}_lead_status (id INT PRIMARY KEY,status VARCHAR(1000),FOREIGN KEY (id) REFERENCES {alias_name}_leads(id))"""
+        cursor.execute(query)
+        connection.commit()
+
+        query  = f"""CREATE TABLE IF NOT EXISTS {alias_name}_project_status (id INT PRIMARY KEY,status VARCHAR(1000),FOREIGN KEY (id) REFERENCEs {alias_name}_projects(id))"""
+        cursor.execute(query)
+        connection.commit()
+        
         return {"message": "Company added successfully"}
     except Exception as e:
-        return {"error": str(e)}
+        return {"error2": str(e)}
     
 @router.delete("/company")
 async def delete_company(Company_alias: str):
