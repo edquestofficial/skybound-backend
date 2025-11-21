@@ -480,7 +480,7 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
     old_status = cursor.fetchone()
     update_fields = []
     params = []
-    update_fields.append(f"{alias_name}_leads_status.status = CONCAT({alias_name}_leads_status.status, %s)")
+    update_fields.append(f"{alias_name}_leads_status.status = CONCAT(IFNULL({alias_name}_leads_status.status,''), %s)")
     tem = {
         "status" : status,
         "Date" : datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(),

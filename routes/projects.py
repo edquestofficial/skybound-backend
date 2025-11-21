@@ -78,7 +78,7 @@ async def update_project_status(request:Request, project_id:int=Form(...), statu
                     error="NOt authorized"
                     )
     try:
-        cursor.execute(f"UPDATE {table_name}_status SET status =CONCAT(status,%s) WHERE id = %s", (json.dumps(tem), project_id))
+        cursor.execute(f"UPDATE {table_name}_status SET status =CONCAT(IFNULL(status,''),%s) WHERE id = %s", (json.dumps(tem), project_id))
         connection.commit()
         return response(
             status="success",
