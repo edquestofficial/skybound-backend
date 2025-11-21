@@ -3,7 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - "yogesh"  # change to your branch name
+      - yogesh # change to your branch name
 
 jobs:
   deploy:

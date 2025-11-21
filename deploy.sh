@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Optional: pass branch as first arg: ./deploy.sh main
-BRANCH="${1:-main}"
+BRANCH="${1:-yogesh}"
 
 # Ensure we are in the app directory where this script is placed
 # (When invoked from ssh we cd to the REMOTE_DIR before running this script)
