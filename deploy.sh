@@ -1,53 +1,82 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Optional: pass branch as first arg: ./deploy.sh main
-BRANCH="${1:-yogesh}"
+# Minimal, branch-safe deploy script for FastAPI with nohup
+# Usage: ./deploy.sh [branch]
 
-# Ensure we are in the app directory where this script is placed
-# (When invoked from ssh we cd to the REMOTE_DIR before running this script)
-APP_DIR="$(cd "$(dirname "$0")" && pwd)"
+BRANCH="${1:-yogesh}"
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOG_DIR="$APP_DIR/logs"
+DEPLOY_LOG="$LOG_DIR/deploy.log"
+UVICORN_LOG="$LOG_DIR/uvicorn.out"
+
+mkdir -p "$LOG_DIR"
+exec >> "$DEPLOY_LOG" 2>&1
+
+echo "--- Deploy started: $(date -u) | branch=$BRANCH | app_dir=$APP_DIR ---"
+
+# Move to app dir
 cd "$APP_DIR"
 
-echo "Deploy started at $(date). Branch: ${BRANCH}. App dir: ${APP_DIR}"
-
-# 1) Find & kill uvicorn processes (if any)
+# 1) Stop existing uvicorn processes gracefully
 PIDS="$(pgrep -f 'uvicorn' || true)"
 if [ -n "$PIDS" ]; then
   echo "Found uvicorn pids: $PIDS — killing..."
-  # pkill may return non-zero when processes already dying; ignore errors
   pkill -f 'uvicorn' || true
   sleep 1
 fi
 
-# 2) Reset local changes and pull latest from origin
-echo "Cleaning local repo and pulling latest from origin/${BRANCH}..."
+# 2) Ensure we have the branch and fetch latest
+echo "Fetching from origin..."
 git fetch --all --prune
-git reset --hard "origin/${BRANCH}"
-git clean -fd || true
-git pull origin "${BRANCH}" || true
 
-# 3) (Optional) Activate virtualenv if exists
-if [ -f "${APP_DIR}/venv/bin/activate" ]; then
+# If branch exists locally, switch; otherwise create tracking branch from origin
+if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+  echo "Switching to local branch $BRANCH"
+  git checkout "$BRANCH"
+else
+  echo "Creating and tracking branch $BRANCH from origin/$BRANCH"
+  git checkout -b "$BRANCH" "origin/$BRANCH" || git checkout --track "origin/$BRANCH"
+fi
+
+# Reset and pull latest
+echo "Resetting to origin/$BRANCH"
+git reset --hard "origin/$BRANCH" || true
+git clean -fd || true
+git pull origin "$BRANCH" || true
+
+# 3) Activate venv if present
+if [ -f "$APP_DIR/venv/bin/activate" ]; then
   echo "Activating virtualenv..."
   # shellcheck disable=SC1090
-  source "${APP_DIR}/venv/bin/activate"
+  source "$APP_DIR/venv/bin/activate"
 fi
 
-# 4) Install/upgrade requirements (safe to continue on failure)
+# 4) Install/upgrade requirements (best-effort)
 if [ -f requirements.txt ]; then
   echo "Installing requirements..."
-  pip install --upgrade -r requirements.txt || true
+  pip install --upgrade -r requirements.txt || echo "pip install failed, continuing"
 fi
 
-# 5) Run DB migrations or other app-specific steps (UNCOMMENT/EDIT)
+# 5) (Optional) run migrations - uncomment if you use migrations
 # echo "Running migrations..."
 # alembic upgrade head || true
 
-# 6) Start uvicorn with nohup (adjust the module path: main:app)
-echo "Starting uvicorn with nohup..."
-# Ensure logs directory exists
-mkdir -p logs
-nohup uvicorn main:app --host 0.0.0.0 --port 8000 > logs/uvicorn.out 2>&1 &
+# 6) Start uvicorn with nohup
+echo "Starting uvicorn (nohup) -> logs: $UVICORN_LOG"
+# ensure old nohup output preserved
+if [ -f "$UVICORN_LOG" ]; then
+  mv "$UVICORN_LOG" "$UVICORN_LOG.$(date +%s)" || true
+fi
 
-echo "Deploy finished at $(date). Check logs/uvicorn.out for output."
+# start in background
+nohup uvicorn main:app --host 0.0.0.0 --port 8000 > "$UVICORN_LOG" 2>&1 &
+NEW_PID=$!
+sleep 2
+
+
+echo "--- Deploy finished: $(date -u) | pid=$NEW_PID ---"
+
+# Print quick tail guidance (not required)
+echo "Tail uvicorn logs: tail -n 200 $UVICORN_LOG"
+echo "View deploy log: tail -n 200 $DEPLOY_LOG"
