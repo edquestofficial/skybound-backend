@@ -1,8 +1,11 @@
 from fastapi import APIRouter, Request,Form,Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from db_config import get_connection
+from zoneinfo import ZoneInfo
 from datetime import datetime
 from util.config import response
+import json
+
 router = APIRouter()
 security = HTTPBearer()
 
@@ -41,9 +44,15 @@ async def update_project_status(request:Request, project_id:int=Form(...), statu
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
+    name = request.state.user[4]
     table_name = f"{alias_name}_projects"
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
+    tem = {
+        "status" : status,
+        "Date" : datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(),
+        "By":name
+    }
     if role_user.lower() not in ["admin","consultant","implementation_engineer"]:
         return response(
             status="error",
@@ -69,7 +78,7 @@ async def update_project_status(request:Request, project_id:int=Form(...), statu
                     error="NOt authorized"
                     )
     try:
-        cursor.execute(f"UPDATE {table_name} SET status = %s WHERE id = %s", (status, project_id))
+        cursor.execute(f"UPDATE {table_name}_status SET status =CONCAT(status,%s) WHERE id = %s", (json.dumps(tem), project_id))
         connection.commit()
         return response(
             status="success",
@@ -184,6 +193,7 @@ async def filter_projects(
     
     table_name = f"{alias_name}_projects"
     leads_table = f"{alias_name}_leads"
+    status_table = f"{alias_name}_projects_status"
     
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
@@ -208,7 +218,7 @@ async def filter_projects(
     if stage:
         progress_normalized = stage.lower().replace(" ", "")
     
-    valid_progress_values = ("inprogress", "open", "reviewraised", "closed")
+    valid_progress_values = ("in progress", "open", "review raised", "closed")
     if stage and progress_normalized not in valid_progress_values:
         return response(
             status="error",
@@ -223,7 +233,7 @@ async def filter_projects(
         values.append(assigned_to)
     
     if stage:
-        if progress_normalized == "inprogress":
+        if progress_normalized == "in progress":
             # In progress = po raised AND assigned to someone
             parameters.append(f"{table_name}.progress = %s")
             values.append("po raised")
@@ -233,7 +243,7 @@ async def filter_projects(
             parameters.append(f"{table_name}.progress = %s")
             values.append("po raised")
             parameters.append(f"{table_name}.assigned_to IS NULL")
-        elif progress_normalized == "reviewraised":
+        elif progress_normalized == "review raised":
             # Review raised = raised review
             parameters.append(f"{table_name}.progress = %s")
             values.append("raised review")
@@ -279,11 +289,13 @@ async def filter_projects(
                 {leads_table}.inquiry_type,
                 {leads_table}.email,
                 {leads_table}.requirement,
-                {leads_table}.status AS lead_status,
+                {status_table}.status,
                 {leads_table}.stage
             FROM {table_name}
             LEFT JOIN {leads_table}
             ON {table_name}.id = {leads_table}.id
+            LEFT JOIN {status_table} 
+            ON {status_table}.id = {table_name}.id
         """
         
         # Role-based filtering

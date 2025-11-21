@@ -7,7 +7,7 @@ def get_user(username: str, password: str, alias_name: str):
     conn =  get_connection()
     cursor = conn.cursor()
     tabel_name = alias_name + "_employees"
-    query = f"SELECT {tabel_name}.username,{tabel_name}.role,company_details.alias_name,company_details.id FROM {tabel_name} LEFT JOIN company_details ON {tabel_name}.company_id = company_details.id WHERE {tabel_name}.username=%s AND {tabel_name}.password=%s"
+    query = f"SELECT {tabel_name}.username,{tabel_name}.role,company_details.alias_name,company_details.id,{tabel_name}.name FROM {tabel_name} LEFT JOIN company_details ON {tabel_name}.company_id = company_details.id WHERE {tabel_name}.username=%s AND {tabel_name}.password=%s"
     try:    
         cursor.execute(query, (username, password))
         result = cursor.fetchone()
@@ -53,7 +53,8 @@ def authenticate_user(username: str, password: str, alias_name: str):
             "username":user_data.data[0],
             "role":user_data.data[1],
             "alias_name":user_data.data[2],
-            "company_id":user_data.data[3]
+            "company_id":user_data.data[3],
+            "name":user_data.data[4]
         }
     )
 

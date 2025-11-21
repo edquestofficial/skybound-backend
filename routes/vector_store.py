@@ -24,15 +24,6 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 RECOGNITION_THRESHOLD = 1.1 
 
 
-# --- Global Initialization (Done ONCE on startup) ---
-try:
-    print("Initializing InsightFace model...")
-    face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
-    face_app.prepare(ctx_id=-1, det_size=(640, 640))
-    print("InsightFace model initialized successfully.")
-except Exception as e:
-    print(f"Error initializing InsightFace model: {e}")
-    face_app = None
 
 # Thread-Lock for safety
 faiss_lock = threading.Lock()
@@ -88,6 +79,14 @@ def create_embedding_for_file(username: str, name: str, image_path: str, image_i
     """
     Reads ONE image, generates embedding, stores it in FAISS.
     """
+    try:
+        print("Initializing InsightFace model...")
+        face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
+        face_app.prepare(ctx_id=-1, det_size=(640, 640))
+        print("InsightFace model initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing InsightFace model: {e}")
+        face_app = None
     print("user.....................",username)
     print("IMAGEindex.....................",image_index)
     print("image_path.....................",image_path)
@@ -175,6 +174,20 @@ def recognize_faces_in_frame(frame: np.ndarray) -> list:
     """
     
     # 1. Check if files exist before trying to load
+
+    try:
+        print("Initializing InsightFace model...")
+        face_app = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
+        face_app.prepare(ctx_id=-1, det_size=(640, 640))
+        print("InsightFace model initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing InsightFace model: {e}")
+        face_app = None
+
+
+
+
+
     with faiss_lock:
         if not os.path.exists(FAISS_INDEX_FILE) or not os.path.exists(METADATA_FILE):
             print("FAISS index or metadata not found. Please register faces first.")

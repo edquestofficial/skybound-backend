@@ -456,6 +456,7 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
     username = request.state.user[0]
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
+    name = request.state.user[4]
     if role_user.lower() not in ["admin","salesman"]:
         return response(
             status="error",
@@ -473,15 +474,20 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
         )
     connection = get_connection()
     cursor = connection.cursor(dictionary=True)
+
+    query = f"""SELECT status from {alias_name}_leads_status WHERE id = %s"""
+    cursor.execute(query,(lead_id,))
+    old_status = cursor.fetchone()
     update_fields = []
     params = []
-    update_fields.append(f"{alias_name}_leads_status.status = %s")
+    update_fields.append(f"{alias_name}_leads_status.status = CONCAT({alias_name}_leads_status.status, %s)")
     tem = {
         "status" : status,
         "Date" : datetime.now(ZoneInfo("Asia/Kolkata")).isoformat(),
-        "By":username
+        "By":name
     }
-    # params.append(json.dumps(tem))
+    
+    status = json.dumps(tem)
     params.append(status)
     if progress is not None and progress != "po raised":
         update_fields.append(f"{alias_name}_leads.progress = %s")
