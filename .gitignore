@@ -7,6 +7,12 @@ wheels/
 *.egg-info
 
 # Virtual environments
+.env
 .venv
 uv.lock
+embeddingface
+routes/__pycache__
+routes/face_embeddings.index
+routes/face_metadata.json
+
 
