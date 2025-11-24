@@ -457,11 +457,11 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
     role_user = request.state.user[1]
     alias_name = request.state.user[2]
     name = request.state.user[4]
-    if role_user.lower() not in ["admin","salesman"]:
+    if role_user.lower() not in ["admin","salesman","consultant","implementation_engineer"]:
         return response(
             status="error",
             code=401,
-            message="Only admin and salesman can update lead status.",
+            message="Only admin, salesman, consultant and implementation_engineer can update lead status.",
             error="NOt authorized"
         )
     
@@ -506,11 +506,11 @@ async def update_lead_status(request:Request,lead_id: int=Form(...), status: str
                 )
             query = f"INSERT INTO {alias_name}_projects (id) VALUES (%s)"
 
-            if lead['assigned_to'] != username and role_user != 'Admin':
+            if lead['assigned_to'] != username and role_user.lower() != 'admin':
                 return response(
             status="error",
             code=401,
-            message="Only admin and assigned salesman can update lead status.",
+            message="Only admin and assigned user can update lead status.",
             error="NOt authorized"
         )
             cursor.execute(query, (lead['id'],))
@@ -645,6 +645,112 @@ async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials 
             code=500,
             message="Failed to fetch lead count",
             error=str(e))
+
+@router.post("/lead_status_history")
+async def get_lead_status_history(request:Request, lead_id: int = Form(...), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Returns status history for a lead as an array of objects.
+    Each object contains: status, Date, and By (user name)
+    """
+    username = request.state.user[0]
+    role_user = request.state.user[1]
+    alias_name = request.state.user[2]
+    
+    connection = get_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    try:
+        # Check if user has access to this lead
+        check_query = f"SELECT assigned_to FROM {alias_name}_leads WHERE id = %s"
+        cursor.execute(check_query, (lead_id,))
+        lead = cursor.fetchone()
+        
+        if not lead:
+            return response(
+                status="error",
+                code=404,
+                message="Lead not found",
+                error="Lead does not exist"
+            )
+        
+        # Check authorization
+        if role_user.lower() not in ['admin', 'hr']:
+            if lead['assigned_to'] != username:
+                return response(
+                    status="error",
+                    code=401,
+                    message="You don't have access to this lead's status history",
+                    error="Not authorized"
+                )
+        
+        # Additional check: salesman, consultant, and implementation_engineer can view if assigned
+        if role_user.lower() in ['salesman', 'consultant', 'implementation_engineer']:
+            if lead['assigned_to'] != username:
+                return response(
+                    status="error",
+                    code=401,
+                    message="You can only view status history for leads assigned to you",
+                    error="Not authorized"
+                )
+        
+        # Get status history
+        query = f"SELECT status FROM {alias_name}_leads_status WHERE id = %s"
+        cursor.execute(query, (lead_id,))
+        result = cursor.fetchone()
+        
+        cursor.close()
+        connection.close()
+        
+        if not result or not result['status']:
+            return response(
+                status="success",
+                code=200,
+                message="No status history found for this lead",
+                data=[]
+            )
+        
+        # Parse the concatenated JSON string into array of objects
+        status_string = result['status']
+        status_history = []
+        
+        # Split by '}{", which is how multiple JSON objects are concatenated
+        if status_string:
+            # Handle case where multiple JSON objects are concatenated
+            json_parts = []
+            bracket_count = 0
+            current_json = ""
+            
+            for char in status_string:
+                current_json += char
+                if char == '{':
+                    bracket_count += 1
+                elif char == '}':
+                    bracket_count -= 1
+                    if bracket_count == 0:
+                        try:
+                            json_obj = json.loads(current_json)
+                            json_parts.append(json_obj)
+                        except json.JSONDecodeError:
+                            pass
+                        current_json = ""
+            
+            status_history = json_parts
+        
+        return response(
+            status="success",
+            code=200,
+            message="Lead status history fetched successfully",
+            data=status_history
+        )
+        
+    except Exception as e:
+        print("Error while fetching lead status history:", e)
+        return response(
+            status="error",
+            code=500,
+            message="Failed to fetch lead status history",
+            error=str(e)
+        )
 
 
     # try:
