@@ -214,43 +214,37 @@ async def filter_projects(
     if stage == "all":
         stage = None
     
-    # Normalize progress value (remove spaces for comparison)
-    if stage:
-        progress_normalized = stage.lower().replace(" ", "")
-    
-    valid_progress_values = ("in progress", "open", "review raised", "closed")
-    if stage and progress_normalized not in valid_progress_values:
-        return response(
-            status="error",
-            code=422,
-            message="Invalid progress value provided. Valid values: 'in progress', 'open', 'review raised', 'closed'",
-            error="Invalid progress"
-        )
-    
     # Build filter parameters based on business logic
     if assigned_to:
         parameters.append(f"{table_name}.assigned_to = %s")
         values.append(assigned_to)
     
     if stage:
-        if progress_normalized == "in progress":
+        if stage == "in progress":
             # In progress = po raised AND assigned to someone
             parameters.append(f"{table_name}.progress = %s")
             values.append("po raised")
             parameters.append(f"{table_name}.assigned_to IS NOT NULL")
-        elif progress_normalized == "open":
+        elif stage == "open":
             # open= po raised AND assigned_to is NULL
             parameters.append(f"{table_name}.progress = %s")
             values.append("po raised")
             parameters.append(f"{table_name}.assigned_to IS NULL")
-        elif progress_normalized == "review raised":
+        elif stage == "review raised":
             # Review raised = raised review
             parameters.append(f"{table_name}.progress = %s")
             values.append("raised review")
-        elif progress_normalized == "closed":
+        elif stage == "closed":
             # Closed = closed
             parameters.append(f"{table_name}.progress = %s")
             values.append("closed")
+        else:
+            return response(
+                status="error",
+                code=422,
+                message="Invalid progress value provided. Valid values: 'in progress', 'open', 'review raised', 'closed'",
+                error="Invalid progress"
+            )
     
     if active is not None:
         parameters.append(f"{table_name}.active = %s")
