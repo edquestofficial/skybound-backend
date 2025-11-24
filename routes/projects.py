@@ -363,6 +363,7 @@ async def count_leads(request:Request,credentials: HTTPAuthorizationCredentials 
             SELECT 
                 COUNT(*) AS total_project,
                 SUM(CASE WHEN progress = 'po raised' AND assigned_to IS NULL THEN 1 ELSE 0 END) AS unassigned_projects,
+                SUM(CASE WHEN progress = 'po raised' AND assigned_to IS NOT NULL THEN 1 ELSE 0 END) AS assigned_projects,
                 SUM(CASE WHEN progress = 'closed' THEN 1 ELSE 0 END) AS closed_project,
                 SUM(CASE WHEN progress = 'review request' THEN 1 ELSE 0 END) AS review_raised_project
             FROM {alias_name}_projects;
