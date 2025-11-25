@@ -262,8 +262,8 @@ async def filter_projects(
         parameters.append(f"{leads_table}.inquiry_type = %s")
         values.append(inquiry_type)
     
-    # Auto-filter for consultant role
-    if role_user.lower() == "consultant" and not assigned_to:
+    # Auto-filter for consultant and implementation_engineer roles
+    if role_user.lower() in ["consultant", "implementation_engineer"] and not assigned_to:
         parameters.append(f"{table_name}.assigned_to = %s")
         values.append(username)
     

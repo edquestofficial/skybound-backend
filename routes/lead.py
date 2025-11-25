@@ -296,7 +296,7 @@ async def filter_leads(request:Request,stage:str=Form(None) ,state:str=Form(None
                 cursor.execute(query, (username,))
             else:
                 filter  = " AND ".join(parameters)
-                query = f"SELECT {alias_name}_leads.*,{alias_name}_leads_status.status FROM {alias_name}_leads LEFT JOIN {alias_name}_leads_status ON {alias_name}_leads.id = {alias_name}_leads_status.id WHERE {alias_name}_leads.assigned_to = %s"+filter
+                query = f"SELECT {alias_name}_leads.*,{alias_name}_leads_status.status FROM {alias_name}_leads LEFT JOIN {alias_name}_leads_status ON {alias_name}_leads.id = {alias_name}_leads_status.id WHERE {alias_name}_leads.assigned_to = %s AND "+filter
                 values.insert(0,username)
                 cursor.execute(query,tuple(values))
         else:

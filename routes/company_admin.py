@@ -39,51 +39,71 @@ async def companyadmin_login(username: str = Form(...),password: str =Form(...),
         )
     
 @router.post("/employees")
-async def get_employees(request:Request,salesman_list:bool|None = Form(False),credentials: HTTPAuthorizationCredentials = Depends(security) ):
+async def get_employees(request:Request, filter_role:str|None = Form(None), credentials: HTTPAuthorizationCredentials = Depends(security)):
     connection = get_connection()
     cursor = connection.cursor(dictionary=True ,buffered=True)
     username = request.state.user[0]
     role = request.state.user[1]
     alias_name = request.state.user[2]
+    
+    # Valid roles list
+    valid_roles = ["salesman", "consultant", "implementation_engineer", "hr", "all"]
+    
     try:
-        if salesman_list and role.lower() in ["admin","hr"]:
-            query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role = 'Salesman'"""
-        elif not salesman_list and role.lower() in ["admin","hr"]:
-            query = f"""SELECT * FROM  {alias_name}_employees WHERE active = 1 AND role != 'Admin'"""
-        elif salesman_list and role.lower()not in ["admin","hr"]:
+        if role.lower() not in ["admin","hr"]:
             return response(
-            status="error",
-            code=401,
-            message="Only admin can access employee list",
-            error="NOt authorized"
-        )
+                status="error",
+                code=401,
+                message="Only admin can access employee list",
+                error="Not authorized"
+            )
+        
+        # Validate the filter_role parameter
+        if filter_role and filter_role.lower() not in valid_roles:
+            return response(
+                status="error",
+                code=400,
+                message=f"Invalid role '{filter_role}' provided.",
+                error=f"Valid roles are: {', '.join(valid_roles)}"
+            )
+        
+        if filter_role and filter_role.lower() != "all":
+            # Return employees based on specified role
+            query = f"""SELECT * FROM {alias_name}_employees WHERE active = 1 AND LOWER(role) = %s"""
+            cursor.execute(query, (filter_role.lower(),))
         else:
+            # Return all employees except Admin
+            query = f"""SELECT * FROM {alias_name}_employees WHERE active = 1 AND role != 'Admin'"""
+            cursor.execute(query)
+            
+        result = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        
+        if not result or len(result) == 0:
             return response(
-            status="error",
-            code=401,
-            message="Only admin can access employee list",
-            error="NOt authorized"
+                status="error",
+                code=404,
+                message=f"No employees found" + (f" with role '{filter_role}'" if filter_role and filter_role.lower() != "all" else ""),
+                error="No records found"
+            )
+        
+        for data in result:
+            data["photo"] = ""
+            
+        return response(
+            status="success",
+            code=200,
+            message="Employee List fetched successfully.",
+            data=result
         )
-    except Exception as e :
+        
+    except Exception as e:
         return response(
             status="error",
             code=500,
-            message="There is an error in companyadmin_login.",
+            message="There is an error in fetching employees.",
             error=str(e)
-        )
-    cursor.execute(query)
-    result = cursor.fetchall()
-    cursor.close()
-    connection.close()
-    details = []
-    for data in result:
-        data["photo"] = ""
-    print(result)
-    return response(
-            status="success",
-            code=200,
-            message="Employee List feched successfully.",
-            data=result
         )
 
 @router.post("/update_employee")
