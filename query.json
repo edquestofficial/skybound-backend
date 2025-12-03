@@ -1,0 +1,40 @@
+{
+  "USER": {
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_user(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,password TEXT, username TEXT UNIQUE,mobile TEXT, role TEXT, active INTEGER, image TEXT, created_by TEXT,created_date TEXT)",
+    "SELECT_USER_NAME":"SELECT name FROM <>_user WHERE username = ?",
+    "SELECT_USER_NAME_PASS":"SELECT id, name, role, password FROM <>_user WHERE username = ?",
+    "INSERT":"INSERT INTO <>_user (name, password, username, mobile, role, active, image, created_by, created_date) VALUES (?, ?,?, ?, ?,?,?,?, DATE('now'))",
+    "SELECT_USER":"select name,role,mobile from <>_user where active = 1",
+    "SELECT_USER_BY_ROLE":"select id,name,role,mobile from <>_user where role = ? and active = 1"
+  },
+   "LEAD": {
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, progress TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by TEXT,created_date TEXT)",
+    "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, progress, stage, next_followup, status, assigned_to, assigned_by, active, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,?,?,?, ?,?,?, ?, ?, DATE('now'))",
+    "SELECT_ALL":"select * from <>_lead",
+    "SELECT_BY_USER":"select * from <>_lead where assigned_to = ?",
+     "SELECT_BY_LEADID":"select * from <>_lead where id = ? and active = 1"
+  },
+  "PROJECT": {
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_project(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by TEXT,created_date TEXT)",
+    "INSERT":"INSERT INTO <>_project(lead_id, stage, next_followup, status, assigned_to, assigned_by, active, created_by, created_date) VALUES (?,?,?,?, ?,?, 1, 1, DATE('now'))"
+  },
+   "LEAD_TIMELINE": {
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_leadtimline(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, message TEXT, docs_urls TEXT, created_by TEXT,created_date TEXT)",
+    "INSERT":"INSERT INTO <>_leadtimline(lead_id, message, docs_urls, status, created_by, created_date) VALUES (?, ?,?, 1, 1, DATE('now'))"
+  },
+   "PROJECT_TIMELINE": {
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_projecttimline(id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER, message TEXT, docs_urls TEXT, created_by TEXT,created_date TEXT)",
+    "INSERT":"INSERT INTO <>_projecttimline(project_id, message, docs_urls, status, created_by, created_date) VALUES (?, ?,?, 1, 1, DATE('now'))"
+  },
+  "ROLE":{
+    "CREATE":"CREATE TABLE IF NOT EXISTS user_role(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)",
+    "INSERT":"INSERT INTO user_role (name) VALUES ('superadmin'), ('admin'),('sales'),('engineer'),('saleshead'),('engineerhead'),('customer')"
+  },
+  "COMPANY":{
+    "CREATE":"CREATE TABLE IF NOT EXISTS company(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE, aliasname TEXT, active INTEGER, created_date TEXT)",
+    "INSERT":"INSERT INTO company (name, aliasname, active, created_date) VALUES (?, ?, ?, DATE('now'))",
+    "SELECT_COMPANY_NAME":"SELECT name FROM company WHERE name = ?",
+    "SELECT_COMPANY_ALIASNAME":"SELECT name FROM company WHERE aliasname = ?"
+
+}
+}
