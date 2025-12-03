@@ -3,14 +3,14 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - yogeshbhatt   # deploy when main branch is updated
+      - yogeshbhatt
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     env:
-      SSH_PORT: ${{ secrets.EC2_SSH_PORT }}       # optional, can skip secret and let it be empty
-      REMOTE_DIR: ${{ secrets.REMOTE_APP_DIR }}   # e.g. /home/ubuntu/skybound-backend
+      REMOTE_DIR: /home/ubuntu/skybound-backend
 
     steps:
       - name: Checkout
@@ -25,13 +25,11 @@ jobs:
 
       - name: Copy deploy script to EC2
         run: |
-          PORT=${SSH_PORT:-22}
-          scp -o StrictHostKeyChecking=no -i key.pem -P "$PORT" ./deploy.sh "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${REMOTE_DIR}/deploy.sh"
+          scp -o StrictHostKeyChecking=no -i key.pem ./deploy.sh "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:${REMOTE_DIR}/deploy.sh"
 
       - name: Run deploy script on EC2
         run: |
-          PORT=${SSH_PORT:-22}
-          ssh -o StrictHostKeyChecking=no -i key.pem -p "$PORT" "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" "cd ${REMOTE_DIR} && chmod +x deploy.sh && ./deploy.sh main"
+          ssh -o StrictHostKeyChecking=no -i key.pem "${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}" "cd ${REMOTE_DIR} && chmod +x deploy.sh && ./deploy.sh main"
 
       - name: Cleanup key file
         if: always()
