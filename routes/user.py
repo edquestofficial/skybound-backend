@@ -10,6 +10,7 @@ from models.response import response
 from core.role import Role
 from utility.statemgmt import state
 from utility.auth import role_required
+from services.user import fetch_user
 
 settings = Settings()
 
@@ -19,7 +20,7 @@ bearer = HTTPBearer()
 
 
 @router.post("/register")
-def register(user: User,userid = Depends(role_required([Role.Admin]))):
+def register(user: User,userid = Depends(role_required([Role.Admin,Role.Sales]))):
     # Check existing user
     cur = execute_company_query(db_query['USER']['SELECT_USER_NAME'], user.username)
     if cur:
@@ -27,7 +28,7 @@ def register(user: User,userid = Depends(role_required([Role.Admin]))):
 
     hashed = hash_password(user.password)
     # print("Passw0rd",hashed)
-    execute_company_query(db_query['USER']['INSERT'],user.name, hashed,user.username,user.mobile,user.role,1,user.image,userid)
+    execute_company_query(db_query['USER']['INSERT'], user.name, hashed, user.username, user.mobile, user.role,1,user.image,userid)
     
     return response(
             status="success",
@@ -74,11 +75,11 @@ def create_token(userDetails:User):
 
 
 
-@router.post("/registeradmin")
+@router.post("/registerAdmin")
 def registerAdmin(user: User):
     # Check existing user
-    if(user.aliasname):
-        state.setvalue(user.aliasname)
+    if(user.company_code):
+        state.setvalue(user.company_code)
         cur = execute_company_query(db_query['USER']['SELECT_USER_NAME'], user.username)
         if cur:
             raise HTTPException(400, "Username already exists")
@@ -94,12 +95,10 @@ def registerAdmin(user: User):
     else :
         raise HTTPException(400,"fill correct user comapny name")
     
-@router.post("/userbyrole")
-def salesUser(role :str ,userid = Depends(role_required([Role.Admin]))):
-    salesuser = execute_company_query(db_query['USER']['SELECT_USER_BY_ROLE'],role)
-    return salesuser
-    
-@router.get("/")
-def getusers():
-    user_data = execute_company_query(db_query['USER']['SELECT_USER'])
-    return user_data
+@router.post("/")
+def fetchUser(user_id:str="",role :str = "" , userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
+   return fetch_user(user_id,role,userInfo)
+
+
+
+

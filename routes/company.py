@@ -11,15 +11,15 @@ router = APIRouter()
 
 @router.post("/register")
 def register(company: Company):
-    if(company.name and company.aliasname):
+    if(company.name and company.comany_code):
         try :
             # Check existing user
             cur = execute_query(db_query['COMPANY']['SELECT_COMPANY_NAME'], company.name)
             if cur:
                 raise HTTPException(400, "Company already exists")
 
-            execute_query(db_query['COMPANY']['INSERT'],company.name, company.aliasname,company.active)
-            state.setvalue(company.aliasname)
+            execute_query(db_query['COMPANY']['INSERT'],company.name, company.comany_code,company.active)
+            state.setvalue(company.comany_code)
 
             execute_company_query(db_query['USER']['CREATE'])
             execute_company_query(db_query['LEAD']['CREATE'])
@@ -40,10 +40,10 @@ def register(company: Company):
          raise HTTPException(400, "Company Name and Alias name is compulsury.")
     
 
-# @router.get("/test")
-# def testapi():
-#     # execute_query(db_query['USER']['CREATE'])
-#     # execute_query(db_query['ROLE']['CREATE'])
-#     # execute_query(db_query['ROLE']['INSERT'])
-#     execute_query(db_query['COMPANY']['CREATE'])
-#     return {"company created"}
+@router.get("/test")
+def testapi():
+    # execute_query(db_query['USER']['CREATE'])
+    # execute_query(db_query['ROLE']['CREATE'])
+    # execute_query(db_query['ROLE']['INSERT'])
+    execute_query(db_query['COMPANY']['CREATE'])
+    return {"company created"}

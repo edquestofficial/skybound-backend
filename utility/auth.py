@@ -22,8 +22,7 @@ def role_required(allowed_roles: List[Role]):
                 algorithms=[settings.algorithm]
             )
 
-            user_role = payload.get("role")
-
+            user_role = int(payload.get("role"))
             if not user_role:
                 raise HTTPException(
                     status_code=403,
@@ -32,7 +31,6 @@ def role_required(allowed_roles: List[Role]):
 
             # Compare Enum values properly
             allowed = [r.value for r in allowed_roles]
-
             if user_role not in allowed:
                 raise HTTPException(
                     status_code=403,

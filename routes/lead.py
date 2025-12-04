@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException,Depends
-from schemas.lead import Lead
+from schemas.lead import Lead, EditLead
 from database import execute_company_query, execute_query,fetch_single_record
 
 from core.config import  db_query
 from models.response import response
 from core.role import Role
 from utility.auth import role_required
+from services.lead import updateLead
 
 lead_router = APIRouter()
 
@@ -22,12 +23,23 @@ def create(lead: Lead,userinfo = Depends(role_required([Role.Admin]))):
             data=[]
         )
 
+
 @lead_router.get("/")
-def fetch_all(userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
-    if userinfo.role == Role.Sales:
-        result =  execute_company_query(db_query['LEAD']['SELECT_BY_USER'],userinfo.id)
-    else:
-        result =  execute_company_query(db_query['LEAD']['SELECT_ALL'])
+def fetch(userId:str = "", leadId:str="", userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+    loggedin_user_id = int(userinfo['id'])
+    if int(userinfo['role']) == Role.Admin.value:
+        if userId != "" and leadId == "" :
+          result =  execute_company_query(db_query['LEAD']['SELECT_BY_USER'],int(userId))
+        elif leadId !="":
+            result =  execute_company_query(db_query['LEAD']['SELECT_BY_LEADID'],int(leadId))
+        elif userId == "" and leadId == "" :
+             result =  execute_company_query(db_query['LEAD']['SELECT_ALL'])
+    elif int(userinfo['role']) == Role.Sales.value:
+        if leadId !="":
+            result =  execute_company_query(db_query['LEAD']['SELECT_BY_LEADID_ASSIGN'],int(leadId),loggedin_user_id)
+        else:
+            result =  execute_company_query(db_query['LEAD']['UNASSIGN_ASSIGN_LEAD'],loggedin_user_id)
+
     return response(
             status="success",
             code=200,
@@ -35,24 +47,16 @@ def fetch_all(userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
             data=result
         )
 
-    
-@lead_router.get("/userid/{id}")
-def fetch_by_user(id :str,userid = Depends(role_required([Role.Admin,Role.Sales]))):
-    
-    result =  execute_company_query(db_query['LEAD']['SELECT_BY_USER'],id)
-    return response(
+@lead_router.patch("/{id}")
+def edit(id:int, update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+     if updateLead(id,update):
+         return response(
             status="success",
             code=200,
-            message="Lead fetch successfully",
-            data=result
+            message="Lead update successfully",
+            data=[]
         )
-@lead_router.get("/{lead_id}")
-def fetch_by_leadid(lead_id :int,userid = Depends(role_required([Role.Admin,Role.Sales]))):
-    
-    result =  execute_company_query(db_query['LEAD']['SELECT_BY_LEADID'],lead_id)
-    return response(
-            status="success",
-            code=200,
-            message="Lead fetch successfully",
-            data=result
-        )
+     else:
+          raise HTTPException(401, "Error in update Lead")
+   
+

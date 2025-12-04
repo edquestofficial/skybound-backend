@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 
 class Company(BaseModel):
-    id : int | None = None
     name: str
-    aliasname: str
+    comany_code: str
     active:int | None = None
