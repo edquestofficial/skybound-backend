@@ -24,9 +24,14 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/skybound-backend
 
-            # Pull latest code
-            git pull origin main || git clone https://github.com/edquestofficial/skybound-backend.git .
-            git checkout revamp-be
+            # Pull latest code on correct branch
+            if [ -d ".git" ]; then
+                git fetch origin
+                git checkout revamp-be
+                git pull origin revamp-be
+            else
+                git clone -b revamp-be https://github.com/edquestofficial/skybound-backend.git .
+            fi
 
             curl -LsSf https://astral.sh/uv/install.sh | sh
             echo "$HOME/.cache/uv/bin" >> $GITHUB_PATH
