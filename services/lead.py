@@ -1,8 +1,7 @@
-from core.role import Role
 from database import execute_company_query, execute_query,fetch_single_record, update_record
 from core.config import db_query
 from schemas.lead import EditLead
-from services.project import create_Project
+from services.project import create_project
 from datetime import date
   
 def fetch_single(id):
@@ -16,7 +15,7 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
         update_data = item.model_dump(exclude_unset=True)
         update_data['modify_date'] = date.today()
         update_data['modify_by'] = loggedin_userId
-        if update_data['assigned_to'] :
+        if update_data.get('assigned_to') not in (None, ""):
             update_data['assigned_by'] = loggedin_userId
             update_data['status']= 'inprogress'
             update_data['stage']= 'cold'
@@ -24,14 +23,15 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             k: v for k, v in update_data.items()
             if v not in (None, "","0")
         }
-
+        if item.stage == "poraised":
+             update_data['status']= 'close'
         set_clause = ", ".join(f"{key}=?" for key in update_data.keys())
         values = list(update_data.values())
         values.append(id)
 
         result = update_record(set_clause, values)
-        if result and  item.status == "poraised":
-           return create_Project()
+        if result and  item.stage == "poraised":
+           return create_project(id,loggedin_userId)
         else :
             return True
     except Exception as e:

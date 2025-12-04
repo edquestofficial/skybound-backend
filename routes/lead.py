@@ -11,7 +11,6 @@ from services.lead import updateLead
 lead_router = APIRouter()
 
 
-
 @lead_router.post("/create")
 def create(lead: Lead,userinfo = Depends(role_required([Role.Admin]))):
     
@@ -35,10 +34,18 @@ def fetch(userId:str = "", leadId:str="", userinfo = Depends(role_required([Role
         elif userId == "" and leadId == "" :
              result =  execute_company_query(db_query['LEAD']['SELECT_ALL'])
     elif int(userinfo['role']) == Role.Sales.value:
-        if leadId !="":
-            result =  execute_company_query(db_query['LEAD']['SELECT_BY_LEADID_ASSIGN'],int(leadId),loggedin_user_id)
-        else:
+        print("data and values",leadId,loggedin_user_id)
+        if leadId is not None and leadId != "":
+            print("step 1")
+            result =  execute_company_query(db_query['LEAD']['SELECT_BY_LEADID_USERID'],int(leadId) if leadId else None,loggedin_user_id)
+
+        elif leadId == "":
+            print("step 2")
             result =  execute_company_query(db_query['LEAD']['UNASSIGN_ASSIGN_LEAD'],loggedin_user_id)
+        else:
+            print("step 3")
+            result =  execute_company_query(db_query['LEAD']['SELECT_BY_LEADID_ASSIGN'],int(leadId),loggedin_user_id)
+
 
     return response(
             status="success",
