@@ -14,41 +14,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.5.4
         with:
-          python-version: "3.13"
+          ssh-private-key: ${{ secrets.EC2_KEY }}
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Install uv
+      - name: Deploy to EC2
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cache/uv/bin" >> $GITHUB_PATH
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/skybound-backend
 
-      - name: Install dependencies
-        run: |
-          uv venv .venv
-          source .venv/bin/activate
-          uv sync
+            # Pull latest code
+            git pull origin main || git clone https://github.com/edquestofficial/skybound-backend.git .
+            git checkout revamp-be
 
-      # Step 4: Deploy Lambda Function
-      - name: Run FastAPI Application
-        run: |
-          # Generate SECRET_KEY dynamically
-          SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
-          export SECRET_KEY
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            echo "$HOME/.cache/uv/bin" >> $GITHUB_PATH
 
-          export ALGORITHM="HS256"
-          export ACCESS_TOKEN_EXPIRE_MINUTES="60"
+            # Create venv if not exists
+            uv venv .venv
+            source .venv/bin/activate
+            uv sync
 
-          echo "SECRET_KEY generated for this CI run"
-          uv run uvicorn main:app --host 0.0.0.0 --port 8000
+            # Restart backend
+            sudo systemctl restart fastapi
+          EOF
 
       - name: Notify success
         run: echo "AWS Lambda Function deployed successfully!"
