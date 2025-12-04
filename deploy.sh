@@ -11,6 +11,12 @@ echo "➡ Fetching latest code..."
 git fetch origin "$BRANCH"
 git reset --hard "origin/$BRANCH"
 
+# Create virtual environment if it doesn't exist
+if [ ! -d ".venv" ]; then
+    echo "➡ Creating virtual environment..."
+    uv venv .venv
+fi
+
 # Activate virtual environment
 echo "➡ Activating virtualenv..."
 source .venv/bin/activate
