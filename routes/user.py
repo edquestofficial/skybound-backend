@@ -20,15 +20,17 @@ bearer = HTTPBearer()
 
 
 @router.post("/register")
-def register(user: User,userid = Depends(role_required([Role.Admin,Role.Sales]))):
+def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.Sales]))):
     # Check existing user
+    if "_" not in user.username:
+        raise HTTPException(400, "Username is not correct")
     cur = execute_company_query(db_query['USER']['SELECT_USER_NAME'], user.username)
     if cur:
         raise HTTPException(400, "Username already exists")
 
     hashed = hash_password(user.password)
     # print("Passw0rd",hashed)
-    execute_company_query(db_query['USER']['INSERT'], user.name, hashed, user.username, user.mobile, user.role,1,user.image,userid)
+    execute_company_query(db_query['USER']['INSERT'], user.name, hashed, user.username, user.mobile, user.role,1,user.image,userinfo['role'])
     
     return response(
             status="success",
@@ -99,6 +101,14 @@ def registerAdmin(user: User):
 def fetchUser(user_id:str="",role :str = "" , userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
    return fetch_user(user_id,role,userInfo)
 
+@router.get("/poraised")
+def poraised():
+     return response(
+                status="success",
+                code=200,
+                message="Po raised successfully",
+                data=[]
+            )
 
 
 

@@ -1,10 +1,21 @@
 import sqlite3
 from  utility.statemgmt import state
-
+from core.config import db_query
+# _conn = None
 def get_db():
-    conn = sqlite3.connect("skybound.db")
-    conn.row_factory = sqlite3.Row
-    return conn
+    # global _conn
+    # if _conn is None:
+    _conn = sqlite3.connect("skybound.db")
+    _conn.row_factory = sqlite3.Row
+    return _conn
+
+def init_db():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(db_query['COMPANY']['CREATE'])
+    conn.commit()
+
+init_db()
 
 def execute_query(query,*args):
     try:
@@ -25,7 +36,7 @@ def execute_query(query,*args):
 def execute_company_query(query,*args):
     try:
         conn = get_db()
-        cur = None
+        cur = conn.cursor()
         aliasname = state.value
         if aliasname :
              query = query.replace('<>',aliasname)
@@ -66,7 +77,6 @@ def fetch_single_record(query,*args):
 def update_record(set_clause,values):
         try:
             conn = get_db()
-            cur = None
             aliasname = state.value
            
             query = f"UPDATE <>_lead SET {set_clause} WHERE id = ?"

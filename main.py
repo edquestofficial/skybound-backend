@@ -20,6 +20,7 @@ async def log_request(request, call_next):
     print("Request received")
     response = await call_next(request)
     return response
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"

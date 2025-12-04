@@ -38,12 +38,3 @@ def register(company: Company):
             raise HTTPException(400, e)
     else:
          raise HTTPException(400, "Company Name and Alias name is compulsury.")
-    
-
-@router.get("/test")
-def testapi():
-    # execute_query(db_query['USER']['CREATE'])
-    # execute_query(db_query['ROLE']['CREATE'])
-    # execute_query(db_query['ROLE']['INSERT'])
-    execute_query(db_query['COMPANY']['CREATE'])
-    return {"company created"}

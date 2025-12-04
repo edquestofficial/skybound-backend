@@ -14,5 +14,6 @@ embeddingface
 routes/__pycache__
 routes/face_embeddings.index
 routes/face_metadata.json
+.vscode
 
 

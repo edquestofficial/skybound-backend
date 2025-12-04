@@ -12,16 +12,16 @@ bearer = HTTPBearer()
 def role_required(allowed_roles: List[Role]):
 
     def verify_jwt(auth = Depends(bearer)):
-        token = auth.credentials
-
+        
         try:
+            token = auth.credentials
             # PyJWT decode
             payload = jwt.decode(
                 token,
                 settings.secret_key,
                 algorithms=[settings.algorithm]
             )
-
+            print("payload", payload)
             user_role = int(payload.get("role"))
             if not user_role:
                 raise HTTPException(
