@@ -15,7 +15,7 @@ lead_router = APIRouter()
 @lead_router.post("/create")
 def create(lead: Lead,userinfo = Depends(role_required([Role.Admin]))):
     
-    execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact,lead.enquery_type,lead.email,lead.requirement,lead.progress,lead.stage,lead.next_followup,lead.status,lead.assigned_to,"",1,userinfo.id)
+    execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquery_type,lead.email,lead.requirement,1,'open',userinfo['id'])
     return response(
             status="success",
             code=200,
@@ -49,7 +49,8 @@ def fetch(userId:str = "", leadId:str="", userinfo = Depends(role_required([Role
 
 @lead_router.patch("/{id}")
 def edit(id:int, update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
-     if updateLead(id,update):
+     loggedin_userId = userinfo['id']
+     if updateLead(id,update, loggedin_userId):
          return response(
             status="success",
             code=200,

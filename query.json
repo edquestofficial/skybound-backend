@@ -9,8 +9,8 @@
     "SELECT_USER_BYID":"select id,name,role,mobile from <>_user where id = ? and active = 1"
   },
    "LEAD": {
-    "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, progress TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by TEXT,created_date TEXT, modify_by TEXT, modify_date TEXT)",
-    "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, progress, stage, next_followup, status, assigned_to, assigned_by, active, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,?,?,?, ?,?,?, ?, ?, DATE('now'))",
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by TEXT,created_date TEXT, modify_by TEXT, modify_date TEXT)",
+    "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,?,?,?, DATE('now'))",
     "SELECT_ALL":"select * from <>_lead",
     "SELECT_BY_USER":"select * from <>_lead where assigned_to = ?",
     "SELECT_BY_LEADID":"select * from <>_lead where id = ? and active = 1",
