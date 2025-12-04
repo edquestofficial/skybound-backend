@@ -101,14 +101,6 @@ def registerAdmin(user: User):
 def fetchUser(user_id:str="",role :str = "" , userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
    return fetch_user(user_id,role,userInfo)
 
-@router.get("/poraised")
-def poraised():
-     return response(
-                status="success",
-                code=200,
-                message="Po raised successfully",
-                data=[]
-            )
 
 
 
