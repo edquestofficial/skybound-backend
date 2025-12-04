@@ -3,7 +3,7 @@ name: Model Training Pipeline
 on:
   push:
     branches:
-      - yogeshbhatt
+      - revamp-be
 
 jobs:
   deploy:
