@@ -39,7 +39,9 @@ jobs:
 
       # Step 4: Deploy Lambda Function
       - name: Run FastAPI Application
-        run: uv run uvicorn skybound_backend.main:app --host 0.0.0.0 --port 8000
+        working-directory: ./skybound_backend
+        run: |
+          uv run uvicorn main:app --host 0.0.0.0 --port 8000
 
       - name: Notify success
         run: echo "AWS Lambda Function deployed successfully!"
