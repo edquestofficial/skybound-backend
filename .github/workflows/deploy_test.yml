@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -25,16 +25,21 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-      
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cache/uv/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
         run: |
           uv venv .venv
           source .venv/bin/activate
           uv sync
-      
+
       # Step 4: Deploy Lambda Function
       - name: Run FastAPI Application
         run: uv run skybound_backend.main:app --host
 
       - name: Notify success
-        run: echo "AWS Lambda Function deployed successfully!"  
+        run: echo "AWS Lambda Function deployed successfully!"
