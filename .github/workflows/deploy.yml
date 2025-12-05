@@ -26,9 +26,11 @@ jobs:
 
             # Pull latest code on correct branch
             if [ -d ".git" ]; then
+                echo "Resetting repository to match remote..."
                 git fetch origin
                 git checkout revamp-be
-                git pull origin revamp-be
+                git reset --hard origin/revamp-be
+                git clean -fd
             else
                 git clone -b revamp-be https://github.com/edquestofficial/skybound-backend.git .
             fi
