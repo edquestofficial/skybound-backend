@@ -13,3 +13,10 @@ class User(BaseModel):
 class Login(BaseModel):
     username: str
     password: str
+
+class UserUpdate(BaseModel):
+    name: str | None = None
+    mobile:str | None = None
+    image:str | None = None
+    role:int | None = None
+    active:int | None = None

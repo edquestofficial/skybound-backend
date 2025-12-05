@@ -21,7 +21,6 @@ def role_required(allowed_roles: List[Role]):
                 settings.secret_key,
                 algorithms=[settings.algorithm]
             )
-            print("payload", payload)
             user_role = int(payload.get("role"))
             if not user_role:
                 raise HTTPException(

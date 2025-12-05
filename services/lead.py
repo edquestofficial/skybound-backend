@@ -3,6 +3,7 @@ from core.config import db_query
 from schemas.lead import EditLead
 from services.project import create_project
 from datetime import date
+from core.role import Role
   
 def fetch_single(id):
     return execute_company_query(db_query['LEAD']['SELECT_BY_LEADID'],id)
@@ -36,3 +37,10 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             return True
     except Exception as e:
         raise 
+
+
+def count_lead(userinfo):
+    if userinfo['role'] == Role.Admin.value:
+        return execute_company_query(db_query['LEAD']['COUNT'])
+    else :
+         return execute_company_query(db_query['LEAD']['COUNT_BY_USER'],userinfo['id'])

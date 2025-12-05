@@ -6,7 +6,7 @@ from core.config import  db_query
 from models.response import response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import updateLead
+from services.lead import updateLead, count_lead
 
 lead_router = APIRouter()
 
@@ -14,7 +14,7 @@ lead_router = APIRouter()
 @lead_router.post("/create")
 def create(lead: Lead,userinfo = Depends(role_required([Role.Admin]))):
     
-    execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquery_type,lead.email,lead.requirement,1,'open',userinfo['id'])
+    execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquery_type,lead.email,lead.requirement,userinfo['id'])
     return response(
             status="success",
             code=200,
@@ -67,4 +67,13 @@ def edit(id:int, update:EditLead, userinfo = Depends(role_required([Role.Admin, 
      else:
           raise HTTPException(401, "Error in update Lead")
    
+@lead_router.get("/count")
+def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+    result = count_lead(userinfo)
+    return response(
+            status="success",
+            code=200,
+            message="Fetch Count successfully",
+            data=result
+        )
 
