@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-class response(BaseModel):
+class Response(BaseModel):
     status: str
     code:int
     message: str

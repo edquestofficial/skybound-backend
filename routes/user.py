@@ -6,7 +6,7 @@ import jwt
 import bcrypt
 
 from core.config import Settings, db_query
-from models.response import response
+from models.response import Response
 from core.role import Role
 from utility.statemgmt import state
 from utility.auth import role_required
@@ -32,7 +32,7 @@ def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.Sales]
     # print("Passw0rd",hashed)
     execute_company_query(db_query['USER']['INSERT'], user.name, hashed, user.username, user.mobile, user.role,1,user.image,userinfo['role'])
     
-    return response(
+    return Response(
             status="success",
             code=200,
             message="User registered successfully",
@@ -53,7 +53,7 @@ def login(user: Login):
             raise HTTPException(401, "Invalid username or password")
         token = create_token(user_data)
         data = {"token":token,"user":{"name":user_data["name"],"role":user_data["role"]}}
-        return response(
+        return Response(
                 status="success",
                 code=200,
                 message="Login Successfully",
@@ -88,7 +88,7 @@ def registerAdmin(user: User):
         hashed = hash_password(user.password)
         execute_company_query(db_query['USER']['INSERT'],user.name, hashed,user.username,user.mobile,user.role,1,user.image,1)
         
-        return response(
+        return Response(
                 status="success",
                 code=200,
                 message="User registered successfully",
@@ -98,14 +98,14 @@ def registerAdmin(user: User):
         raise HTTPException(400,"fill correct user comapny name")
     
 @router.post("/")
-def fetchUser(user_id:str="",role :str = "" , userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
+def fetch(user_id:str="",role :str = "" , userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
    return fetch_user(user_id,role,userInfo)
 
 @router.patch("/")
-def Edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin]))):
+def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin]))):
     # Check existing user
     EditUser(id,user,userinfo['id'])
-    return response(
+    return Response(
             status="success",
             code=200,
             message="User updated successfully",

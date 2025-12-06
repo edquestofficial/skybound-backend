@@ -1,4 +1,8 @@
 from fastapi import FastAPI,Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from models.response import Response
 import uvicorn
 import logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +13,28 @@ from routes.project import project_router
 
 app = FastAPI(title="Skybound App", swagger_ui_parameters={"persistAuthorization": True} )
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+
+    # Detect extra field error
+    for error in exc.errors():
+        if error.get("type") == "extra_forbidden":
+            field_name = error.get("loc")[-1]
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": f"Extra field '{field_name}' is not allowed."
+                }
+            )
+    return Response(
+                code= 400,
+                data=[],
+                error=True,
+                message=jsonable_encoder(exc.errors()),
+                status="fail"
+            )
+    
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,7 +44,6 @@ app.add_middleware(
 )
 
 async def log_request(request, call_next):
-    print("Request received")
     response = await call_next(request)
     return response
 

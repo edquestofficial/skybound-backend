@@ -1,6 +1,6 @@
 from core.role import Role
-from database import execute_company_query, execute_query,fetch_single_record,update_user
-from core.config import Settings, db_query
+from database import execute_company_query, execute_query,fetch_single_record,update_query
+from core.config import db_query
 from datetime import date
 
 def fetch_user(userId, role, userinfo):
@@ -40,9 +40,8 @@ def EditUser(id,EditUser,loggedin_userId):
         set_clause = ", ".join(f"{key}=?" for key in update_data.keys())
         values = list(update_data.values())
         values.append(id)
-
-        result = update_user(set_clause, values)
-       
+        query = db_query['USER']['UPDATE']
+        result = update_query(query,set_clause, values)
         return True
     except Exception as e:
         raise 

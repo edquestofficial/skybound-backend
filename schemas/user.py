@@ -7,7 +7,7 @@ class User(BaseModel):
     username:str
     mobile:str
     image:str
-    role:int | None = None
+    role:int
 
 
 class Login(BaseModel):

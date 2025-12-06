@@ -24,3 +24,11 @@ def fetch_project(userId,projid,userinfo):
 
     return result
    
+def count_project(userinfo):
+    if userinfo['role'] == Role.Admin.value:
+        return execute_company_query(db_query['PROJECT']['COUNT'])
+    else :
+         return execute_company_query(db_query['PROJECT']['COUNT_BY_USER'],userinfo['id'])
+    
+def addTimeLine(projId, comment, userinfo, docUrls):
+    return execute_company_query(db_query['PROJECT_TIMELINE']['INSERT'],projId,comment,docUrls,userinfo[id])

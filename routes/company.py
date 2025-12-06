@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException,Depends
 from schemas.company import Company
 from database import execute_query, execute_company_query
 
-from models.response import response
+from models.response import Response
 from core.role import Role
 from core.config import db_query
 from utility.statemgmt import state
@@ -18,7 +18,7 @@ def register(company: Company):
             if cur:
                 raise HTTPException(400, "Company already exists")
 
-            execute_query(db_query['COMPANY']['INSERT'],company.name, company.comany_code,company.active)
+            execute_query(db_query['COMPANY']['INSERT'],company.name, company.comany_code,1)
             state.setvalue(company.comany_code)
 
             execute_company_query(db_query['USER']['CREATE'])
@@ -27,7 +27,7 @@ def register(company: Company):
             execute_company_query(db_query['LEAD_TIMELINE']['CREATE'])
             execute_company_query(db_query['PROJECT_TIMELINE']['CREATE'])
             
-            return response(
+            return Response(
                     status="success",
                     code=200,
                     message="Company registered successfully and DB created successfully",

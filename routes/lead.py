@@ -1,21 +1,18 @@
 from fastapi import APIRouter, HTTPException,Depends
-from schemas.lead import Lead, EditLead
-from database import execute_company_query, execute_query,fetch_single_record
+from schemas.lead import Lead, EditLead, SearchLead
 
-from core.config import  db_query
-from models.response import response
+from models.response import Response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import updateLead, count_lead
+from services.lead import create_lead, updateLead, count_lead, fetch_lead, addTimeLine
 
 lead_router = APIRouter()
 
 
 @lead_router.post("/create")
 def create(lead: Lead,userinfo = Depends(role_required([Role.Admin]))):
-    
-    execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquery_type,lead.email,lead.requirement,userinfo['id'])
-    return response(
+    create_lead(lead,userinfo)
+    return Response(
             status="success",
             code=200,
             message="Lead created successfully",
@@ -23,42 +20,26 @@ def create(lead: Lead,userinfo = Depends(role_required([Role.Admin]))):
         )
 
 
-@lead_router.get("/")
-def fetch(userId:str = "", leadId:str="", userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
-    loggedin_user_id = int(userinfo['id'])
-    if int(userinfo['role']) == Role.Admin.value:
-        if userId != "" and leadId == "" :
-          result =  execute_company_query(db_query['LEAD']['SELECT_BY_USER'],int(userId))
-        elif leadId !="":
-            result =  execute_company_query(db_query['LEAD']['SELECT_BY_LEADID'],int(leadId))
-        elif userId == "" and leadId == "" :
-             result =  execute_company_query(db_query['LEAD']['SELECT_ALL'])
-    elif int(userinfo['role']) == Role.Sales.value:
-        print("data and values",leadId,loggedin_user_id)
-        if leadId is not None and leadId != "":
-            print("step 1")
-            result =  execute_company_query(db_query['LEAD']['SELECT_BY_LEADID_USERID'],int(leadId) if leadId else None,loggedin_user_id)
-
-        elif leadId == "":
-            print("step 2")
-            result =  execute_company_query(db_query['LEAD']['UNASSIGN_ASSIGN_LEAD'],loggedin_user_id)
-        else:
-            print("step 3")
-            result =  execute_company_query(db_query['LEAD']['SELECT_BY_LEADID_ASSIGN'],int(leadId),loggedin_user_id)
-
-
-    return response(
+@lead_router.post("/")
+def fetch( lead :SearchLead, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+   
+    result = fetch_lead(lead,userinfo)
+    return Response(
             status="success",
             code=200,
             message="Lead fetch successfully",
             data=result
         )
 
+
+
+
+
 @lead_router.patch("/{id}")
 def edit(id:int, update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
      loggedin_userId = userinfo['id']
      if updateLead(id,update, loggedin_userId):
-         return response(
+         return Response(
             status="success",
             code=200,
             message="Lead update successfully",
@@ -70,10 +51,20 @@ def edit(id:int, update:EditLead, userinfo = Depends(role_required([Role.Admin, 
 @lead_router.get("/count")
 def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
     result = count_lead(userinfo)
-    return response(
+    return Response(
             status="success",
             code=200,
             message="Fetch Count successfully",
             data=result
+        )
+
+@lead_router.post("/timeline")
+def create(leadId:int,comment:str,docUrls:str = "",userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+    addTimeLine(leadId, comment, userinfo, docUrls)
+    return Response(
+            status="success",
+            code=200,
+            message="Comment added successfully",
+            data=[]
         )
 

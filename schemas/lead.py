@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel,ConfigDict
 class Lead(BaseModel):
     name: str
     company_name: str
@@ -8,6 +8,8 @@ class Lead(BaseModel):
     enquery_type:str|None = None
     email: str |None = None
     requirement: str |None = None
+
+    model_config = ConfigDict(extra="forbid")
 
 class EditLead(BaseModel):
     name: str |None =None
@@ -19,3 +21,15 @@ class EditLead(BaseModel):
     next_followup:str | None =None
     status: str | None =None
     assigned_to: str | None =None
+
+    model_config = ConfigDict(extra="forbid")
+
+class SearchLead(BaseModel):
+    id:int |None = None
+    city: str |None = None
+    state: str |None = None
+    enquery_type:str |None = None
+    status: str | None =None
+    assigned_to: str | None =None
+
+    model_config = ConfigDict(extra="forbid")

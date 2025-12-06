@@ -73,33 +73,15 @@ def fetch_single_record(query,*args):
     except Exception as e:
         print("Exception in company Query Exceution", e)
         raise
-
-def update_record(set_clause,values):
+      
+def update_query(query,set_clause,values):
         try:
             conn = get_db()
             aliasname = state.value
-           
-            query = f"UPDATE <>_lead SET {set_clause} WHERE id = ?"
+            query = query.replace('<set_clause>',set_clause)
             if aliasname :
                 query = query.replace('<>',aliasname)
-            
-            conn.execute(query, values)
-            conn.commit()
-            conn.close()
-            return True
-        except Exception as e:
-            print("Exception in update Query Exceution", e)
-            raise
-        
-def update_user(set_clause,values):
-        try:
-            conn = get_db()
-            aliasname = state.value
-           
-            query = f"UPDATE <>_user SET {set_clause} WHERE id = ?"
-            if aliasname :
-                query = query.replace('<>',aliasname)
-            
+            print("query , values", query, values)
             conn.execute(query, values)
             conn.commit()
             conn.close()
@@ -107,4 +89,21 @@ def update_user(set_clause,values):
         except Exception as e:
             print("Exception in update User Exceution", e)
             raise
-        
+
+def execute_select_query(base_query,conditions,values):
+     try:
+            conn = get_db()
+            cur = conn.cursor()
+            aliasname = state.value
+            if aliasname :
+                base_query = base_query.replace('<>',aliasname)
+            if len(conditions) > 0:
+                base_query = base_query + " WHERE " + conditions
+            cur =conn.execute(base_query, values)
+            rows = cur.fetchall()
+            conn.commit()
+            conn.close()
+            return [dict(r) for r in rows]
+     except Exception as e:
+            print("Exception in select User Exceution", e)
+            raise

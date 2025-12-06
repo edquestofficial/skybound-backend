@@ -1,12 +1,17 @@
-from database import execute_company_query, execute_query,fetch_single_record, update_record
+from database import execute_company_query, execute_select_query,fetch_single_record, update_query
 from core.config import db_query
 from schemas.lead import EditLead
 from services.project import create_project
 from datetime import date
 from core.role import Role
   
+def create_lead(lead,userinfo):
+    return execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquery_type,lead.email,lead.requirement,userinfo['id'])
+
 def fetch_single(id):
     return execute_company_query(db_query['LEAD']['SELECT_BY_LEADID'],id)
+
+
 def updateLead(id:int,item:EditLead, loggedin_userId:int):
     try :
         lead = fetch_single_record(db_query['LEAD']['SELECT_BY_LEADID'],id)
@@ -30,7 +35,8 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
         values = list(update_data.values())
         values.append(id)
 
-        result = update_record(set_clause, values)
+        query = db_query['LEAD']['UPDATE']
+        result = update_query(query,set_clause, values)
         if result and  item.stage == "poraised":
            return create_project(id,loggedin_userId)
         else :
@@ -44,3 +50,30 @@ def count_lead(userinfo):
         return execute_company_query(db_query['LEAD']['COUNT'])
     else :
          return execute_company_query(db_query['LEAD']['COUNT_BY_USER'],userinfo['id'])
+    
+def addTimeLine(leadId, comment, userinfo, docUrls):
+    return execute_company_query(db_query['LEAD_TIMELINE']['INSERT'],leadId,comment,docUrls,userinfo['id'])
+
+def fetch_lead(lead,userinfo):
+    user_id = userinfo['id']
+    role = userinfo['role']
+    query = db_query['LEAD']['SELECT_ALL']
+    conditions = ""
+    values = []
+    update_data = lead.model_dump(exclude_unset=True)
+    update_data = {
+        k: v for k, v in update_data.items()
+        if v not in (None, "","0")
+    }
+    if len(update_data)>0 :
+        conditions = " AND ".join(f"{key}=?" for key in update_data.keys())
+        values = list(update_data.values())
+    if Role.Sales.value == role :
+        if conditions != "" :
+            conditions += " AND "
+
+        conditions += " (assigned_to is NULL) OR assigned_to = ? "
+        values.append(user_id)
+
+    return execute_select_query(query,conditions,values)
+
