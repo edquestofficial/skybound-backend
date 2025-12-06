@@ -52,7 +52,7 @@ def login(user: Login):
         if not user_data or not verify_password(user.password, user_data["password"]):
             raise HTTPException(401, "Invalid username or password")
         token = create_token(user_data)
-        data = {"token":token,"user":{"name":user_data["name"],"role":user_data["role"]}}
+        data = {"token":token,"user":{"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"]}}
         return Response(
                 status="success",
                 code=200,
