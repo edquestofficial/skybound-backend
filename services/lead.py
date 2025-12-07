@@ -6,7 +6,7 @@ from datetime import date
 from core.role import Role
   
 def create_lead(lead,userinfo):
-    return execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquery_type,lead.email,lead.requirement,userinfo['id'])
+    return execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,userinfo['id'])
 
 def fetch_single(id):
     return execute_company_query(db_query['LEAD']['SELECT_BY_LEADID'],id)

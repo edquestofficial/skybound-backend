@@ -26,13 +26,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                     "error": f"Extra field '{field_name}' is not allowed."
                 }
             )
-    return Response(
-                code= 400,
-                data=[],
-                error=True,
-                message=jsonable_encoder(exc.errors()),
-                status="fail"
-            )
+        else:
+            return JSONResponse(
+            status_code=400,
+            content={
+                "error": "Invalid payload data"
+            }
+    )
+    
     
 
 app.add_middleware(
