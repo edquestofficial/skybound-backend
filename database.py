@@ -1,10 +1,7 @@
 import sqlite3
 from  utility.statemgmt import state
 from core.config import db_query
-# _conn = None
 def get_db():
-    # global _conn
-    # if _conn is None:
     _conn = sqlite3.connect("skybound.db")
     _conn.row_factory = sqlite3.Row
     return _conn
@@ -44,9 +41,7 @@ def execute_company_query(query,*args):
             cur = conn.execute(query, args)   # ← pass args as tuple
         else:
             cur = conn.execute(query)
-
         rows = cur.fetchall()
-        
         conn.commit()
         conn.close()
         
@@ -87,7 +82,7 @@ def update_query(query,set_clause,values):
             conn.close()
             return True
         except Exception as e:
-            print("Exception in update User Exceution", e)
+            print("Exception in update Exceution", e)
             raise
 
 def execute_select_query(base_query,conditions,values):
@@ -103,7 +98,7 @@ def execute_select_query(base_query,conditions,values):
             rows = cur.fetchall()
             conn.commit()
             conn.close()
-            return [dict(r) for r in rows]
+            return [{k: v for k, v in dict(r).items() if k != "active"} for r in rows ]
      except Exception as e:
             print("Exception in select User Exceution", e)
             raise

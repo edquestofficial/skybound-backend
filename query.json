@@ -13,11 +13,7 @@
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by TEXT,created_date TEXT, modify_by TEXT, modify_date TEXT)",
     "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,1,'open',?, DATE('now'))",
     "SELECT_ALL":"select * from <>_lead",
-    "SELECT_BY_USER":"select * from <>_lead where assigned_to = ?",
     "SELECT_BY_LEADID":"select * from <>_lead where id = ? and active = 1",
-    "SELECT_BY_LEADID_USERID":"select * from <>_lead where id = ? and assigned_to = ? and active = 1",
-    "SELECT_BY_LEADID_ASSIGN":"select * from <>_lead where id = ? and assigned_to = ? and active = 1",
-    "UNASSIGN_ASSIGN_LEAD":"SELECT * FROM <>_lead WHERE active = 1 and ((assigned_to is NULL) OR assigned_to = ?)",
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_lead GROUP BY status;",
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_lead where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
     "UPDATE":"UPDATE <>_lead SET <set_clause> WHERE id = ?"
@@ -30,16 +26,20 @@
     "SELECT_BY_PROJID":"select * from <>_project where id = ? and active = 1",
     "SELECT_BY_PROJID_ASSIGN":"select * from <>_project where id = ? and assigned_to = ? and active = 1",
     "UNASSIGN_ASSIGN_PROJ":"select * from <>_project where assigned_to = '' or assigned_to = ? and active = 1",
-    "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;"
+    "COUNT":"SELECT status, COUNT(*) AS total FROM <>_project GROUP BY status;",
+    "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
+    "UPDATE":"UPDATE <>_project SET <set_clause> WHERE id = ?"
 
   },
    "LEAD_TIMELINE": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_leadtimline(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, message TEXT, docs_urls TEXT, created_by TEXT,created_date TEXT)",
-    "INSERT":"INSERT INTO <>_leadtimline(lead_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, DATE('now'))"
+    "INSERT":"INSERT INTO <>_leadtimline(lead_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, DATE('now'))",
+    "SELECT":"SELECT * FROM <>_leadtimline where lead_id = ? "
   },
    "PROJECT_TIMELINE": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_projecttimline(id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER, message TEXT, docs_urls TEXT, created_by TEXT,created_date TEXT)",
-    "INSERT":"INSERT INTO <>_projecttimline(project_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, DATE('now'))"
+    "INSERT":"INSERT INTO <>_projecttimline(project_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, DATE('now'))",
+    "SELECT":"SELECT * FROM <>_projecttimline where project_id = ? "
   },
   "ROLE":{
     "CREATE":"CREATE TABLE IF NOT EXISTS user_role(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)",

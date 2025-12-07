@@ -1,26 +1,26 @@
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from core.role import Role
 from utility.auth import role_required
 from models.response import Response
-from services.project import create_project,fetch_project, count_project, addTimeLine
-
+from services.project import create_project,fetch_project, count_project, addTimeLine, updateProject
+from schemas.project import SearchProject
 project_router = APIRouter()
 
 
-@project_router.post("/create")
-def create(leadid:int, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
-    create_project(leadid, userinfo)
-    return Response(
-                status="success",
-                code=200,
-                message="Project created successfully",
-                data=[]
-            )
+# @project_router.post("/create")
+# def create(leadid:int, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+#     create_project(leadid, userinfo)
+#     return Response(
+#                 status="success",
+#                 code=200,
+#                 message="Project created successfully",
+#                 data=[]
+#             )
 
-@project_router.get("/")
-def fetch(userId:str = "", projid:str="", userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
-    result = fetch_project(userId,projid,userinfo)
+@project_router.post("/")
+def fetch(proj : SearchProject, userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
+    result = fetch_project(proj,userinfo)
     return Response(
             status="success",
             code=200,
@@ -39,7 +39,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer]
         )
 
 @project_router.post("/timeline")
-def create(projid:int,comment:str,docUrls:str = None,userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+def create(projid:int,comment:str,docUrls:str = "",userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
     addTimeLine(projid, comment, userinfo, docUrls)
     return Response(
             status="success",
@@ -48,4 +48,16 @@ def create(projid:int,comment:str,docUrls:str = None,userinfo = Depends(role_req
             data=[]
         )
 
-
+@project_router.patch("/{id}")
+def edit(id:int, update:SearchProject, userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
+     loggedin_userId = userinfo['id']
+     if updateProject(id,update, loggedin_userId):
+         return Response(
+            status="success",
+            code=200,
+            message="Project update successfully",
+            data=[]
+        )
+     else:
+          raise HTTPException(401, "Error in update project")
+   

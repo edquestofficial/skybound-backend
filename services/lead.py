@@ -75,5 +75,12 @@ def fetch_lead(lead,userinfo):
         conditions += " (assigned_to is NULL) OR assigned_to = ? "
         values.append(user_id)
 
-    return execute_select_query(query,conditions,values)
+    result = execute_select_query(query,conditions,values)
+    if lead.id is not None:
+        query = db_query['LEAD_TIMELINE']['SELECT']
+        rows=execute_company_query(query,lead.id)
+        result[0]['timeline']=rows
+    return result
+         
+
 

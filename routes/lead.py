@@ -31,10 +31,6 @@ def fetch( lead :SearchLead, userinfo = Depends(role_required([Role.Admin, Role.
             data=result
         )
 
-
-
-
-
 @lead_router.patch("/{id}")
 def edit(id:int, update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
      loggedin_userId = userinfo['id']
