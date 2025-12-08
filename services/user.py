@@ -1,5 +1,5 @@
 from core.role import Role
-from database import execute_company_query, execute_query,fetch_single_record,update_query
+from database import execute_company_query,fetch_single_record,update_query
 from core.config import db_query
 from datetime import date
 
