@@ -12,7 +12,7 @@
    "LEAD": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
     "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,1,'open',?, datetime('now'))",
-    "SELECT_ALL":"select a.*, b.name as assigned_user from <>_lead as a join <>_user as b on a.assigned_to = b.id ",
+    "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user from <>_lead as a left join <>_user as b on a.assigned_to = b.id ",
     "SELECT_BY_LEADID":"select * from <>_lead where id = ? and active = 1",
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_lead GROUP BY status;",
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_lead where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",

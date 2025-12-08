@@ -73,7 +73,7 @@ def fetch_lead(lead,userinfo):
         if conditions != "" :
             conditions += " AND "
 
-        conditions += " (assigned_to is NULL) OR assigned_to = ? "
+        conditions += " (a.assigned_to is NULL) OR a.assigned_to = ? "
         values.append(user_id)
 
     result = execute_select_query(query,conditions,values)
