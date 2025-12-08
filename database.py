@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from  utility.statemgmt import state
 from core.config import db_query
@@ -90,7 +91,7 @@ def execute_select_query(base_query,conditions,values):
             cur = conn.cursor()
             aliasname = state.value
             if aliasname :
-                base_query = base_query.replace('<>',aliasname)
+                base_query = re.sub(r'<>', aliasname, base_query)
             if len(conditions) > 0:
                 base_query = base_query + " WHERE " + conditions
             cur =conn.execute(base_query, values)

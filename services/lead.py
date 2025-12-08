@@ -67,7 +67,7 @@ def fetch_lead(lead,userinfo):
         if v not in (None, "","0")
     }
     if len(update_data)>0 :
-        conditions = " AND ".join(f"{key}=?" for key in update_data.keys())
+        conditions = " AND ".join(f"a.{key}=?" for key in update_data.keys())
         values = list(update_data.values())
     if Role.Sales.value == role :
         if conditions != "" :

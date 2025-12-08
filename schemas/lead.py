@@ -37,7 +37,7 @@ class EditLead(BaseModel):
     next_followup:str | None =None
     enquiry_type:Optional[str] = None
     status: Optional[str] = None
-    assigned_to: Optional[str] = None
+    assigned_to: Optional[int] = None
     close : Optional[bool]  = False
 
     model_config = ConfigDict(extra="forbid")
@@ -47,7 +47,7 @@ class SearchLead(BaseModel):
     city: str |None = None
     state: str |None = None
     enquiry_type:str |None = None
-    status: str | None =None
-    assigned_to: str | None =None
+    status: Optional[LeadStatus] = None
+    assigned_to: Optional[int] = None
 
     model_config = ConfigDict(extra="forbid")
