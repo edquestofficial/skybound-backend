@@ -4,9 +4,10 @@
     "SELECT_USER_NAME":"SELECT name FROM <>_user WHERE username = ? COLLATE NOCASE",
     "SELECT_USER_NAME_PASS":"SELECT id, name, username, role, password FROM <>_user WHERE username = ? COLLATE NOCASE",
     "INSERT":"INSERT INTO <>_user (name, password, username, mobile, role, active, image, created_by, created_date) VALUES (?, ?,?, ?, ?,?,?,?, datetime('now'))",
-    "SELECT_USER":"select id, name,role,mobile, active from <>_user where active = 1",
-    "SELECT_USER_BY_ROLE":"select id,name,role,mobile, active from <>_user where role = ? and active = 1",
-    "SELECT_USER_BYID":"select id,name,role,mobile, active from <>_user where id = ? and active = 1",
+    "SELECT_ALL":"Select id,name, role, mobile, image, active from <>_user",
+    "SELECT_USER":"select id, name, role, mobile, active, image from <>_user where active = 1",
+    "SELECT_USER_BY_ROLE":"select id,name, role, mobile, image, active from <>_user where role = ? and active = 1",
+    "SELECT_USER_BYID":"select id,name, role, mobile, active, image from <>_user where id = ? and active = 1",
     "UPDATE":"UPDATE <>_user SET <set_clause> WHERE id = ?"
   },
    "LEAD": {

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class User(BaseModel):
     name: str
@@ -9,10 +9,14 @@ class User(BaseModel):
     image:str
     role:int
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class Login(BaseModel):
     username: str
     password: str
+
+    model_config = ConfigDict(extra="forbid")
 
 class UserUpdate(BaseModel):
     name: str | None = None
@@ -20,3 +24,11 @@ class UserUpdate(BaseModel):
     image:str | None = None
     role:int | None = None
     active:int | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+class SerachUser(BaseModel):
+    id:int | None = None
+    role :int | None = None
+
+    model_config = ConfigDict(extra="forbid")

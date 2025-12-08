@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException,Depends
-from schemas.user import User,Login, UserUpdate
+from schemas.user import User,Login, UserUpdate,SerachUser
 from database import execute_company_query, execute_query,fetch_single_record
 from fastapi.security import HTTPBearer
 import jwt
@@ -10,7 +10,7 @@ from models.response import Response
 from core.role import Role
 from utility.statemgmt import state
 from utility.auth import role_required
-from services.user import fetch_user,EditUser
+from services.user import EditUser, fetchUser
 
 settings = Settings()
 
@@ -98,8 +98,8 @@ def registerAdmin(user: User):
         raise HTTPException(400,"fill correct user comapny name")
     
 @router.post("/")
-def fetch(user_id:str="",role :str = "" , userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
-   return fetch_user(user_id,role,userInfo)
+def fetch(user:SerachUser,userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
+   return fetchUser(user,userInfo)
 
 @router.patch("/")
 def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin]))):
