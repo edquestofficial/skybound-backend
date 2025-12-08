@@ -33,6 +33,9 @@ def fetch_project(proj,userinfo):
     if proj.id is not None:
         query = db_query['PROJECT_TIMELINE']['SELECT']
         rows=execute_company_query(query,proj.id)
+        for row in rows:
+            urls = row.get("docs_urls", "")
+            row["docs_urls"] = urls.split(",") if urls else []
         result[0]['timeline']=rows
     return result
 

@@ -29,8 +29,8 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             k: v for k, v in update_data.items()
             if v not in (None, "","0")
         }
-        if item.stage == "poraised":
-             update_data['status']= 'close'
+        if item.stage == "poraised" and item.close:
+             update_data['status']= 'closed'
         set_clause = ", ".join(f"{key}=?" for key in update_data.keys())
         values = list(update_data.values())
         values.append(id)
@@ -52,6 +52,7 @@ def count_lead(userinfo):
          return execute_company_query(db_query['LEAD']['COUNT_BY_USER'],userinfo['id'])
     
 def addTimeLine(leadId, comment, userinfo, docUrls):
+    print("docs urls", docUrls)
     return execute_company_query(db_query['LEAD_TIMELINE']['INSERT'],leadId,comment,docUrls,userinfo['id'])
 
 def fetch_lead(lead,userinfo):
@@ -79,7 +80,11 @@ def fetch_lead(lead,userinfo):
     if lead.id is not None:
         query = db_query['LEAD_TIMELINE']['SELECT']
         rows=execute_company_query(query,lead.id)
-        result[0]['timeline']=rows
+        for row in rows:
+            urls = row.get("docs_urls", "")
+            row["docs_urls"] = urls.split(",") if urls else []
+
+        result[0]["timeline"] = rows
     return result
          
 

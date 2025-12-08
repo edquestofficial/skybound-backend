@@ -76,7 +76,6 @@ def update_query(query,set_clause,values):
             query = query.replace('<set_clause>',set_clause)
             if aliasname :
                 query = query.replace('<>',aliasname)
-            print("query , values", query, values)
             conn.execute(query, values)
             conn.commit()
             conn.close()

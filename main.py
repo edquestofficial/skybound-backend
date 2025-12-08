@@ -15,24 +15,13 @@ app = FastAPI(title="Skybound App", swagger_ui_parameters={"persistAuthorization
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-
+    error_list =[]
     # Detect extra field error
     for error in exc.errors():
-        if error.get("type") == "extra_forbidden":
-            field_name = error.get("loc")[-1]
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "error": f"Extra field '{field_name}' is not allowed."
-                }
-            )
-        else:
-            return JSONResponse(
-            status_code=400,
-            content={
-                "error": "Invalid payload data"
-            }
-    )
+        field_name = error.get("loc")[-1]
+        error_list.append({field_name:error.get("msg")})
+                    
+    return JSONResponse(status_code=400, content=error_list)
     
     
 

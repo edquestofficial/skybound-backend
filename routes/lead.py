@@ -1,4 +1,7 @@
-from fastapi import APIRouter, HTTPException,Depends
+import os
+import shutil
+from typing import List
+from fastapi import APIRouter, File, Form, HTTPException,Depends, UploadFile
 from schemas.lead import Lead, EditLead, SearchLead
 
 from models.response import Response
@@ -55,8 +58,22 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales])))
         )
 
 @lead_router.post("/timeline")
-def create(leadId:int,comment:str,docUrls:str = "",userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
-    addTimeLine(leadId, comment, userinfo, docUrls)
+def create( id: int = Form(...),
+    comment: str = Form(...),
+    files: List[UploadFile] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+    saved_files = []
+    docs :str = ""
+    if files:
+        upload_dir = "Lead_Doc"
+        os.makedirs(upload_dir, exist_ok=True)
+
+        for file in files:
+            file_location = f"{upload_dir}/{id}_{file.filename}"
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            saved_files.append(file_location)
+            docs = ",".join(saved_files)
+    addTimeLine(id, comment, userinfo, docs)
     return Response(
             status="success",
             code=200,
