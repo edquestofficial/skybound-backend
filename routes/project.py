@@ -1,5 +1,8 @@
 
-from fastapi import APIRouter, Depends, HTTPException
+import os
+import shutil
+from typing import List
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from core.role import Role
 from utility.auth import role_required
 from models.response import Response
@@ -38,16 +41,6 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer]
             data=result
         )
 
-@project_router.post("/timeline")
-def create(projid:int,comment:str,docUrls:str = "",userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
-    addTimeLine(projid, comment, userinfo, docUrls)
-    return Response(
-            status="success",
-            code=200,
-            message="Comment added successfully",
-            data=[]
-        )
-
 @project_router.patch("/{id}")
 def edit(id:int, update:SearchProject, userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
      loggedin_userId = userinfo['id']
@@ -61,3 +54,27 @@ def edit(id:int, update:SearchProject, userinfo = Depends(role_required([Role.Ad
      else:
           raise HTTPException(401, "Error in update project")
    
+
+@project_router.post("/timeline")
+def create( id: int = Form(...),
+    comment: str = Form(...),
+    files: List[UploadFile] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
+    saved_files = []
+    docs :str = ""
+    if files:
+        upload_dir = "Project_Doc"
+        os.makedirs(upload_dir, exist_ok=True)
+
+        for file in files:
+            file_location = f"{upload_dir}/{id}_{file.filename}"
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            saved_files.append(file_location)
+            docs = ",".join(saved_files)
+    addTimeLine(id, comment, userinfo, docs)
+    return Response(
+            status="success",
+            code=200,
+            message="Comment added successfully",
+            data=[]
+        )
