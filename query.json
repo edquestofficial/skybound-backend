@@ -1,13 +1,13 @@
 {
   "USER": {
-    "CREATE":"CREATE TABLE IF NOT EXISTS <>_user(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,password TEXT, username TEXT UNIQUE,mobile TEXT, role INTEGER, active INTEGER, image TEXT, created_by Integer, created_date TEXT, modify_by Integer, modify_date TEXT)",
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_user(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,password TEXT, username TEXT UNIQUE,mobile TEXT,emailid TEXT, role INTEGER, active INTEGER, image TEXT, created_by Integer, created_date TEXT, modify_by Integer, modify_date TEXT)",
     "SELECT_USER_NAME":"SELECT name FROM <>_user WHERE username = ? COLLATE NOCASE",
     "SELECT_USER_NAME_PASS":"SELECT id, name, username, role, password FROM <>_user WHERE username = ? COLLATE NOCASE",
-    "INSERT":"INSERT INTO <>_user (name, password, username, mobile, role, active, image, created_by, created_date) VALUES (?, ?,?, ?, ?,?,?,?, datetime('now'))",
-    "SELECT_ALL":"Select id,name, role, mobile, image, active from <>_user",
-    "SELECT_USER":"select id, name, role, mobile, active, image from <>_user where active = 1",
-    "SELECT_USER_BY_ROLE":"select id,name, role, mobile, image, active from <>_user where role = ? and active = 1",
-    "SELECT_USER_BYID":"select id,name, role, mobile, active, image from <>_user where id = ? and active = 1",
+    "INSERT":"INSERT INTO <>_user (name, password, username, mobile, emailid, role, active, image, created_by, created_date) VALUES (?, ?,?, ?, ?,?,?,?,?, datetime('now'))",
+    "SELECT_ALL":"Select id,name, emailid, role, mobile, image, active from <>_user",
+    "SELECT_USER":"select id, name, role, emailid, mobile, active, image from <>_user where active = 1",
+    "SELECT_USER_BY_ROLE":"select id,name, role, emailid, mobile, image, active from <>_user where role = ? and active = 1",
+    "SELECT_USER_BYID":"select id,name, role, emailid, mobile, active, image from <>_user where id = ? and active = 1",
     "UPDATE":"UPDATE <>_user SET <set_clause> WHERE id = ?"
   },
    "LEAD": {
@@ -22,11 +22,8 @@
   "PROJECT": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_project(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
     "INSERT":"INSERT INTO <>_project(lead_id, stage, status, active, created_by, created_date) VALUES (?, ?,?, ?, ?, datetime('now'))",
-    "SELECT":"SELECT * FROM <>_project",
-    "SELECT_BY_USER":"select * from <>_project where assigned_to = ?",
+    "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user from <>_project as a left join <>_user as b on a.assigned_to = b.id ",
     "SELECT_BY_PROJID":"select * from <>_project where id = ? and active = 1",
-    "SELECT_BY_PROJID_ASSIGN":"select * from <>_project where id = ? and assigned_to = ? and active = 1",
-    "UNASSIGN_ASSIGN_PROJ":"select * from <>_project where assigned_to = '' or assigned_to = ? and active = 1",
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_project GROUP BY status;",
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
     "UPDATE":"UPDATE <>_project SET <set_clause> WHERE id = ?"
@@ -35,12 +32,12 @@
    "LEAD_TIMELINE": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_leadtimline(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, message TEXT, docs_urls TEXT, created_by Integer,created_date TEXT)",
     "INSERT":"INSERT INTO <>_leadtimline(lead_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now'))",
-    "SELECT":"SELECT * FROM <>_leadtimline where lead_id = ? "
+    "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS assigned_user FROM <>_leadtimline as a left join <>_user as b on a.assigned_to = b.id  where a.lead_id = ? "
   },
    "PROJECT_TIMELINE": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_projecttimline(id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER, message TEXT, docs_urls TEXT, created_by Integer,created_date TEXT)",
     "INSERT":"INSERT INTO <>_projecttimline(project_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now'))",
-    "SELECT":"SELECT * FROM <>_projecttimline where project_id = ? "
+    "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS assigned_user FROM <>_projecttimline as a left join <>_user as b on a.assigned_to = b.id where project_id = ? "
   },
   "ROLE":{
     "CREATE":"CREATE TABLE IF NOT EXISTS user_role(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)",

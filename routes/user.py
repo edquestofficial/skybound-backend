@@ -30,7 +30,7 @@ def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.Sales]
 
     hashed = hash_password(user.password)
     # print("Passw0rd",hashed)
-    execute_company_query(db_query['USER']['INSERT'], user.name, hashed, user.username, user.mobile, user.role,1,user.image,userinfo['role'])
+    execute_company_query(db_query['USER']['INSERT'], user.name, hashed, user.username, user.mobile, user.emailid, user.role,1,user.image,userinfo['role'])
     
     return Response(
             status="success",
@@ -86,7 +86,7 @@ def registerAdmin(user: User):
         if cur:
             raise HTTPException(400, "Username already exists")
         hashed = hash_password(user.password)
-        execute_company_query(db_query['USER']['INSERT'],user.name, hashed,user.username,user.mobile,user.role,1,user.image,1)
+        execute_company_query(db_query['USER']['INSERT'],user.name, hashed, user.username, user.mobile,user.emailid, user.role,1,user.image,1)
         
         return Response(
                 status="success",

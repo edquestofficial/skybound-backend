@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from core.role import Role
 from database import execute_company_query,execute_select_query, fetch_single_record, update_query
 from core.config import db_query
@@ -11,7 +11,7 @@ def create_project(lead_id, user_id):
 def fetch_project(proj,userinfo):
     user_id = userinfo['id']
     role = userinfo['role']
-    query = db_query['PROJECT']['SELECT']
+    query = db_query['PROJECT']['SELECT_ALL']
     conditions = ""
     values = []
     update_data = proj.model_dump(exclude_unset=True)
@@ -20,13 +20,13 @@ def fetch_project(proj,userinfo):
         if v not in (None, "","0")
     }
     if len(update_data)>0 :
-        conditions = " AND ".join(f"{key}=?" for key in update_data.keys())
+        conditions = " AND ".join(f"a.{key}=?" for key in update_data.keys())
         values = list(update_data.values())
     if Role.Engineer.value == role :
         if conditions != "" :
             conditions += " AND "
 
-        conditions += " (assigned_to is NULL) OR assigned_to = ? "
+        conditions += " (a.assigned_to is NULL) OR a.assigned_to = ? "
         values.append(user_id)
 
     result = execute_select_query(query,conditions,values)
@@ -55,7 +55,7 @@ def updateProject(id:int,item:SearchProject, loggedin_userId:int):
         if not proj:
            return False
         update_data = item.model_dump(exclude_unset=True)
-        update_data['modify_date'] = date.today()
+        update_data['modify_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         update_data['modify_by'] = loggedin_userId
         if update_data.get('assigned_to') not in (None, ""):
             update_data['assigned_by'] = loggedin_userId

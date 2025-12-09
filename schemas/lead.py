@@ -6,9 +6,13 @@ class Lead(BaseModel):
     company_name: str
     city: str
     state: str 
-    contact_number:str|None = None
+    contact_number: Optional[str] = Field(
+        default=None,
+        pattern=r"^[6-9]\d{9}$",      # Indian 10-digit mobile
+        description="Must be a valid 10-digit Indian phone number"
+    )
     enquiry_type:str|None = None
-    email: str |None = None
+    email: Optional[EmailStr] = None
     requirement: str |None = None
 
     model_config = ConfigDict(extra="forbid")

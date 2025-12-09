@@ -2,7 +2,7 @@ from database import execute_company_query, execute_select_query,fetch_single_re
 from core.config import db_query
 from schemas.lead import EditLead
 from services.project import create_project
-from datetime import date
+from datetime import datetime
 from core.role import Role
   
 def create_lead(lead,userinfo):
@@ -19,7 +19,7 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
         if not lead:
            return False
         update_data = item.model_dump(exclude_unset=True)
-        update_data['modify_date'] = date.today()
+        update_data['modify_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         update_data['modify_by'] = loggedin_userId
         if update_data.get('assigned_to') not in (None, ""):
             update_data['assigned_by'] = loggedin_userId
