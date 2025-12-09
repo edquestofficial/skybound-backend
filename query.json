@@ -49,5 +49,6 @@
     "SELECT_COMPANY_NAME":"SELECT name FROM company WHERE name = ?",
     "SELECT_COMPANY_ALIASNAME":"SELECT name FROM company WHERE aliasname = ? COLLATE NOCASE"
 
-}
+},
+"Delete":"drop database skybound; "
 }

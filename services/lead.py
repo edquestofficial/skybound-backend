@@ -18,7 +18,7 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
     
         if not lead:
            return False
-        update_data = item.model_dump(exclude_unset=True)
+        update_data = item.model_dump(exclude_unset=True,  by_alias=False)
         update_data['modify_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         update_data['modify_by'] = loggedin_userId
         if update_data.get('assigned_to') not in (None, ""):
@@ -29,8 +29,9 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             k: v for k, v in update_data.items()
             if v not in (None, "","0")
         }
-        if item.stage == "poraised" and item.close:
+        if item.stage == "poraised" and not item.close:
              update_data['status']= 'closed'
+             update_data['stage']= 'poraised'
         set_clause = ", ".join(f"{key}=?" for key in update_data.keys())
         values = list(update_data.values())
         values.append(id)

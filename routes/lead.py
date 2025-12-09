@@ -34,18 +34,28 @@ def fetch( lead :SearchLead, userinfo = Depends(role_required([Role.Admin, Role.
             data=result
         )
 
-@lead_router.patch("/{id}")
-def edit(id:int, update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
-     loggedin_userId = userinfo['id']
-     if updateLead(id,update, loggedin_userId):
-         return Response(
+@lead_router.post("/edit")
+def edit(update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+    
+    if len(update.id) == 0:
+        return Response(
+            status="fail",
+            code=400,
+            message="please provide the atleast one lead id",
+            data=[]
+        )
+    else:
+        ids = update.id
+        del update.id
+        for id in ids:
+            loggedin_userId = userinfo['id']
+            updateLead(id,update, loggedin_userId)
+    return Response(
             status="success",
             code=200,
             message="Lead update successfully",
             data=[]
-        )
-     else:
-          raise HTTPException(401, "Error in update Lead")
+                )   
    
 @lead_router.get("/count")
 def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales]))):

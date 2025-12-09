@@ -14,7 +14,7 @@ def fetch_project(proj,userinfo):
     query = db_query['PROJECT']['SELECT_ALL']
     conditions = ""
     values = []
-    update_data = proj.model_dump(exclude_unset=True)
+    update_data = proj.model_dump(exclude_unset=True,by_alias=False)
     update_data = {
         k: v for k, v in update_data.items()
         if v not in (None, "","0")

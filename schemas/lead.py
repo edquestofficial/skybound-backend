@@ -28,6 +28,7 @@ class LeadStage(str, Enum):
     poraise = "poraised"
 
 class EditLead(BaseModel):
+    id: list[int] = Field(default_factory=list)
     name: str |None =None
     contact_number: Optional[str] = Field(
         default=None,
@@ -44,7 +45,7 @@ class EditLead(BaseModel):
     assigned_to: Optional[int] = None
     close : Optional[bool]  = False
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = { "use_enum_values": True}
 
 class SearchLead(BaseModel):
     id:int |None = None
