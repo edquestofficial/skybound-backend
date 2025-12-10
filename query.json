@@ -22,7 +22,7 @@
   "PROJECT": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_project(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
     "INSERT":"INSERT INTO <>_project(lead_id, stage, status, active, created_by, created_date) VALUES (?, ?,?, ?, ?, datetime('now'))",
-    "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user from <>_project as a left join <>_user as b on a.assigned_to = b.id ",
+    "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user, c.*  from <>_project as a left join <>_user as b on a.assigned_to = b.id left join <>_lead as c on a.lead_id = c.id  ",
     "SELECT_BY_PROJID":"select * from <>_project where id = ? and active = 1",
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_project GROUP BY status;",
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
@@ -32,12 +32,12 @@
    "LEAD_TIMELINE": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_leadtimline(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, message TEXT, docs_urls TEXT, created_by Integer,created_date TEXT)",
     "INSERT":"INSERT INTO <>_leadtimline(lead_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now'))",
-    "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS assigned_user FROM <>_leadtimline as a left join <>_user as b on a.assigned_to = b.id  where a.lead_id = ? "
+    "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_by FROM <>_leadtimline as a left join <>_user as b on a.created_by = b.id  where a.lead_id = ? "
   },
    "PROJECT_TIMELINE": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_projecttimline(id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER, message TEXT, docs_urls TEXT, created_by Integer,created_date TEXT)",
     "INSERT":"INSERT INTO <>_projecttimline(project_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now'))",
-    "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS assigned_user FROM <>_projecttimline as a left join <>_user as b on a.assigned_to = b.id where project_id = ? "
+    "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_by FROM <>_projecttimline as a left join <>_user as b on a.created_by = b.id where project_id = ? "
   },
   "ROLE":{
     "CREATE":"CREATE TABLE IF NOT EXISTS user_role(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)",
