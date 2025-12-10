@@ -59,7 +59,7 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
 def fetch_lead(lead,userinfo):
     user_id = userinfo['id']
     role = userinfo['role']
-    query = db_query['LEAD']['SELECT']
+    query = db_query['LEAD']['SELECT_ALL']
     conditions = ""
     values = []
     update_data = lead.model_dump(exclude_unset=True)
