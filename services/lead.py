@@ -88,5 +88,9 @@ def fetch_lead(lead,userinfo):
         result[0]["timeline"] = rows
     return result
          
-
+def bulk_create_lead(data_rows,userinfo):
+    for lead in data_rows:
+           
+        if lead:
+            execute_company_query(db_query['LEAD']['INSERT'],lead['name'], lead['company name'],lead['city'],lead['state'],lead['contact 1'],lead['inquiry type'],lead['e mail'],lead['requirements'],userinfo['id'])
 

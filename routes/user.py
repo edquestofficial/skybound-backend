@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException,Depends
+from schemas.email import EmailSchema
 from schemas.user import User,Login, UserUpdate,SerachUser
 from database import execute_company_query, execute_query,fetch_single_record
 from fastapi.security import HTTPBearer
@@ -8,6 +9,7 @@ import bcrypt
 from core.config import Settings, db_query
 from models.response import Response
 from core.role import Role
+from utility.mail import send_email_smtp
 from utility.statemgmt import state
 from utility.auth import role_required
 from services.user import EditUser, fetchUser
@@ -20,7 +22,7 @@ bearer = HTTPBearer()
 
 
 @router.post("/register")
-def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.Sales]))):
+async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.Sales]))):
     # Check existing user
     if "_" not in user.username:
         raise HTTPException(400, "Username is not correct")
@@ -31,7 +33,25 @@ def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.Sales]
     hashed = hash_password(user.password)
     # print("Passw0rd",hashed)
     execute_company_query(db_query['USER']['INSERT'], user.name, hashed, user.username, user.mobile, user.emailid, user.role,1,user.image,userinfo['role'])
-    
+
+    email_data = EmailSchema()
+    email_data.recipient_email = user.emailid
+    email_data.body = f"""Hi {user.name.capitalize()},
+
+Your account has been successfully created. Below are your login credentials:
+
+Username: {user.username}
+Password: {user.password}
+
+Please keep this information secure and do not share it with anyone.
+
+If you have any questions or need assistance logging in, feel free to contact our support team.
+
+Thank you,
+Skybound"""
+    email_data.subject ="Your Account Has Been Successfully Created"
+    result = await send_email_smtp(email_data)
+    print(result)
     return Response(
             status="success",
             code=200,
