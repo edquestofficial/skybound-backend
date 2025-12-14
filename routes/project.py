@@ -31,7 +31,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer]
             data=result
         )
 
-@project_router.patch("/{id}")
+@project_router.post("/edit")
 def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
     if len(update.id) == 0:
         return Response(

@@ -8,6 +8,17 @@ def create_project(lead_id, user_id):
     execute_company_query(db_query['PROJECT']['INSERT'],lead_id, 'cold', 'open', 1, user_id)
     return True
 
+def build_conditions(update_data: dict) -> str:
+    a_keys = {"id", "assigned_to", "status"}
+    c_keys = {"city", "state", "enquiry_type"}
+
+    clauses = []
+
+    clauses.extend( f"{'a' if k in a_keys else 'c'}.{k}=?"
+    for k in update_data
+    if k in a_keys or k in c_keys)
+
+    return " AND ".join(clauses)
 def fetch_project(proj,userinfo):
     user_id = userinfo['id']
     role = userinfo['role']
@@ -20,7 +31,8 @@ def fetch_project(proj,userinfo):
         if v not in (None, "","0")
     }
     if len(update_data)>0 :
-        conditions = " AND ".join(f"a.{key}=?" for key in update_data.keys())
+        # conditions = " AND ".join(f"a.{key}=?" for key in update_data.keys())
+        conditions = build_conditions(update_data)
         values = list(update_data.values())
     if Role.Engineer.value == role :
         if conditions != "" :

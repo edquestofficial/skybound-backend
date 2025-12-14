@@ -2,6 +2,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class SearchProject(BaseModel):
     id:int |None = None
+    city :str = None
+    state:str =  None
+    enquiry_type :str = None
     assigned_to : int | None = None
     status : str | None = None
 
