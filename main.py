@@ -1,8 +1,7 @@
 from fastapi import FastAPI,Request
-from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
-from models.response import Response
 import uvicorn
 import logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +12,8 @@ from routes.project import project_router
 
 app = FastAPI(title="Skybound App", swagger_ui_parameters={"persistAuthorization": True} )
 
+app.mount("/Lead_Doc", StaticFiles(directory="Lead_Doc"), name="images")
+app.mount("/Project_Doc", StaticFiles(directory="Project_Doc"), name="images")
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     error_list =[]
