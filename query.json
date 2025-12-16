@@ -32,12 +32,12 @@
    "LEAD_TIMELINE": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_leadtimline(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, message TEXT, docs_urls TEXT, created_by Integer,created_date TEXT)",
     "INSERT":"INSERT INTO <>_leadtimline(lead_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now'))",
-    "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_by FROM <>_leadtimline as a left join <>_user as b on a.created_by = b.id  where a.lead_id = ? "
+    "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_from FROM <>_leadtimline as a left join <>_user as b on a.created_by = b.id  where a.lead_id = ? "
   },
    "PROJECT_TIMELINE": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_projecttimline(id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER, message TEXT, docs_urls TEXT, created_by Integer,created_date TEXT)",
     "INSERT":"INSERT INTO <>_projecttimline(project_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now'))",
-    "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_by FROM <>_projecttimline as a left join <>_user as b on a.created_by = b.id where project_id = ? "
+    "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_from FROM <>_projecttimline as a left join <>_user as b on a.created_by = b.id where project_id = ? "
   },
   "ROLE":{
     "CREATE":"CREATE TABLE IF NOT EXISTS user_role(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)",
