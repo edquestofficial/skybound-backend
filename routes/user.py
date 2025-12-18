@@ -12,7 +12,8 @@ from core.role import Role
 from utility.mail import send_email_smtp
 from utility.statemgmt import state
 from utility.auth import role_required
-from services.user import EditUser, fetchUser
+from services.user import EditUser, fetchUser, resetpassword
+import random
 
 settings = Settings()
 
@@ -24,15 +25,16 @@ bearer = HTTPBearer()
 @router.post("/register")
 async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.Sales]))):
     # Check existing user
-    if "_" not in user.username:
-        raise HTTPException(400, "Username is not correct")
-    cur = execute_company_query(db_query['USER']['SELECT_USER_NAME'], user.username)
+    # if "_" not in user.username:
+    #     raise HTTPException(400, "Username is not correct")
+    username = user.company_code+"_"+user.emailid.split('@')[0]
+    cur = execute_company_query(db_query['USER']['SELECT_USER_NAME'], username)
     if cur:
         raise HTTPException(400, "Username already exists")
-
-    hashed = hash_password(user.password)
+    password = random_8_digit = random.randint(10_000_000, 99_999_999)
+    hashed = hash_password(password)
     # print("Passw0rd",hashed)
-    execute_company_query(db_query['USER']['INSERT'], user.name, hashed, user.username, user.mobile, user.emailid, user.role,1,user.image,userinfo['role'])
+    execute_company_query(db_query['USER']['INSERT'], user.name, hashed, username, user.mobile, user.emailid, user.role,1,user.image,userinfo['role'])
 
     email_data = EmailSchema()
     email_data.recipient_email = user.emailid
@@ -40,8 +42,8 @@ async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.
 
 Your account has been successfully created. Below are your login credentials:
 
-Username: {user.username}
-Password: {user.password}
+Username: {username}
+Password: {password}
 
 Please keep this information secure and do not share it with anyone.
 
@@ -70,11 +72,7 @@ def login(user: Login):
         state.setvalue(prefix)
         user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASS'], user.username) 
         if user_data["active"] == 0 :
-            return Response(
-                    status="success",
-                    code=200,
-                    message="Your account is deactivated"
-                )
+           raise HTTPException(401, "Your account is deactivated")
         if not user_data or not verify_password(user.password, user_data["password"]):
             raise HTTPException(401, "Invalid username or password")
         token = create_token(user_data)
@@ -141,6 +139,18 @@ def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin]))
 @router.get("/roles")
 def fetchRole(userInfo= Depends(role_required([Role.Admin]))):
   return {role.name:role.value for role in Role}
+
+@router.post("/resetpassword")
+def resetpassword(emailId:str,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.Engineer]))):
+    return resetpassword(emailId,userInfo)
+    pass
+
+@router.post("/changepassword")
+def resetpassword(oldpassword:str,newpassword:str,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.Engineer]))):
+    pass
+
+
+
 
 
 

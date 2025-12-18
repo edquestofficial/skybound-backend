@@ -8,6 +8,7 @@
     "SELECT_USER":"select id, name, username,role, emailid, mobile, active, image from <>_user where active = 1",
     "SELECT_USER_BY_ROLE":"select id,name, username, role, emailid, mobile, image, active from <>_user where role = ? and active = 1",
     "SELECT_USER_BYID":"select id,name, role, username, emailid, mobile, active, image from <>_user where id = ? and active = 1",
+    "SELECT_USER_BYEMAILID":"select id,name, role, username, emailid, mobile, active, image from <>_user where emailid = ? and active = 1",
     "UPDATE":"UPDATE <>_user SET <set_clause> WHERE id = ?"
   },
    "LEAD": {

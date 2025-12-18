@@ -67,3 +67,7 @@ def fetchUser(user, userinfo):
     else :
          return execute_company_query(db_query['USER']['SELECT_USER_BYID'],user_id)
     
+
+def resetpassword(emailid,userinfo):
+   query = db_query['USER']['SELECT_ALL']
+   pass
