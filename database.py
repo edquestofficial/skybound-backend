@@ -98,7 +98,7 @@ def execute_select_query(base_query,conditions,values):
             rows = cur.fetchall()
             conn.commit()
             conn.close()
-            return [{k: v for k, v in dict(r).items() if k != "active"} for r in rows ]
+            return [{k: v for k, v in dict(r).items() } for r in rows ]
      except Exception as e:
             print("Exception in select User Exceution", e)
             raise
