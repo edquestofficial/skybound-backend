@@ -68,7 +68,13 @@ def login(user: Login):
      
       if cur :
         state.setvalue(prefix)
-        user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASS'], user.username)  
+        user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASS'], user.username) 
+        if user_data["active"] == 0 :
+            return Response(
+                    status="success",
+                    code=200,
+                    message="Your account is deactivated"
+                )
         if not user_data or not verify_password(user.password, user_data["password"]):
             raise HTTPException(401, "Invalid username or password")
         token = create_token(user_data)
