@@ -8,8 +8,11 @@
     "SELECT_USER":"select id, name, username,role, emailid, mobile, active, image from <>_user where active = 1",
     "SELECT_USER_BY_ROLE":"select id,name, username, role, emailid, mobile, image, active from <>_user where role = ? and active = 1",
     "SELECT_USER_BYID":"select id,name, role, username, emailid, mobile, active, image from <>_user where id = ? and active = 1",
-    "SELECT_USER_BYEMAILID":"select id,name, role, username, emailid, mobile, active, image from <>_user where emailid = ? and active = 1",
-    "UPDATE":"UPDATE <>_user SET <set_clause> WHERE id = ?"
+    "SELECT_USER_BYEMAILID":"select id,name, role, username, emailid, mobile, active, image from <>_user where emailid = ? and active = 1 Limit 1 ",
+    "UPDATE":"UPDATE <>_user SET <set_clause> WHERE id = ?",
+    "UPDATE_PASSWORD":"UPDATE <>_user SET password = ? WHERE emailid = ?",
+    "SELECT_USER_NAME_PASSById":"SELECT id, name, username, role, password,emailid, active FROM <>_user WHERE id = ? "
+
   },
    "LEAD": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",

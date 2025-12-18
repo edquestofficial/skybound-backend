@@ -8,3 +8,4 @@ class Role(Enum):
     SalesHead = 5
     EngineerHead = 6
     Customer = 7
+    HR = 8

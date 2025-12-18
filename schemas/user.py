@@ -38,7 +38,7 @@ class UserUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-class SerachUser(BaseModel):
+class SearchUser(BaseModel):
     id:int | None = None
     role :int | None = None
     active:int | None = None

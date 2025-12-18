@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException,Depends
 from schemas.email import EmailSchema
-from schemas.user import User,Login, UserUpdate,SerachUser
+from schemas.user import User,Login, UserUpdate,SearchUser
 from database import execute_company_query, execute_query,fetch_single_record
 from fastapi.security import HTTPBearer
 import jwt
@@ -12,7 +12,7 @@ from core.role import Role
 from utility.mail import send_email_smtp
 from utility.statemgmt import state
 from utility.auth import role_required
-from services.user import EditUser, fetchUser, resetpassword
+from services.user import EditUser, fetchUser, reset_password,change_password
 import random
 
 settings = Settings()
@@ -102,15 +102,17 @@ def create_token(userDetails:User):
 
 
 @router.post("/registerAdmin")
-def registerAdmin(user: User):
+def registerAdmin(company_code:str,user: User):
     # Check existing user
-    if(user.company_code):
-        state.setvalue(user.company_code)
-        cur = execute_company_query(db_query['USER']['SELECT_USER_NAME'], user.username)
+    if(company_code):
+        state.setvalue(company_code)
+        username =  state.value+"_"+user.emailid.split('@')[0]
+        cur = execute_company_query(db_query['USER']['SELECT_USER_NAME'], username)
         if cur:
             raise HTTPException(400, "Username already exists")
-        hashed = hash_password(user.password)
-        execute_company_query(db_query['USER']['INSERT'],user.name, hashed, user.username, user.mobile,user.emailid, user.role,1,user.image,1)
+        password = random_8_digit = random.randint(10_000_000, 99_999_999)
+        hashed = hash_password(password)
+        execute_company_query(db_query['USER']['INSERT'],user.name, hashed, username, user.mobile,user.emailid, user.role,1,user.image,1)
         
         return Response(
                 status="success",
@@ -122,32 +124,106 @@ def registerAdmin(user: User):
         raise HTTPException(400,"fill correct user comapny name")
     
 @router.post("/")
-def fetch(user:SerachUser,userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
+def fetch(user:SearchUser,userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
    return fetchUser(user,userInfo)
 
 @router.patch("/")
-def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin]))):
+def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
+    if Role.Admin.value == 2 or userinfo['id'] == id :
     # Check existing user
-    EditUser(id,user,userinfo['id'])
-    return Response(
-            status="success",
-            code=200,
-            message="User updated successfully",
-            data=[]
-        )
+        EditUser(id,user,userinfo['id'])
+        return Response(
+                status="success",
+                code=200,
+                message="User updated successfully",
+                data=[]
+            )
+    else :
+        return Response(
+                status="failure",
+                code=200,
+                message="Insufficient permission.",
+                data=[]
+            )
+
     
 @router.get("/roles")
 def fetchRole(userInfo= Depends(role_required([Role.Admin]))):
   return {role.name:role.value for role in Role}
 
 @router.post("/resetpassword")
-def resetpassword(emailId:str,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.Engineer]))):
-    return resetpassword(emailId,userInfo)
-    pass
+async def resetpassword(emailId:str,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.HR]))):
+    user_data = reset_password(emailId)[0]
+    if user_data and user_data["active"] == 0 :
+           raise HTTPException(401, "Your account is deactivated")
+    password  = random.randint(10_000_000, 99_999_999)
+    hashed = hash_password(password)
+    # print("Passw0rd",hashed)
+    
+    execute_company_query(db_query['USER']['UPDATE_PASSWORD'],  hashed, emailId)
+
+    email_data = EmailSchema()
+    email_data.recipient_email = emailId
+    email_data.body = f"""Hi {emailId.split('@')[0].capitalize()},
+
+Your password has been reset successfully. Below are your new password :
+
+Password: {password}
+
+Please keep this information secure and do not share it with anyone.
+
+If you have any questions or need assistance logging in, feel free to contact our support team.
+
+Thank you,
+Skybound"""
+    email_data.subject ="Your Password reset successfully"
+    result = await send_email_smtp(email_data)
+    print(result)
+    return Response(
+            status="success",
+            code=200,
+            message="User password reset successfully",
+            data=[]
+        )
+    
 
 @router.post("/changepassword")
-def resetpassword(oldpassword:str,newpassword:str,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.Engineer]))):
-    pass
+async def changepassword(oldpassword:str,newpassword:str,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.Engineer]))):
+    user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASSById'], userInfo['id'])
+    if user_data and user_data["active"] == 0 :
+           raise HTTPException(401, "Your account is deactivated")
+    if not user_data or not verify_password(oldpassword, user_data["password"]):
+        raise HTTPException(401, "Invalid password")
+    hashed = hash_password(newpassword)
+    # print("Passw0rd",hashed)
+    
+    execute_company_query(db_query['USER']['UPDATE_PASSWORD'],  hashed, user_data['emailid'])
+
+    email_data = EmailSchema()
+    email_data.recipient_email = user_data['emailid']
+    email_data.body = f"""Hi {user_data['username']},
+
+Your password has been changed successfully. Below are your new password :
+
+Password: {newpassword}
+
+Please keep this information secure and do not share it with anyone.
+
+If you have any questions or need assistance logging in, feel free to contact our support team.
+
+Thank you,
+Skybound"""
+    email_data.subject ="Your Password reset successfully"
+    result = await send_email_smtp(email_data)
+    print(result)
+    return Response(
+            status="success",
+            code=200,
+            message="User password changed successfully",
+            data=[]
+        )
+    
+     
 
 
 

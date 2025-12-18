@@ -68,6 +68,12 @@ def fetchUser(user, userinfo):
          return execute_company_query(db_query['USER']['SELECT_USER_BYID'],user_id)
     
 
-def resetpassword(emailid,userinfo):
-   query = db_query['USER']['SELECT_ALL']
-   pass
+def reset_password(emailid):
+   query = db_query['USER']['SELECT_USER_BYEMAILID']
+   return execute_company_query(query,emailid)
+
+def change_password(oldpwd,newpwd):
+     
+     user = fetch_single_record(db_query['USER']['SELECT_USER_BYID'],id)
+    
+   
