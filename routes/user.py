@@ -27,7 +27,7 @@ async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.
     # Check existing user
     # if "_" not in user.username:
     #     raise HTTPException(400, "Username is not correct")
-    username = user.company_code+"_"+user.emailid.split('@')[0]
+    username =  state.value+"_"+user.emailid.split('@')[0]
     cur = execute_company_query(db_query['USER']['SELECT_USER_NAME'], username)
     if cur:
         raise HTTPException(400, "Username already exists")
@@ -71,12 +71,12 @@ def login(user: Login):
       if cur :
         state.setvalue(prefix)
         user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASS'], user.username) 
-        if user_data["active"] == 0 :
+        if user_data and user_data["active"] == 0 :
            raise HTTPException(401, "Your account is deactivated")
         if not user_data or not verify_password(user.password, user_data["password"]):
             raise HTTPException(401, "Invalid username or password")
         token = create_token(user_data)
-        data = {"token":token,"user":{"id":user_data["id"],"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"]}}
+        data = {"token":token,"user":{"id":user_data["id"],"company_code":user_data["id"],"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"]}}
         return Response(
                 status="success",
                 code=200,
@@ -87,8 +87,8 @@ def login(user: Login):
            raise HTTPException(401, "No Company available")
 
 def hash_password(password: str) -> str:
-    password = password[:72]                # bcrypt max length
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    # password = password[:72]                # bcrypt max length
+    hashed = bcrypt.hashpw(str(password).encode('utf-8'), bcrypt.gensalt())
     return hashed.decode() 
 
 def verify_password(plain_pass: str, hashed_pass: str) -> bool:

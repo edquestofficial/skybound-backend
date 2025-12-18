@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 class User(BaseModel):
     name: str
     # password: str
-    company_code:str
+    # company_code:str
     # username:str
     emailid:Optional[EmailStr] = None
     mobile:Optional[str] = Field(
