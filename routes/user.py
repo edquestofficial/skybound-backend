@@ -102,7 +102,7 @@ def create_token(userDetails:User):
 
 
 @router.post("/registerAdmin")
-def registerAdmin(company_code:str,user: User):
+async def registerAdmin(company_code:str,user: User):
     # Check existing user
     if(company_code):
         state.setvalue(company_code)
@@ -113,13 +113,29 @@ def registerAdmin(company_code:str,user: User):
         password = random_8_digit = random.randint(10_000_000, 99_999_999)
         hashed = hash_password(password)
         execute_company_query(db_query['USER']['INSERT'],user.name, hashed, username, user.mobile,user.emailid, user.role,1,user.image,1)
-        
+        email_data = EmailSchema()
+        email_data.recipient_email = user.emailid
+        email_data.body = f"""Hi {user.name.capitalize()},
+
+Your account has been successfully created. Below are your login credentials:
+
+Username: {username}
+Password: {password}
+
+Please keep this information secure and do not share it with anyone.
+
+If you have any questions or need assistance logging in, feel free to contact our support team.
+
+Thank you,
+Skybound"""
+        email_data.subject ="Your Account Has Been Successfully Created"
+        result = await send_email_smtp(email_data)
         return Response(
-                status="success",
-                code=200,
-                message="User registered successfully",
-                data=[]
-            )
+            status="success",
+            code=200,
+            message="User registered successfully",
+            data=[]
+        )
     else :
         raise HTTPException(400,"fill correct user comapny name")
     
