@@ -164,7 +164,7 @@ def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin, R
 
     
 @router.get("/roles")
-def fetchRole(userInfo= Depends(role_required([Role.Admin]))):
+def fetchRole(userInfo= Depends(role_required([Role.Admin,Role.Sales, Role.Engineer]))):
   return {role.name:role.value for role in Role}
 
 @router.post("/resetpassword")
