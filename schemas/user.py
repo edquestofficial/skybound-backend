@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+
 class User(BaseModel):
     name: str
     # password: str
@@ -38,9 +39,16 @@ class UserUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+class ChangePassword(BaseModel):
+    oldpassword:str
+    newpassword:str
+
 class SearchUser(BaseModel):
     id:int | None = None
     role :int | None = None
     active:int | None = None
 
     model_config = ConfigDict(extra="forbid")
+
+class EmailUser(BaseModel):
+     emailid:EmailStr

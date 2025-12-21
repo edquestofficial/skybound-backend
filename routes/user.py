@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException,Depends
 from schemas.email import EmailSchema
-from schemas.user import User,Login, UserUpdate,SearchUser
+from schemas.user import ChangePassword, EmailUser, User,Login, UserUpdate,SearchUser
 from database import execute_company_query, execute_query,fetch_single_record
 from fastapi.security import HTTPBearer
 import jwt
@@ -30,8 +30,14 @@ async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.
     username =  state.value+"_"+user.emailid.split('@')[0]
     cur = execute_company_query(db_query['USER']['SELECT_USER_NAME'], username)
     if cur:
-        raise HTTPException(400, "Username already exists")
-    password = random_8_digit = random.randint(10_000_000, 99_999_999)
+         return Response(
+            status="Success",
+            code=200,
+            message="Username already exists",
+            data=[]
+        )
+        
+    password  = random.randint(10_000_000, 99_999_999)
     hashed = hash_password(password)
     # print("Passw0rd",hashed)
     execute_company_query(db_query['USER']['INSERT'], user.name, hashed, username, user.mobile, user.emailid, user.role,1,user.image,userinfo['role'])
@@ -53,7 +59,6 @@ Thank you,
 Skybound"""
     email_data.subject ="Your Account Has Been Successfully Created"
     result = await send_email_smtp(email_data)
-    print(result)
     return Response(
             status="success",
             code=200,
@@ -72,11 +77,22 @@ def login(user: Login):
         state.setvalue(prefix)
         user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASS'], user.username) 
         if user_data and user_data["active"] == 0 :
-           raise HTTPException(401, "Your account is deactivated")
+            return Response(
+                status="success",
+                code=200,
+                message="Your account is deactivated",
+                data=[]
+            )
+           
         if not user_data or not verify_password(user.password, user_data["password"]):
-            raise HTTPException(401, "Invalid username or password")
+            return Response(
+                status="success",
+                code=200,
+                message="Invalid username or password",
+                data=[]
+            )
         token = create_token(user_data)
-        data = {"token":token,"user":{"id":user_data["id"],"company_code":user_data["id"],"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"]}}
+        data = {"token":token,"user":{"id":user_data["id"],"email":user_data["emailid"],"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"], "mobile":user_data["mobile"]}}
         return Response(
                 status="success",
                 code=200,
@@ -84,7 +100,12 @@ def login(user: Login):
                 data=data
             )
       else :
-           raise HTTPException(401, "No Company available")
+            return Response(
+                status="success",
+                code=200,
+                message="No Company available",
+                data=[]
+            )
 
 def hash_password(password: str) -> str:
     # password = password[:72]                # bcrypt max length
@@ -168,7 +189,8 @@ def fetchRole(userInfo= Depends(role_required([Role.Admin,Role.Sales, Role.Engin
   return {role.name:role.value for role in Role}
 
 @router.post("/resetpassword")
-async def resetpassword(emailId:str,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.HR]))):
+async def resetpassword(email:EmailUser,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.HR]))):
+    emailId = email.emailid
     user_data = reset_password(emailId)[0]
     if user_data and user_data["active"] == 0 :
            raise HTTPException(401, "Your account is deactivated")
@@ -204,13 +226,24 @@ Skybound"""
     
 
 @router.post("/changepassword")
-async def changepassword(oldpassword:str,newpassword:str,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.Engineer]))):
+async def changepassword(changepassword:ChangePassword,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.Engineer]))):
     user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASSById'], userInfo['id'])
     if user_data and user_data["active"] == 0 :
-           raise HTTPException(401, "Your account is deactivated")
-    if not user_data or not verify_password(oldpassword, user_data["password"]):
-        raise HTTPException(401, "Invalid password")
-    hashed = hash_password(newpassword)
+            return Response(
+            status="success",
+            code=200,
+            message="Your account is deactivated",
+            data=[]
+        )
+        
+    if not user_data or not verify_password(changepassword.oldpassword, user_data["password"]):
+         return Response(
+            status="success",
+            code=200,
+            message="Invalid Password !",
+            data=[]
+        )
+    hashed = hash_password(changepassword.newpassword)
     # print("Passw0rd",hashed)
     
     execute_company_query(db_query['USER']['UPDATE_PASSWORD'],  hashed, user_data['emailid'])
@@ -221,7 +254,7 @@ async def changepassword(oldpassword:str,newpassword:str,userInfo= Depends(role_
 
 Your password has been changed successfully. Below are your new password :
 
-Password: {newpassword}
+Password: {changepassword.newpassword}
 
 Please keep this information secure and do not share it with anyone.
 
@@ -231,7 +264,6 @@ Thank you,
 Skybound"""
     email_data.subject ="Your Password reset successfully"
     result = await send_email_smtp(email_data)
-    print(result)
     return Response(
             status="success",
             code=200,
