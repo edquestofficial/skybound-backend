@@ -78,7 +78,7 @@ def login(user: Login):
         user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASS'], user.username) 
         if user_data and user_data["active"] == 0 :
             return Response(
-                status="success",
+                status="true",
                 code=200,
                 message="Your account is deactivated",
                 data=[]
@@ -86,7 +86,7 @@ def login(user: Login):
            
         if not user_data or not verify_password(user.password, user_data["password"]):
             return Response(
-                status="success",
+                status="false",
                 code=200,
                 message="Invalid username or password",
                 data=[]
@@ -94,14 +94,14 @@ def login(user: Login):
         token = create_token(user_data)
         data = {"token":token,"user":{"id":user_data["id"],"email":user_data["emailid"],"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"], "mobile":user_data["mobile"]}}
         return Response(
-                status="success",
+                status="true",
                 code=200,
                 message="Login Successfully",
                 data=data
             )
       else :
             return Response(
-                status="success",
+                status="false",
                 code=200,
                 message="No Company available",
                 data=[]
@@ -152,12 +152,13 @@ Skybound"""
         email_data.subject ="Your Account Has Been Successfully Created"
         result = await send_email_smtp(email_data)
         return Response(
-            status="success",
+            status="true",
             code=200,
             message="User registered successfully",
             data=[]
         )
     else :
+       
         raise HTTPException(400,"fill correct user comapny name")
     
 @router.post("/")
@@ -170,14 +171,14 @@ def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin, R
     # Check existing user
         EditUser(id,user,userinfo['id'])
         return Response(
-                status="success",
+                status="true",
                 code=200,
                 message="User updated successfully",
                 data=[]
             )
     else :
         return Response(
-                status="failure",
+                status="false",
                 code=200,
                 message="Insufficient permission.",
                 data=[]
@@ -193,7 +194,12 @@ async def resetpassword(email:EmailUser,userInfo= Depends(role_required([Role.Ad
     emailId = email.emailid
     user_data = reset_password(emailId)[0]
     if user_data and user_data["active"] == 0 :
-           raise HTTPException(401, "Your account is deactivated")
+            return Response(
+                status="false",
+                code=200,
+                message="Your account is deactivated.",
+                data=[]
+            )
     password  = random.randint(10_000_000, 99_999_999)
     hashed = hash_password(password)
     # print("Passw0rd",hashed)
@@ -218,7 +224,7 @@ Skybound"""
     result = await send_email_smtp(email_data)
     print(result)
     return Response(
-            status="success",
+            status="true",
             code=200,
             message="User password reset successfully",
             data=[]
@@ -230,7 +236,7 @@ async def changepassword(changepassword:ChangePassword,userInfo= Depends(role_re
     user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASSById'], userInfo['id'])
     if user_data and user_data["active"] == 0 :
             return Response(
-            status="success",
+            status="false",
             code=200,
             message="Your account is deactivated",
             data=[]
@@ -238,7 +244,7 @@ async def changepassword(changepassword:ChangePassword,userInfo= Depends(role_re
         
     if not user_data or not verify_password(changepassword.oldpassword, user_data["password"]):
          return Response(
-            status="success",
+            status="false",
             code=200,
             message="Invalid Password !",
             data=[]
@@ -265,7 +271,7 @@ Skybound"""
     email_data.subject ="Your Password reset successfully"
     result = await send_email_smtp(email_data)
     return Response(
-            status="success",
+            status="true",
             code=200,
             message="User password changed successfully",
             data=[]
