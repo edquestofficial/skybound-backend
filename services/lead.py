@@ -29,9 +29,12 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             k: v for k, v in update_data.items()
             if v not in (None, "","0")
         }
-        if item.stage == "poraised" and not item.close:
-             update_data['status']= 'closed'
-             update_data['stage']= 'poraised'
+        if item.stage == "poraised" :
+            if item.close:
+                update_data['status']= 'closed'
+            else :
+                update_data['status']= 'inprogress'
+            update_data['stage']= 'poraised'
         set_clause = ", ".join(f"{key}=?" for key in update_data.keys())
         values = list(update_data.values())
         values.append(id)
