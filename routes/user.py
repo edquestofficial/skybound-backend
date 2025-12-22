@@ -60,7 +60,7 @@ Skybound"""
     email_data.subject ="Your Account Has Been Successfully Created"
     result = await send_email_smtp(email_data)
     return Response(
-            status="success",
+            status=True,
             code=200,
             message="User registered successfully",
             data=[]

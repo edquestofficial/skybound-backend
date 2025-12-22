@@ -71,7 +71,7 @@ def edit(update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sal
 def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
     result = count_lead(userinfo)
     return Response(
-            status="success",
+            status=True,
             code=200,
             message="Fetch Count successfully",
             data=result
@@ -95,7 +95,7 @@ def create( id: int = Form(...),
             docs = ",".join(saved_files)
     addTimeLine(id, comment, userinfo, docs)
     return Response(
-            status="success",
+            status=True,
             code=200,
             message="Comment added successfully",
             data=[]
@@ -125,7 +125,7 @@ async def bulk_upload(file: UploadFile = File(...),userinfo = Depends(role_requi
         if not required_set.issubset(standardized_file_headers):
             missing_headers = list(required_set - standardized_file_headers)
             return Response(
-                status="error",
+                status=False,
                 code=400,
                 message="Invalid file format. Missing required headers.",
                 error=missing_headers
