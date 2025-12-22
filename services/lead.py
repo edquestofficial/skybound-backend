@@ -71,13 +71,11 @@ def fetch_lead(lead,userinfo):
     if len(update_data)>0 :
         conditions = " AND ".join(f"a.{key}=?" for key in update_data.keys())
         values = list(update_data.values())
-    if Role.Sales.value == role :
+    if Role.Sales.value == role and lead.id is None :
         if conditions != "" :
             conditions += " AND "
-
-        conditions += " (a.assigned_to is NULL) OR a.assigned_to = ? "
+        conditions += " (a.assigned_to is NULL OR a.assigned_to = ? ) "
         values.append(user_id)
-    print("userinfo : -",role,Role.Sales.value,conditions,values)
     result = execute_select_query(query,conditions,values)
     if lead.id is not None:
         query = db_query['LEAD_TIMELINE']['SELECT']
@@ -87,7 +85,7 @@ def fetch_lead(lead,userinfo):
             row["docs_urls"] = urls.split(",") if urls else []
         if len(result)>0:
              result[0]["timeline"] = rows
-    return {"x":result,"y":role,"z":Role.Sales.value,"c":conditions,"v":values}
+    return result
          
 def bulk_create_lead(data_rows,userinfo):
     for lead in data_rows:
