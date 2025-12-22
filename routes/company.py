@@ -28,13 +28,22 @@ def register(company: Company):
             execute_company_query(db_query['PROJECT_TIMELINE']['CREATE'])
             
             return Response(
-                    status="success",
+                    status=True,
                     code=200,
                     message="Company registered successfully and DB created successfully",
                     data=[]
                 )
         except Exception as e:
-            print("exception in company registraion", e)
-            raise HTTPException(400, e)
+           return Response(
+                    status=False,
+                    code=400,
+                    message="Something went wrong !!",
+                    data=[]
+                )
     else:
-         raise HTTPException(400, "Company Name and Alias name is compulsury.")
+        return Response(
+                status=False,
+                code=400,
+                message="Company Name and Alias name is compulsory",
+                data=[]
+            )

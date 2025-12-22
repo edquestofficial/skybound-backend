@@ -15,7 +15,7 @@ project_router = APIRouter()
 def fetch(proj : SearchProject, userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
     result = fetch_project(proj,userinfo)
     return Response(
-            status="success",
+            status=True,
             code=200,
             message="Project fetch successfully",
             data=result
@@ -25,7 +25,7 @@ def fetch(proj : SearchProject, userinfo = Depends(role_required([Role.Admin, Ro
 def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
     result = count_project(userinfo)
     return Response(
-            status="success",
+            status=True,
             code=200,
             message="Fetch Count successfully",
             data=result
@@ -35,7 +35,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer]
 def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
     if len(update.id) == 0:
         return Response(
-            status="fail",
+            status=False,
             code=400,
             message="please provide the atleast one lead id",
             data=[]
@@ -48,7 +48,7 @@ def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.
             updateProject(id,update, loggedin_userId)
      
     return Response(
-            status="success",
+            status=True,
             code=200,
             message="Project update successfully",
             data=[]
@@ -71,7 +71,7 @@ def create( id: int = Form(...),
             docs = ",".join(saved_files)
     addTimeLine(id, comment, userinfo, docs)
     return Response(
-            status="success",
+            status=True,
             code=200,
             message="Comment added successfully",
             data=[]

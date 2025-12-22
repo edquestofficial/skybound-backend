@@ -34,11 +34,11 @@ def fetch_project(proj,userinfo):
         # conditions = " AND ".join(f"a.{key}=?" for key in update_data.keys())
         conditions = build_conditions(update_data)
         values = list(update_data.values())
-    if Role.Engineer.value == role :
+    if Role.Engineer.value == role and proj.id is None:
         if conditions != "" :
             conditions += " AND "
 
-        conditions += " (a.assigned_to is NULL) OR a.assigned_to = ? "
+        conditions += " (a.assigned_to is NULL OR a.assigned_to = ?) "
         values.append(user_id)
 
     result = execute_select_query(query,conditions,values)
