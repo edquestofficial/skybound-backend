@@ -36,12 +36,13 @@ def create(lead: Lead,userinfo = Depends(role_required([Role.Admin]))):
 @lead_router.post("/")
 def fetch( lead :SearchLead, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
    
-    result = fetch_lead(lead,userinfo)
+    data = fetch_lead(lead,userinfo)
     return Response(
             status=True,
             code=200,
             message="Lead fetch successfully",
-            data=result
+            data=data["x"],
+            custome=data
         )
 
 @lead_router.post("/edit")

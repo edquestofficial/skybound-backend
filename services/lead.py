@@ -87,7 +87,7 @@ def fetch_lead(lead,userinfo):
             row["docs_urls"] = urls.split(",") if urls else []
         if len(result)>0:
              result[0]["timeline"] = rows
-    return result
+    return {"x":result,"y":role,"z":Role.Sales.value,"c":conditions,"v":values}
          
 def bulk_create_lead(data_rows,userinfo):
     for lead in data_rows:
