@@ -59,6 +59,7 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
 def fetch_lead(lead,userinfo):
     user_id = userinfo['id']
     role = userinfo['role']
+   
     query = db_query['LEAD']['SELECT_ALL']
     conditions = ""
     values = []
@@ -76,7 +77,7 @@ def fetch_lead(lead,userinfo):
 
         conditions += " (a.assigned_to is NULL) OR a.assigned_to = ? "
         values.append(user_id)
-
+    print("userinfo : -",role,Role.Sales.value,conditions,values)
     result = execute_select_query(query,conditions,values)
     if lead.id is not None:
         query = db_query['LEAD_TIMELINE']['SELECT']

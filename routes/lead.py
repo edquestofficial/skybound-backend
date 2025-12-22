@@ -156,7 +156,7 @@ async def bulk_upload(file: UploadFile = File(...),userinfo = Depends(role_requi
         bulk_create_lead(data_rows, userinfo)
     except Exception as e:
         return Response(
-            status="error",
+            status=False,
             code=500,
             message="An error occurred while processing the file.",
             error=str(e)
