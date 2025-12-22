@@ -64,7 +64,7 @@ def fetch_lead(lead,userinfo):
     values = []
     update_data = lead.model_dump(exclude_unset=True)
     update_data = {
-        k: v for k, v in update_data.items()
+        k: (v.strip() if isinstance(v, str) else v) for k, v in update_data.items()
         if v not in (None, "","0")
     }
     if len(update_data)>0 :
@@ -84,8 +84,8 @@ def fetch_lead(lead,userinfo):
         for row in rows:
             urls = row.get("docs_urls", "")
             row["docs_urls"] = urls.split(",") if urls else []
-
-        result[0]["timeline"] = rows
+        if len(result)>0:
+             result[0]["timeline"] = rows
     return result
          
 def bulk_create_lead(data_rows,userinfo):

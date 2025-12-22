@@ -2,6 +2,8 @@ import re
 import sqlite3
 from  utility.statemgmt import state
 from core.config import db_query
+
+conn = None
 def get_db():
     _conn = sqlite3.connect("skybound.db")
     _conn.row_factory = sqlite3.Row
@@ -29,7 +31,11 @@ def execute_query(query,*args):
         return data
     except Exception as e:
         print("Exception in Query Exceution", e)
-        raise
+        return None
+    finally:
+        # This runs NO MATTER WHAT, even after a return statement
+        if conn:
+            conn.close()
 
 def execute_company_query(query,*args):
     try:
@@ -49,7 +55,11 @@ def execute_company_query(query,*args):
         return [dict(r) for r in rows]
     except Exception as e:
         print("Exception in company Query Exceution", e)
-        raise
+        return None
+    finally:
+        # This runs NO MATTER WHAT, even after a return statement
+        if conn:
+            conn.close()
 
 def fetch_single_record(query,*args):
     try:
@@ -68,7 +78,11 @@ def fetch_single_record(query,*args):
         return data
     except Exception as e:
         print("Exception in company Query Exceution", e)
-        raise
+        return None
+    finally:
+        # This runs NO MATTER WHAT, even after a return statement
+        if conn:
+            conn.close()
       
 def update_query(query,set_clause,values):
         try:
@@ -83,7 +97,11 @@ def update_query(query,set_clause,values):
             return True
         except Exception as e:
             print("Exception in update Exceution", e)
-            raise
+            return None
+        finally:
+        # This runs NO MATTER WHAT, even after a return statement
+            if conn:
+                conn.close()
 
 def execute_select_query(base_query,conditions,values):
      try:
@@ -101,4 +119,8 @@ def execute_select_query(base_query,conditions,values):
             return [{k: v for k, v in dict(r).items() } for r in rows ]
      except Exception as e:
             print("Exception in select User Exceution", e)
-            raise
+            return None
+     finally:
+        # This runs NO MATTER WHAT, even after a return statement
+        if conn:
+            conn.close()

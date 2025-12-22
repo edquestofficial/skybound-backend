@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 class Response(BaseModel):
-    status: str
+    status: bool
     code:int
     message: str
     error: str | None = None  # Optional field with a default value of None

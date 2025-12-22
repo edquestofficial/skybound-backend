@@ -16,13 +16,21 @@ lead_router = APIRouter()
 
 @lead_router.post("/create")
 def create(lead: Lead,userinfo = Depends(role_required([Role.Admin]))):
-    create_lead(lead,userinfo)
-    return Response(
-            status="success",
-            code=200,
-            message="Lead created successfully",
-            data=[]
-        )
+    response  = create_lead(lead,userinfo)
+    if response is not None:
+        return Response(
+                status=True,
+                code=200,
+                message="Lead created successfully",
+                data=[]
+            )
+    else:
+         return Response(
+                status=False,
+                code=200,
+                message="Invalid data",
+                data=[]
+            )
 
 
 @lead_router.post("/")
@@ -30,7 +38,7 @@ def fetch( lead :SearchLead, userinfo = Depends(role_required([Role.Admin, Role.
    
     result = fetch_lead(lead,userinfo)
     return Response(
-            status="success",
+            status=True,
             code=200,
             message="Lead fetch successfully",
             data=result
@@ -41,7 +49,7 @@ def edit(update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sal
     
     if len(update.id) == 0:
         return Response(
-            status="fail",
+            status=False,
             code=400,
             message="please provide the atleast one lead id",
             data=[]
@@ -53,7 +61,7 @@ def edit(update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sal
             loggedin_userId = userinfo['id']
             updateLead(id,update, loggedin_userId)
     return Response(
-            status="success",
+            status=True,
             code=200,
             message="Lead update successfully",
             data=[]
