@@ -4,10 +4,9 @@ on:
   push:
     branches:
       - revamp-be
-
 jobs:
   deploy:
-    name: Build & Deploy Skybound
+    name: Build & Deploy Skybound (Hostinger VPS)
     runs-on: ubuntu-latest
 
     steps:
@@ -17,35 +16,40 @@ jobs:
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.5.4
         with:
-          ssh-private-key: ${{ secrets.EC2_KEY }}
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Deploy to EC2
+      - name: Deploy to Hostinger VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd ~/skybound-backend
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            set -e
 
-            # Pull latest code on correct branch
+            cd Skybound-backend
+
+            # Pull latest code
             if [ -d ".git" ]; then
-                echo "Resetting repository to match remote..."
-                git fetch origin
-                git checkout revamp-be
-                git reset --hard origin/revamp-be
-                git clean -fd
+              git fetch origin
+              git checkout revamp-be
+              git reset --hard origin/revamp-be
+              git clean -fd
             else
-                git clone -b revamp-be https://github.com/edquestofficial/skybound-backend.git .
+              git clone -b revamp-be https://github.com/edquestofficial/skybound-backend.git .
             fi
 
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            echo "$HOME/.cache/uv/bin" >> $GITHUB_PATH
+            # Install uv if missing
+            if ! command -v uv &> /dev/null; then
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+            fi
 
-            # Create venv if not exists
+            export PATH="$HOME/.cache/uv/bin:$PATH"
+
+            # Setup virtualenv
             uv venv .venv
             source .venv/bin/activate
             uv sync
 
-            # Restart backend
+            # Restart FastAPI service
             sudo systemctl restart fastapi
           EOF
 
       - name: Notify success
-        run: echo "AWS Lambda Function deployed successfully!"
+        run: echo "Skybound FastAPI deployed successfully on Hostinger VPS 🚀"
