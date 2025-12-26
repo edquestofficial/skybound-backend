@@ -31,7 +31,7 @@ async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.
     cur = execute_company_query(db_query['USER']['SELECT_USER_NAME'], username)
     if cur:
          return Response(
-            status=True,
+            status=False,
             code=200,
             message="Username already exists",
             data=[]
