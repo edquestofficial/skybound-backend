@@ -33,7 +33,7 @@ async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.
          return Response(
             status=False,
             code=200,
-            message="Username already exists",
+            message="User email already exist.",
             data=[]
         )
         
