@@ -154,6 +154,12 @@ async def bulk_upload(file: UploadFile = File(...),userinfo = Depends(role_requi
         # Convert the DataFrame to a list of dictionaries
         data_rows = df.to_dict(orient="records")
         bulk_create_lead(data_rows, userinfo)
+        return Response(
+            status=True,
+            code=200,
+            message="Excel file processed and leads created successfully.",
+            error=None
+        )
     except Exception as e:
         return Response(
             status=False,
