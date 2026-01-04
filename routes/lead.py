@@ -107,8 +107,9 @@ EXPECTED_HEADERS = [
     "cold/hot/warm", "open/closed", "next follow up"
 ]
 @lead_router.post("/bulkupload")
-async def bulk_upload(file: UploadFile = File(...),userinfo = Depends(role_required([Role.Admin]))):
+async def bulk_upload(file: UploadFile = File(...)):
     try:
+        userinfo = {}
         # Read the file's content into memory
         contents = await file.read()
         buffer = io.BytesIO(contents)

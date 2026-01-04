@@ -1,6 +1,6 @@
 from datetime import datetime
 from core.role import Role
-from database import execute_company_query,execute_select_query, fetch_single_record, update_query
+from database import execute_company_query,execute_filter_lead, fetch_single_record, update_query
 from core.config import db_query
 from schemas.project import SearchProject
 
@@ -19,29 +19,76 @@ def build_conditions(update_data: dict) -> str:
     if k in a_keys or k in c_keys)
 
     return " AND ".join(clauses)
+
+
+LIKE_COLUMNS = {
+    "city": "c.city",
+    "state": "c.state",
+    "enquiry_type": "c.enquiry_type"
+}
+
+EXACT_COLUMNS = {
+    "id": "a.id",
+    "status": "a.status",
+    "assigned_to": "a.assigned_to",
+}
+
+def build_filters(filters):
+    conditions = []
+    values = []
+
+    for key, column in LIKE_COLUMNS.items():
+        value = filters.get(key)
+        if value:
+            value = value.strip()
+            conditions.append(f"TRIM({column}) LIKE ?")
+            values.append(f"%{value}%")
+
+    for key, column in EXACT_COLUMNS.items():
+        value = filters.get(key)
+        if value is not None:
+            conditions.append(f"{column} = ?")
+            values.append(value)
+
+    return conditions, values
+
+
+
+
 def fetch_project(proj,userinfo):
     user_id = userinfo['id']
     role = userinfo['role']
     query = db_query['PROJECT']['SELECT_ALL']
-    conditions = ""
+    conditions = []
     values = []
-    update_data = proj.model_dump(exclude_unset=True,by_alias=False)
-    update_data = {
-        k: v for k, v in update_data.items()
-        if v not in (None, "","0")
-    }
-    if len(update_data)>0 :
-        # conditions = " AND ".join(f"a.{key}=?" for key in update_data.keys())
-        conditions = build_conditions(update_data)
-        values = list(update_data.values())
-    if Role.Engineer.value == role and proj.id is None:
-        if conditions != "" :
-            conditions += " AND "
+      # 🔹 KEYSET PAGINATION
+    conditions.append("AND a.id > ?")
+    values.append(proj.last_id)
 
-        conditions += " (a.assigned_to is NULL OR a.assigned_to = ?) "
+    filters = proj.model_dump(exclude_unset=True)
+    filter_conditions, filter_values = build_filters(filters)
+    conditions.extend(filter_conditions)
+    values.extend(filter_values)
+
+
+
+    # update_data = proj.model_dump(exclude_unset=True,by_alias=False)
+    # update_data = {
+    #     k: v for k, v in update_data.items()
+    #     if v not in (None, "","0")
+    # }
+    # if len(update_data)>0 :
+    #     # conditions = " AND ".join(f"a.{key}=?" for key in update_data.keys())
+    #     conditions = build_conditions(update_data)
+    #     values = list(update_data.values())
+
+     # 🔹 ROLE BASED CONDITION
+    if Role.Sales.value == role and proj.id is None:
+        conditions.append("(a.assigned_to IS NULL OR a.assigned_to = ?)")
         values.append(user_id)
-
-    result = execute_select_query(query,conditions,values)
+    condition_str = " AND ".join(conditions)
+    values.append(proj.limit)
+    result = execute_filter_lead(query,condition_str,values)
     if proj.id is not None:
         query = db_query['PROJECT_TIMELINE']['SELECT']
         rows=execute_company_query(query,proj.id)

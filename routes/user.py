@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException,Depends
 from schemas.email import EmailSchema
 from schemas.user import ChangePassword, EmailUser, User,Login, UserUpdate,SearchUser
@@ -117,7 +118,9 @@ def verify_password(plain_pass: str, hashed_pass: str) -> bool:
     return bcrypt.checkpw(plain_pass.encode(), hashed_pass.encode())
 
 def create_token(userDetails:User):
-    payload = {"id":userDetails["id"], "name":userDetails["name"],"role":userDetails["role"]}
+    payload = {"id":userDetails["id"], "name":userDetails["name"],"role":userDetails["role"],
+               "iat": datetime.utcnow(),
+        "exp": datetime.utcnow() + timedelta(minutes=30)}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 

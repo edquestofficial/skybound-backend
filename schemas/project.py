@@ -7,6 +7,8 @@ class SearchProject(BaseModel):
     enquiry_type :str = None
     assigned_to : int | None = None
     status : str | None = None
+    last_id: int  = 0
+    limit: int = 10
 
     model_config = ConfigDict(extra="forbid")
 

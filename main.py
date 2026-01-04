@@ -9,6 +9,7 @@ from routes.user import router as user_router
 from routes.company import router as company_router
 from routes.lead import lead_router
 from routes.project import project_router
+from routes.state import state_router
 
 app = FastAPI(title="Skybound App", swagger_ui_parameters={"persistAuthorization": True} )
 
@@ -50,6 +51,7 @@ app.include_router(user_router, prefix="/user")
 app.include_router(lead_router, prefix="/lead")
 app.include_router(project_router, prefix="/project")
 app.include_router(company_router, prefix="/company")
+app.include_router(state_router, prefix="/state")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info", reload=True)

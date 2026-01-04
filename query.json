@@ -15,18 +15,19 @@
 
   },
    "LEAD": {
-    "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
     "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,1,'open',?, datetime('now'))",
-    "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user from <>_lead as a left join <>_user as b on a.assigned_to = b.id ",
+    "SELECT_ALL":"SELECT a.id,a.name,a.company_name, a.city,a.state,a.contact_number, a.enquiry_type, a.email, a.requirement, a.stage, a.next_followup, a.status,a.created_date,  a.modify_date,  COALESCE(b.name, 'Unassigned') AS assigned_user FROM <>_lead AS a LEFT JOIN <>_user AS b ON a.assigned_to = b.id WHERE 1=1 {conditions} ORDER BY a.id LIMIT ?",
     "SELECT_BY_LEADID":"select * from <>_lead where id = ? and active = 1",
-    "COUNT":"SELECT status, COUNT(*) AS total FROM <>_lead GROUP BY status;",
-    "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_lead where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
-    "UPDATE":"UPDATE <>_lead SET <set_clause> WHERE id = ?"
+    "COUNT":"SELECT CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' ELSE 'Open' END AS status, COUNT(*) AS total FROM <>_lead GROUP BY CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' ELSE 'Open' END;",
+    "COUNT_BY_USER":"SELECT CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' WHEN UPPER(TRIM(status)) LIKE '%INPROGRESS%' THEN 'Inprogress' ELSE 'Open' END AS status, COUNT(*) AS total FROM <>_lead WHERE (assigned_to IS NULL OR assigned_to = ?) GROUP BY 1;",
+    "UPDATE":"UPDATE <>_lead SET <set_clause> WHERE id = ?",
+    "INSERT_BULK_LEAD":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type,  email, requirement, stage, next_followup, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
   },
   "PROJECT": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_project(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
     "INSERT":"INSERT INTO <>_project(lead_id, stage, status, active, created_by, created_date) VALUES (?, ?,?, ?, ?, datetime('now'))",
-    "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user, c.*  from <>_project as a left join <>_user as b on a.assigned_to = b.id left join <>_lead as c on a.lead_id = c.id  ",
+    "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user, c.*  from <>_project as a left join <>_user as b on a.assigned_to = b.id left join <>_lead as c on a.lead_id = c.id WHERE 1=1 {conditions} ORDER BY a.id LIMIT ? ;",
     "SELECT_BY_PROJID":"select * from <>_project where id = ? and active = 1",
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_project GROUP BY status;",
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
@@ -48,11 +49,22 @@
     "INSERT":"INSERT INTO user_role (name) VALUES ('superadmin'), ('admin'),('sales'),('engineer'),('saleshead'),('engineerhead'),('customer')"
   },
   "COMPANY":{
-    "CREATE":"CREATE TABLE IF NOT EXISTS company(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE, aliasname TEXT, active INTEGER, created_date TEXT)",
-    "INSERT":"INSERT INTO company (name, aliasname, active, created_date) VALUES (?, ?, ?, datetime('now'))",
-    "SELECT_COMPANY_NAME":"SELECT name FROM company WHERE name = ?",
-    "SELECT_COMPANY_ALIASNAME":"SELECT name FROM company WHERE aliasname = ? COLLATE NOCASE"
+    "CREATE":"CREATE TABLE IF NOT EXISTS company(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE, aliasname TEXT, active INTEGER, created_date TEXT) ;",
+    "INSERT":"INSERT INTO company (name, aliasname, active, created_date) VALUES (?, ?, ?, datetime('now')) ;",
+    "SELECT_COMPANY_NAME":"SELECT name FROM company WHERE name = ? ;",
+    "SELECT_COMPANY_ALIASNAME":"SELECT name FROM company WHERE aliasname = ? COLLATE NOCASE ;"
 
 },
+"STATE":{
+    "CREATE":"CREATE TABLE IF NOT EXISTS state(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE) ;",
+    "INSERT":"INSERT INTO state (name) VALUES ('Andhra Pradesh'), ('Arunachal Pradesh'), ('Assam'), ('Bihar'), ('Chhattisgarh'), ('Goa'), ('Gujarat'), ('Haryana'), ('Himachal Pradesh'), ('Jharkhand'), ('Karnataka'), ('Kerala'), ('Madhya Pradesh'), ('Maharashtra'), ('Manipur'), ('Meghalaya'), ('Mizoram'), ('Nagaland'), ('Odisha'), ('Punjab'), ('Rajasthan'), ('Sikkim'), ('Tamil Nadu'), ('Telangana'), ('Tripura'), ('Uttar Pradesh'), ('Uttarakhand'), ('West Bengal'), ('Andaman and Nicobar Islands'), ('Chandigarh'), ('Dadra and Nagar Haveli and Daman and Diu'), ('Delhi'), ('Jammu and Kashmir'), ('Ladakh'), ('Lakshadweep'), ('Puducherry') ;",
+    "SELECT_ALL":"SELECT * FROM state ;"
+},
+"CITY": {
+  "CREATE": "CREATE TABLE IF NOT EXISTS city (id INTEGER PRIMARY KEY AUTOINCREMENT, state_id INTEGER, name TEXT UNIQUE)",
+  "INSERT": "INSERT INTO city (state_id, name) VALUES (?,?)",
+  "SELECT_BY_STATEID": "SELECT id, name FROM city WHERE state_id = ?"
+},
+
 "Delete":"drop database skybound; "
 }

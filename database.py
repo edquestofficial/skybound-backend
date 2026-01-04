@@ -9,13 +9,12 @@ def get_db():
     _conn.row_factory = sqlite3.Row
     return _conn
 
-def init_db():
+def init_db(query):
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute(db_query['COMPANY']['CREATE'])
+    cursor.executescript(query)
     conn.commit()
-
-init_db()
+    conn.close()
 
 def execute_query(query,*args):
     try:
@@ -124,3 +123,50 @@ def execute_select_query(base_query,conditions,values):
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
             conn.close()
+
+def excute_simple_query(query,*args):
+    try:
+        conn = get_db()
+        conn.execute(query,args)
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print("Exception in simple Query Exceution", e)
+        return None
+    finally:
+        # This runs NO MATTER WHAT, even after a return statement
+        if conn:
+            conn.close()
+
+def execute_filter_lead(base_query,conditions,values):
+     try:
+            conn = get_db()
+            cur = conn.cursor()
+            aliasname = state.value
+            if aliasname :
+                base_query = re.sub(r'<>', aliasname, base_query)
+            if len(conditions) > 0:
+               base_query = re.sub(r'{conditions}', conditions, base_query)
+
+            cur =conn.execute(base_query, values)
+            rows = cur.fetchall()
+            conn.commit()
+            conn.close()
+            return [{k: v for k, v in dict(r).items() } for r in rows ]
+     except Exception as e:
+            print("Exception in select User Exceution", e)
+            return None
+     finally:
+        # This runs NO MATTER WHAT, even after a return statement
+        if conn:
+            conn.close()
+
+def get_state(query,*args):
+        conn = get_db()
+        cur = conn.cursor()
+        cur= conn.execute(query,args)
+        rows = cur.fetchall()
+        conn.commit()
+        conn.close()
+        return [{k: v for k, v in dict(r).items() } for r in rows ]

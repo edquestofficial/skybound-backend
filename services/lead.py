@@ -1,4 +1,4 @@
-from database import execute_company_query, execute_select_query,fetch_single_record, update_query
+from database import execute_company_query, execute_filter_lead,fetch_single_record, update_query
 from core.config import db_query
 from schemas.lead import EditLead
 from services.project import create_project
@@ -30,10 +30,6 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             if v not in (None, "","0")
         }
         if item.stage == "poraised" :
-            if item.close:
-                update_data['status']= 'closed'
-            else :
-                update_data['status']= 'inprogress'
             update_data['stage']= 'poraised'
         set_clause = ", ".join(f"{key}=?" for key in update_data.keys())
         values = list(update_data.values())
@@ -56,30 +52,64 @@ def count_lead(userinfo):
          return execute_company_query(db_query['LEAD']['COUNT_BY_USER'],userinfo['id'])
     
 def addTimeLine(leadId, comment, userinfo, docUrls):
-    print("docs urls", docUrls)
     return execute_company_query(db_query['LEAD_TIMELINE']['INSERT'],leadId,comment,docUrls,userinfo['id'])
+
+
+LIKE_COLUMNS = {
+    "city": "a.city",
+    "state": "a.state",
+    "enquiry_type": "a.enquiry_type",
+}
+
+EXACT_COLUMNS = {
+    "id": "a.id",
+    "status": "a.status",
+    "assigned_to": "a.assigned_to",
+}
+
+def build_filters(filters):
+    conditions = []
+    values = []
+
+    for key, column in LIKE_COLUMNS.items():
+        value = filters.get(key)
+        if value:
+            value = value.strip()
+            conditions.append(f"TRIM({column}) LIKE ?")
+            values.append(f"%{value}%")
+
+    for key, column in EXACT_COLUMNS.items():
+        value = filters.get(key)
+        if value is not None:
+            conditions.append(f"{column} = ?")
+            values.append(value)
+
+    return conditions, values
 
 def fetch_lead(lead,userinfo):
     user_id = userinfo['id']
     role = userinfo['role']
    
     query = db_query['LEAD']['SELECT_ALL']
-    conditions = ""
+    conditions = []
     values = []
-    update_data = lead.model_dump(exclude_unset=True)
-    update_data = {
-        k: (v.strip() if isinstance(v, str) else v) for k, v in update_data.items()
-        if v not in (None, "","0")
-    }
-    if len(update_data)>0 :
-        conditions = " AND ".join(f"a.{key}=?" for key in update_data.keys())
-        values = list(update_data.values())
-    if Role.Sales.value == role and lead.id is None :
-        if conditions != "" :
-            conditions += " AND "
-        conditions += " (a.assigned_to is NULL OR a.assigned_to = ? ) "
+
+     # 🔹 KEYSET PAGINATION
+    conditions.append("AND a.id > ?")
+    values.append(lead.last_id)
+     # 🔹 FILTERS (whitelisted)
+    filters = lead.model_dump(exclude_unset=True)
+    filter_conditions, filter_values = build_filters(filters)
+    conditions.extend(filter_conditions)
+    values.extend(filter_values)    
+     # 🔹 ROLE BASED CONDITION
+    if Role.Sales.value == role and lead.id is None:
+        conditions.append("(a.assigned_to IS NULL OR a.assigned_to = ?)")
         values.append(user_id)
-    result = execute_select_query(query,conditions,values)
+
+    condition_str = " AND ".join(conditions)
+    values.append(lead.limit)
+    result = execute_filter_lead(query,condition_str,values)
     if lead.id is not None:
         query = db_query['LEAD_TIMELINE']['SELECT']
         rows=execute_company_query(query,lead.id)
@@ -90,9 +120,21 @@ def fetch_lead(lead,userinfo):
              result[0]["timeline"] = rows
     return result
          
+def to_sqlite_datetime(value):
+    if value is None:
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
 def bulk_create_lead(data_rows,userinfo):
-    for lead in data_rows:
-           
-        if lead:
-            execute_company_query(db_query['LEAD']['INSERT'],lead['name'], lead['company name'],lead['city'],lead['state'],lead['contact 1'],lead['inquiry type'],lead['e mail'],lead['requirements'],userinfo['id'])
+    try :
+        for lead in data_rows:
+            
+            if lead:
+                    execute_company_query(db_query['LEAD']['INSERT_BULK_LEAD'],lead['name'], lead['company name'],lead['city'],lead['state'],lead['contact 1'],lead['inquiry type'],lead['e mail'],lead['requirements'], lead['cold/hot/warm'],to_sqlite_datetime(lead['next follow up']),1,lead['open/closed'],None, to_sqlite_datetime(lead['date']))
+        return True
+    except Exception as e:
+        print("Error in bulk lead creation:", e)
+        return False     
 

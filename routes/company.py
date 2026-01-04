@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException,Depends
 from schemas.company import Company
-from database import execute_query, execute_company_query
+from database import execute_query, init_db,execute_company_query
 
 from models.response import Response
 from core.role import Role
@@ -37,13 +37,36 @@ def register(company: Company):
            return Response(
                     status=False,
                     code=400,
-                    message="Something went wrong !!",
+                    message= str(e),
                     data=[]
+
                 )
     else:
         return Response(
                 status=False,
                 code=400,
                 message="Company Name and Alias name is compulsory",
+                data=[]
+            )
+    
+@router.get("/setupdb")
+def setup_db():
+    try :
+        query = db_query['COMPANY']['CREATE']+ db_query['STATE']['CREATE']+db_query['STATE']['INSERT']
+
+        init_db(query)
+        
+        
+        return Response(
+                status=True,
+                code=200,
+                message="DB created successfully",
+                data=[]
+            )
+    except Exception as e:
+       return Response(
+                status=False,
+                code=400,
+                message="Something went wrong !!",
                 data=[]
             )
