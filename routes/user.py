@@ -119,8 +119,7 @@ def verify_password(plain_pass: str, hashed_pass: str) -> bool:
 
 def create_token(userDetails:User):
     payload = {"id":userDetails["id"], "name":userDetails["name"],"role":userDetails["role"],
-               "iat": datetime.utcnow(),
-        "exp": datetime.utcnow() + timedelta(minutes=30)}
+               "iat": datetime.utcnow()}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
