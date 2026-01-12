@@ -3,7 +3,7 @@ name: Model Training Pipeline
 on:
   push:
     branches:
-      - revamp-be
+      - dev
 jobs:
   deploy:
     name: Build & Deploy Skybound (Hostinger VPS)
