@@ -52,4 +52,4 @@ jobs:
           EOF
 
       - name: Notify success
-        run: echo "Skybound FastAPI deployed successfully on Hostinger VPS 🚀"
+        run: echo "Skybound FastAPI deployed for dev env successfully on Hostinger VPS 🚀"
