@@ -118,8 +118,7 @@ def verify_password(plain_pass: str, hashed_pass: str) -> bool:
     return bcrypt.checkpw(plain_pass.encode(), hashed_pass.encode())
 
 def create_token(userDetails:User):
-    payload = {"id":userDetails["id"], "name":userDetails["name"],"role":userDetails["role"],
-               "iat": datetime.utcnow()}
+    payload = {"id":userDetails["id"], "name":userDetails["name"],"role":userDetails["role"]}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
