@@ -3,7 +3,7 @@ name: Model Training Pipeline
 on:
   push:
     branches:
-      - revamp-be
+      - dev
 jobs:
   deploy:
     name: Build & Deploy Skybound (Hostinger VPS)
@@ -52,4 +52,4 @@ jobs:
           EOF
 
       - name: Notify success
-        run: echo "Skybound FastAPI deployed successfully on Hostinger VPS 🚀"
+        run: echo "Skybound FastAPI deployed for dev env successfully on Hostinger VPS 🚀"
