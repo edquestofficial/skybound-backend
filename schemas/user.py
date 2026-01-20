@@ -22,6 +22,7 @@ class User(BaseModel):
 class Login(BaseModel):
     username: str
     password: str
+    device_id: Optional[str] = None
 
     model_config = ConfigDict(extra="forbid")
 

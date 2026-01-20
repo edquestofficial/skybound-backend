@@ -3,26 +3,6 @@ from database import execute_company_query, execute_select_query,fetch_single_re
 from core.config import db_query
 from datetime import datetime
 
-# def fetch_user(userId, role, userinfo):
-#     logged_role = userinfo['role']
-#     id = userinfo['id']
-#     users = None
-#     if logged_role == Role.Admin.value:
-#       if userId is None and role is not None:
-#         users = execute_company_query(db_query['USER']['SELECT_USER_BY_ROLE'], role)
-
-#     elif userId is not None and role is None:
-#         users = execute_company_query(db_query['USER']['SELECT_USER_BYID'], userId)
-
-#     elif userId is None and role is None:
-#         users = execute_company_query(db_query['USER']['SELECT_USER'])
-       
-#         return users
-#     elif id:
-#         users = execute_company_query(db_query['USER']['SELECT_USER_BYID'],id)
-#         return users
-#     else :
-#         return []
        
 def EditUser(id,EditUser,loggedin_userId):
     try :

@@ -23,6 +23,7 @@ def role_required(allowed_roles: List[Role]):
             )
             
             user_role = int(payload.get("role"))
+            device_id = payload.get("device_id")    
             if not user_role:
                 raise HTTPException(
                     status_code=403,
@@ -37,7 +38,7 @@ def role_required(allowed_roles: List[Role]):
                     detail=f"Access denied."
                 )
 
-            return {"id":payload.get("id"), "role":user_role}
+            return {"id":payload.get("id"), "role":user_role, "device_id": device_id}
 
         except ExpiredSignatureError:
             raise HTTPException(

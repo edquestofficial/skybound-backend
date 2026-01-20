@@ -53,7 +53,7 @@ class SearchLead(BaseModel):
     enquiry_type:str |None = None
     status: Optional[LeadStatus] = None
     assigned_to: Optional[int] = None
-    last_id: int  = 0
+    last_id:int |None = None
     limit: int = 10
 
     model_config = ConfigDict(extra="forbid")

@@ -11,13 +11,14 @@
     "SELECT_USER_BYEMAILID":"select id,name, role, username, emailid, mobile, active, image from <>_user where emailid = ? Limit 1 ",
     "UPDATE":"UPDATE <>_user SET <set_clause> WHERE id = ?",
     "UPDATE_PASSWORD":"UPDATE <>_user SET password = ? WHERE emailid = ?",
-    "SELECT_USER_NAME_PASSById":"SELECT id, name, username, role, password,emailid, active FROM <>_user WHERE id = ? "
+    "SELECT_USER_NAME_PASSById":"SELECT id, name, username, role, password,emailid, active FROM <>_user WHERE id = ? ",
+    "SELECT_SALESPERSON_DEVICE_TOKEN":"SELECT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.role = ? ORDER BY n.id DESC"
 
   },
    "LEAD": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
     "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,1,'open',?, datetime('now'))",
-    "SELECT_ALL":"SELECT a.id,a.name,a.company_name, a.city,a.state,a.contact_number, a.enquiry_type, a.email, a.requirement, a.stage, a.next_followup, a.status,a.created_date,  a.modify_date,  COALESCE(b.name, 'Unassigned') AS assigned_user FROM <>_lead AS a LEFT JOIN <>_user AS b ON a.assigned_to = b.id WHERE 1=1 {conditions} ORDER BY a.id LIMIT ?",
+    "SELECT_ALL":"SELECT a.id,a.name,a.company_name, a.city,a.state,a.contact_number, a.enquiry_type, a.email, a.requirement, a.stage, a.next_followup, a.status,a.created_date, a.assigned_to, a.modify_date,  COALESCE(b.name, 'Unassigned') AS assigned_user FROM <>_lead AS a LEFT JOIN <>_user AS b ON a.assigned_to = b.id WHERE 1=1 {conditions} ORDER BY a.id desc LIMIT ?",
     "SELECT_BY_LEADID":"select * from <>_lead where id = ? and active = 1",
     "COUNT":"SELECT CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' ELSE 'Open' END AS status, COUNT(*) AS total FROM <>_lead GROUP BY CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' ELSE 'Open' END;",
     "COUNT_BY_USER":"SELECT CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' WHEN UPPER(TRIM(status)) LIKE '%INPROGRESS%' THEN 'Inprogress' ELSE 'Open' END AS status, COUNT(*) AS total FROM <>_lead WHERE (assigned_to IS NULL OR assigned_to = ?) GROUP BY 1;",
@@ -65,6 +66,10 @@
   "INSERT": "INSERT INTO city (state_id, name) VALUES (?,?)",
   "SELECT_BY_STATEID": "SELECT id, name FROM city WHERE state_id = ?"
 },
-
-"Delete":"drop database skybound; "
+"NOTIFICATION":{
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_notification(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, device_id TEXT, created_date TEXT)",
+    "INSERT":"INSERT INTO <>_notification (user_id, device_id, created_date) VALUES (?, ?, datetime('now'))",
+    "SELECT":"SELECT * FROM <>_notification WHERE user_id = ? AND device_id = ? order by id desc limit 1 ",
+    "SELECT_ALL":"SELECT id, device_id, created_date FROM <>_notification WHERE user_id = ? ORDER BY id DESC LIMIT ?"
+}
 }

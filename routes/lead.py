@@ -15,7 +15,7 @@ lead_router = APIRouter()
 
 
 @lead_router.post("/create")
-def create(lead: Lead,userinfo = Depends(role_required([Role.Admin]))):
+def create(lead: Lead,userinfo = Depends(role_required([Role.Admin,Role.SalesHead]))):
     response  = create_lead(lead,userinfo)
     if response is not None:
         return Response(
@@ -34,7 +34,7 @@ def create(lead: Lead,userinfo = Depends(role_required([Role.Admin]))):
 
 
 @lead_router.post("/")
-def fetch( lead :SearchLead, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+def fetch( lead :SearchLead, userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
    
     result = fetch_lead(lead,userinfo)
     return Response(
@@ -45,7 +45,7 @@ def fetch( lead :SearchLead, userinfo = Depends(role_required([Role.Admin, Role.
         )
 
 @lead_router.post("/edit")
-def edit(update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+def edit(update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     
     if len(update.id) == 0:
         return Response(
@@ -68,7 +68,7 @@ def edit(update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sal
                 )   
    
 @lead_router.get("/count")
-def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     result = count_lead(userinfo)
     return Response(
             status=True,
@@ -169,5 +169,25 @@ async def bulk_upload(file: UploadFile = File(...)):
             error=str(e)
         )
 
+
+# callback function to get lead from indiamart api and create lead in skybound
+@lead_router.post("/indiamart/callback")
+def indiamart_callback(lead: Lead):
+    print("Received lead from indiamart:", lead)
+    response  = create_lead(lead,{})
+    if response is not None:
+        return Response(
+                status=True,
+                code=200,
+                message="Lead created successfully from indiamart",
+                data=[]
+            )
+    else:
+         return Response(
+                status=False,
+                code=200,
+                message="Invalid data",
+                data=[]
+            )
 
 
