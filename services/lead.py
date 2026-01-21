@@ -119,7 +119,7 @@ def fetch_lead(lead,userinfo):
 
      # 🔹 KEYSET PAGINATION
     if lead.last_id is not None:
-        conditions.append("AND a.id < ?")
+        conditions.append(" a.id < ?")
         values.append(lead.last_id)
      # 🔹 FILTERS (whitelisted)
     filters = lead.model_dump(exclude_unset=True)
@@ -132,6 +132,8 @@ def fetch_lead(lead,userinfo):
         values.append(user_id)
 
     condition_str = " AND ".join(conditions)
+    if len(conditions) > 0:
+        condition_str = " AND " + condition_str
     values.append(lead.limit)
     result = execute_filter_lead(query,condition_str,values)
     if lead.id is not None:
