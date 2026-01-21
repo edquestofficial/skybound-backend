@@ -146,8 +146,8 @@ def execute_filter_lead(base_query,conditions,values):
             aliasname = state.value
             if aliasname :
                 base_query = re.sub(r'<>', aliasname, base_query)
-            if len(conditions) > 0:
-               base_query = re.sub(r'{conditions}', conditions, base_query)
+            # if len(conditions) > 0:
+                base_query = re.sub(r'{conditions}', conditions, base_query)
 
             cur =conn.execute(base_query, values)
             rows = cur.fetchall()
@@ -156,7 +156,7 @@ def execute_filter_lead(base_query,conditions,values):
             return [{k: v for k, v in dict(r).items() } for r in rows ]
      except Exception as e:
             print("Exception in select User Exceution", e)
-            return None
+            return []
      finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
