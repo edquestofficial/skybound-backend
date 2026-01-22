@@ -6,7 +6,7 @@
     "INSERT":"INSERT INTO <>_user (name, password, username, mobile, emailid, role, active, image, created_by, created_date) VALUES (?, ?,?, ?, ?,?,?,?,?, datetime('now'))",
     "SELECT_ALL":"Select id,name, emailid, role,username, mobile, image, active from <>_user",
     "SELECT_USER":"select id, name, username,role, emailid, mobile, active, image from <>_user ",
-    "SELECT_USER_BY_ROLE":"select id,name, username, role, emailid, mobile, image, active from <>_user where role = ?",
+    "SELECT_USER_BY_ROLE":"select id,name, username, role, emailid, mobile, image, active from <>_user WHERE {conditions}",
     "SELECT_USER_BYID":"select id,name, role, username, emailid, mobile, active, image from <>_user where id = ? ",
     "SELECT_USER_BYEMAILID":"select id,name, role, username, emailid, mobile, active, image from <>_user where emailid = ? Limit 1 ",
     "UPDATE":"UPDATE <>_user SET <set_clause> WHERE id = ?",

@@ -175,8 +175,22 @@ Skybound"""
     
     
 @router.post("/")
-def fetch(user:SearchUser,userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer, Role.SalesHead, Role.EngineerHead]))):
-   return fetchUser(user,userInfo)
+def fetch(user:SearchUser,userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer, Role.SalesHead, Role.EngineerHead,Role.HR]))):
+   result = fetchUser(user,userInfo)
+   if len(result) >0:
+        return Response(
+                        status=True,
+                        code=200,
+                        message="User fetch successfully",
+                        data=result
+                    )
+   else:
+        return Response(
+                        status=True,
+                        code=200,
+                        message="No record found",
+                        data=[]
+                    )
 
 @router.patch("/")
 def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.Engineer, Role.SalesHead, Role.EngineerHead]))):

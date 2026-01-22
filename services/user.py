@@ -1,5 +1,5 @@
 from core.role import Role
-from database import execute_company_query, execute_select_query,fetch_single_record,update_query
+from database import execute_company_query, execute_filter_lead, execute_select_query,fetch_single_record,update_query
 from core.config import db_query
 from datetime import datetime
 
@@ -42,8 +42,24 @@ def fetchUser(user, userinfo):
     if len(update_data)>0 :
         conditions = " AND ".join(f"{key}=?" for key in update_data.keys())
         values = list(update_data.values())
-    if Role.Admin.value == role:
+    if Role.Admin.value == role or Role.HR.value == role:
         return execute_select_query(query,conditions,values)
+    if Role.SalesHead.value == role:
+            if conditions != "":
+                conditions += " AND role in (?,?)"
+            else :
+                conditions += " role in (?,?)"
+            values.append(Role.Sales.value)
+            values.append(Role.SalesHead.value)
+            return execute_filter_lead(db_query['USER']['SELECT_USER_BY_ROLE'],conditions,values)
+    if Role.EngineerHead.value == role:
+            if conditions != "":
+                conditions += " AND role in (?,?)"
+            else :
+                conditions += " role in (?,?)"
+            values.append(Role.Engineer.value)
+            values.append(Role.EngineerHead.value)
+            return execute_filter_lead(db_query['USER']['SELECT_USER_BY_ROLE'],conditions,values)
     else :
          return execute_company_query(db_query['USER']['SELECT_USER_BYID'],user_id)
     
