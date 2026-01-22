@@ -1,8 +1,8 @@
 import io
 import os
 import shutil
-from typing import List, Optional
-from fastapi import APIRouter, File, Form, HTTPException,Depends, UploadFile
+from typing import List, Optional, Any
+from fastapi import APIRouter, File, Form, HTTPException,Depends, UploadFile, Body
 from schemas.lead import Lead, EditLead, SearchLead
 import pandas as pd
 import numpy as np
@@ -172,22 +172,53 @@ async def bulk_upload(file: UploadFile = File(...)):
 
 # callback function to get lead from indiamart api and create lead in skybound
 @lead_router.post("/indiamart/callback")
-def indiamart_callback(lead: Lead):
-    print("Received lead from indiamart:", lead)
-    response  = create_lead(lead,{})
-    if response is not None:
-        return Response(
+def indiamart_callback(payload: Any = Body(...)):
+    try:
+        print("Received lead from indiamart:")
+        
+        # Parse the IndiaMART API response
+        if isinstance(payload, dict):
+            response_data = payload.get("RESPONSE", {})
+        else:
+            response_data = payload.dict().get("RESPONSE", {}) if hasattr(payload, 'dict') else {}
+        
+        # Map IndiaMART fields to Lead schema
+        lead_data = {
+            "name": response_data.get("SENDER_NAME", ""),
+            "company_name": response_data.get("SENDER_COMPANY", ""),
+            "city": response_data.get("SENDER_CITY", ""),
+            "state": response_data.get("SENDER_STATE", ""),
+            "contact_number": response_data.get("SENDER_MOBILE", "").replace("+91-", "").replace("+91", ""),
+            "email": response_data.get("SENDER_EMAIL"),
+            "enquiry_type": "Product Inquiry",
+            "requirement": response_data.get("QUERY_MESSAGE", "")
+        }
+        
+        # Create Lead object
+        lead = Lead(**lead_data)
+        response = create_lead(lead, userinfo=None)
+        
+        if response is not None:
+            return Response(
                 status=True,
                 code=200,
                 message="Lead created successfully from indiamart",
                 data=[]
             )
-    else:
-         return Response(
+        else:
+            return Response(
                 status=False,
                 code=200,
                 message="Invalid data",
                 data=[]
             )
+    except Exception as e:
+        print(f"Error processing IndiaMART callback: {str(e)}")
+        return Response(
+            status=False,
+            code=500,
+            message="Error processing IndiaMART callback",
+            data=[]
+        )
 
 

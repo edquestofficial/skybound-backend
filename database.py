@@ -54,7 +54,7 @@ def execute_company_query(query,*args):
         return [dict(r) for r in rows]
     except Exception as e:
         print("Exception in company Query Exceution", e)
-        return None
+        return []
     finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
