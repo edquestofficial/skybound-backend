@@ -1,28 +1,8 @@
 from core.role import Role
-from database import execute_company_query, execute_select_query,fetch_single_record,update_query
+from database import execute_company_query, execute_filter_lead, execute_select_query,fetch_single_record,update_query
 from core.config import db_query
 from datetime import datetime
 
-# def fetch_user(userId, role, userinfo):
-#     logged_role = userinfo['role']
-#     id = userinfo['id']
-#     users = None
-#     if logged_role == Role.Admin.value:
-#       if userId is None and role is not None:
-#         users = execute_company_query(db_query['USER']['SELECT_USER_BY_ROLE'], role)
-
-#     elif userId is not None and role is None:
-#         users = execute_company_query(db_query['USER']['SELECT_USER_BYID'], userId)
-
-#     elif userId is None and role is None:
-#         users = execute_company_query(db_query['USER']['SELECT_USER'])
-       
-#         return users
-#     elif id:
-#         users = execute_company_query(db_query['USER']['SELECT_USER_BYID'],id)
-#         return users
-#     else :
-#         return []
        
 def EditUser(id,EditUser,loggedin_userId):
     try :
@@ -62,8 +42,24 @@ def fetchUser(user, userinfo):
     if len(update_data)>0 :
         conditions = " AND ".join(f"{key}=?" for key in update_data.keys())
         values = list(update_data.values())
-    if Role.Admin.value == role:
+    if Role.Admin.value == role or Role.HR.value == role:
         return execute_select_query(query,conditions,values)
+    if Role.SalesHead.value == role:
+            if conditions != "":
+                conditions += " AND role in (?,?)"
+            else :
+                conditions += " role in (?,?)"
+            values.append(Role.Sales.value)
+            values.append(Role.SalesHead.value)
+            return execute_filter_lead(db_query['USER']['SELECT_USER_BY_ROLE'],conditions,values)
+    if Role.EngineerHead.value == role:
+            if conditions != "":
+                conditions += " AND role in (?,?)"
+            else :
+                conditions += " role in (?,?)"
+            values.append(Role.Engineer.value)
+            values.append(Role.EngineerHead.value)
+            return execute_filter_lead(db_query['USER']['SELECT_USER_BY_ROLE'],conditions,values)
     else :
          return execute_company_query(db_query['USER']['SELECT_USER_BYID'],user_id)
     

@@ -6,6 +6,7 @@ from models.response import Response
 from core.role import Role
 from core.config import db_query
 from utility.statemgmt import state
+import os
 
 router = APIRouter()
 
@@ -26,6 +27,7 @@ def register(company: Company):
             execute_company_query(db_query['PROJECT']['CREATE'])
             execute_company_query(db_query['LEAD_TIMELINE']['CREATE'])
             execute_company_query(db_query['PROJECT_TIMELINE']['CREATE'])
+            execute_company_query(db_query['NOTIFICATION']['CREATE'])
             
             return Response(
                     status=True,
@@ -52,11 +54,12 @@ def register(company: Company):
 @router.get("/setupdb")
 def setup_db():
     try :
+        os.remove("skybound.db")
         query = db_query['COMPANY']['CREATE']+ db_query['STATE']['CREATE']+db_query['STATE']['INSERT']
 
         init_db(query)
         
-        
+
         return Response(
                 status=True,
                 code=200,
@@ -67,6 +70,6 @@ def setup_db():
        return Response(
                 status=False,
                 code=400,
-                message="Something went wrong !!",
+                message="Something went wrong !!+ error:"+ str(e),
                 data=[]
             )

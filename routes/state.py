@@ -36,7 +36,7 @@ state_router = APIRouter()
 #             )
     
 @state_router.get("/")
-def getState(userinfo = Depends(role_required([Role.Admin]))):
+def getState(userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead, Role.Engineer, Role.EngineerHead,Role.HR]))):
     try :
             result = getStateInfo()
             if result:
@@ -62,7 +62,7 @@ def getState(userinfo = Depends(role_required([Role.Admin]))):
             )
     
 @state_router.get("/{statename}")
-async def getCity(statename: str, userinfo = Depends(role_required([Role.Admin]))):
+async def getCity(statename: str, userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead, Role.Engineer, Role.EngineerHead,Role.HR]))):
     result = await fetch_cities(statename)
     if result:  
         return Response(

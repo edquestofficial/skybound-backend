@@ -10,8 +10,11 @@ async def fetch_cities(state: str):
                 "https://countriesnow.space/api/v0.1/countries/state/cities",
                 json={"country": 'India', "state": state}
             )
+            cities = r.json()["data"]
             r.raise_for_status()
-            return r.json()["data"]
+            cleaned_cities = [city.replace("ā", "a") for city in cities]
+
+            return cleaned_cities
         except httpx.HTTPError as e:
             raise HTTPException(status_code=503, detail=str(e))
     # return excute_simple_query(db_query['CITY']['INSERT'],state.stateid, state.cityname)

@@ -24,7 +24,7 @@ bearer = HTTPBearer()
 
 
 @router.post("/register")
-async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.Sales]))):
+async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.Sales,Role.SalesHead,Role.Engineer,Role.HR,Role.EngineerHead]))):
     # Check existing user
     # if "_" not in user.username:
     #     raise HTTPException(400, "Username is not correct")
@@ -92,7 +92,13 @@ def login(user: Login):
                 message="Invalid username or password",
                 data=[]
             )
-        token = create_token(user_data)
+        #get the device id and check if this id already in notification table then do nothing else store in notification table
+        if user.device_id:
+            cur = execute_company_query(db_query['NOTIFICATION']['SELECT'],user_data['id'], user.device_id)
+            if not cur:
+                execute_company_query(db_query['NOTIFICATION']['INSERT'],user_data['id'], user.device_id)
+
+        token = create_token(user_data, user.device_id)
         data = {"token":token,"user":{"id":user_data["id"],"email":user_data["emailid"],"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"], "mobile":user_data["mobile"]}}
         return Response(
                 status=True,
@@ -117,10 +123,9 @@ def verify_password(plain_pass: str, hashed_pass: str) -> bool:
     # plain_pass = plain_pass[:72]
     return bcrypt.checkpw(plain_pass.encode(), hashed_pass.encode())
 
-def create_token(userDetails:User):
+def create_token(userDetails:User, device_id: str):
     payload = {"id":userDetails["id"], "name":userDetails["name"],"role":userDetails["role"],
-               "iat": datetime.utcnow(),
-        "exp": datetime.utcnow() + timedelta(minutes=30)}
+               "device_id": device_id}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 
@@ -170,11 +175,25 @@ Skybound"""
     
     
 @router.post("/")
-def fetch(user:SearchUser,userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
-   return fetchUser(user,userInfo)
+def fetch(user:SearchUser,userInfo= Depends(role_required([Role.Admin, Role.Sales, Role.Engineer, Role.SalesHead, Role.EngineerHead,Role.HR]))):
+   result = fetchUser(user,userInfo)
+   if len(result) >0:
+        return Response(
+                        status=True,
+                        code=200,
+                        message="User fetch successfully",
+                        data=result
+                    )
+   else:
+        return Response(
+                        status=True,
+                        code=200,
+                        message="No record found",
+                        data=[]
+                    )
 
 @router.patch("/")
-def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.Engineer]))):
+def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.Engineer, Role.SalesHead, Role.EngineerHead]))):
     if Role.Admin.value == 2 or userinfo['id'] == id :
     # Check existing user
         EditUser(id,user,userinfo['id'])
@@ -194,11 +213,11 @@ def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin, R
 
     
 @router.get("/roles")
-def fetchRole(userInfo= Depends(role_required([Role.Admin,Role.Sales, Role.Engineer]))):
+def fetchRole(userInfo= Depends(role_required([Role.Admin,Role.Sales, Role.Engineer, Role.SalesHead, Role.EngineerHead, Role.HR]))):
   return {role.name:role.value for role in Role}
 
 @router.post("/resetpassword")
-async def resetpassword(email:EmailUser,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.HR]))):
+async def resetpassword(email:EmailUser,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.HR, Role.Engineer,Role.SalesHead,Role.EngineerHead, Role.HR]))):
     emailId = email.emailid
     user_data = reset_password(emailId)[0]
     if user_data and user_data["active"] == 0 :
@@ -240,7 +259,7 @@ Skybound"""
     
 
 @router.post("/changepassword")
-async def changepassword(changepassword:ChangePassword,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.Engineer]))):
+async def changepassword(changepassword:ChangePassword,userInfo= Depends(role_required([Role.Admin, Role.Sales,Role.Engineer, Role.SalesHead, Role.EngineerHead, Role.HR]))):
     user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASSById'], userInfo['id'])
     if user_data and user_data["active"] == 0 :
             return Response(

@@ -71,17 +71,6 @@ def fetch_project(proj,userinfo):
     values.extend(filter_values)
 
 
-
-    # update_data = proj.model_dump(exclude_unset=True,by_alias=False)
-    # update_data = {
-    #     k: v for k, v in update_data.items()
-    #     if v not in (None, "","0")
-    # }
-    # if len(update_data)>0 :
-    #     # conditions = " AND ".join(f"a.{key}=?" for key in update_data.keys())
-    #     conditions = build_conditions(update_data)
-    #     values = list(update_data.values())
-
      # 🔹 ROLE BASED CONDITION
     if Role.Sales.value == role and proj.id is None:
         conditions.append("(a.assigned_to IS NULL OR a.assigned_to = ?)")

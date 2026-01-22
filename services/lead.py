@@ -4,9 +4,32 @@ from schemas.lead import EditLead
 from services.project import create_project
 from datetime import datetime
 from core.role import Role
+
+from utility.pushnotify import send_notify, send_notifications
   
+
+# create the lead and find all salesperson to assign the lead and send notification  
 def create_lead(lead,userinfo):
-    return execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,userinfo['id'])
+    try :
+        print("Lead Data:", lead, userinfo)
+        #insert lead record
+        result = execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,userinfo['id'])
+        print("Lead created with ID:", result)
+        # get all sales person device token and send notification
+        query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
+        rows= execute_company_query( query, Role.Sales.value)
+        device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+        # send notification to all sales person
+        if device_tokens:
+            title = "New Lead"
+            message = f"A new lead has been created."
+            send_notifications(device_tokens, title, message)
+
+        return True
+    except Exception as e:
+        print("Error in lead creation:", e)
+        return None
+
 
 def fetch_single(id):
     return execute_company_query(db_query['LEAD']['SELECT_BY_LEADID'],id)
@@ -95,8 +118,9 @@ def fetch_lead(lead,userinfo):
     values = []
 
      # 🔹 KEYSET PAGINATION
-    conditions.append("AND a.id > ?")
-    values.append(lead.last_id)
+    if lead.last_id is not None:
+        conditions.append(" a.id < ?")
+        values.append(lead.last_id)
      # 🔹 FILTERS (whitelisted)
     filters = lead.model_dump(exclude_unset=True)
     filter_conditions, filter_values = build_filters(filters)
@@ -108,6 +132,8 @@ def fetch_lead(lead,userinfo):
         values.append(user_id)
 
     condition_str = " AND ".join(conditions)
+    if len(conditions) > 0:
+        condition_str = " AND " + condition_str
     values.append(lead.limit)
     result = execute_filter_lead(query,condition_str,values)
     if lead.id is not None:

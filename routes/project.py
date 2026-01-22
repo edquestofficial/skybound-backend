@@ -12,7 +12,7 @@ project_router = APIRouter()
 
 
 @project_router.post("/")
-def fetch(proj : SearchProject, userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
+def fetch(proj : SearchProject, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     result = fetch_project(proj,userinfo)
     return Response(
             status=True,
@@ -22,7 +22,7 @@ def fetch(proj : SearchProject, userinfo = Depends(role_required([Role.Admin, Ro
         )
 
 @project_router.get("/count")
-def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
+def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer , Role.EngineerHead]))):
     result = count_project(userinfo)
     return Response(
             status=True,
@@ -32,7 +32,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer]
         )
 
 @project_router.post("/edit")
-def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
+def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     if len(update.id) == 0:
         return Response(
             status=False,
