@@ -3,7 +3,8 @@ import firebase_admin as admin
 from firebase_admin import credentials, messaging
 import os
 
-creds_path = os.path.join(os.path.dirname(__file__), "skybound-b63c2-firebase-adminsdk-fbsvc-e14f5bb985.json")
+# creds_path = os.path.join(os.path.dirname(__file__), "skybound-b63c2-firebase-adminsdk-fbsvc-e14f5bb985.json")
+creds_path = os.environ["FIREBASE_CREDENTIALS"]
 cred = credentials.Certificate(creds_path)
 admin.initialize_app(cred)
 
