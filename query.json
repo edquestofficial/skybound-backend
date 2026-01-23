@@ -12,7 +12,8 @@
     "UPDATE":"UPDATE <>_user SET <set_clause> WHERE id = ?",
     "UPDATE_PASSWORD":"UPDATE <>_user SET password = ? WHERE emailid = ?",
     "SELECT_USER_NAME_PASSById":"SELECT id, name, username, role, password,emailid, active FROM <>_user WHERE id = ? ",
-    "SELECT_SALESPERSON_DEVICE_TOKEN":"SELECT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.role = ? ORDER BY n.id DESC"
+    "SELECT_SALESPERSON_DEVICE_TOKEN":"SELECT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.role = ? ORDER BY n.id DESC",
+    "SELECT_DEVICE_TOKEN_BY_USERID":"SELECT device_id FROM <>_notification  where user_id = ? order by id DESC"
 
   },
    "LEAD": {
