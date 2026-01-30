@@ -108,9 +108,9 @@ def login(user: Login):
             )
       else :
             return Response(
-                status=True,
+                status=False,
                 code=200,
-                message="No Company available",
+                message="Invalid username or password",
                 data=[]
             )
 
