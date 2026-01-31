@@ -12,9 +12,9 @@
     "UPDATE":"UPDATE <>_user SET <set_clause> WHERE id = ?",
     "UPDATE_PASSWORD":"UPDATE <>_user SET password = ? WHERE emailid = ?",
     "SELECT_USER_NAME_PASSById":"SELECT id, name, username, role, password,emailid, active FROM <>_user WHERE id = ? ",
-    "SELECT_SALESPERSON_DEVICE_TOKEN":"SELECT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.role = ? ORDER BY n.id DESC",
-    "SELECT_DEVICE_TOKEN_BY_USERID":"SELECT device_id FROM <>_notification  where user_id = ? order by id DESC"
-
+    "SELECT_SALESPERSON_DEVICE_TOKEN":"SELECT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.role in ( ?, ?,?) ORDER BY n.id DESC",
+    "SELECT_DEVICE_TOKEN_BY_USERID":"SELECT DISTINCT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.id = ? OR u.role IN (?, ?) ORDER BY n.id DESC;",
+    "SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN":"SELECT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.role in ( ?, ?) ORDER BY n.id DESC"
   },
    "LEAD": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",

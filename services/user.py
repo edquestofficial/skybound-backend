@@ -2,6 +2,7 @@ from core.role import Role
 from database import execute_company_query, execute_filter_lead, execute_select_query,fetch_single_record,update_query
 from core.config import db_query
 from datetime import datetime
+from utility.pushnotify import send_notify, send_notifications
 
        
 def EditUser(id,EditUser,loggedin_userId):
@@ -72,4 +73,12 @@ def change_password(oldpwd,newpwd):
      
      user = fetch_single_record(db_query['USER']['SELECT_USER_BYID'],id)
     
-   
+def notification(title,message):
+    query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
+    rows= execute_company_query( query, Role.HR.value, Role.Admin.value)
+    device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+    # send notification to all sales person
+    if device_tokens:
+        title = title
+        message = message
+        send_notifications(device_tokens, title, message)

@@ -13,7 +13,7 @@ from core.role import Role
 from utility.mail import send_email_smtp
 from utility.statemgmt import state
 from utility.auth import role_required
-from services.user import EditUser, fetchUser, reset_password,change_password
+from services.user import EditUser, fetchUser, reset_password,change_password,notification
 import random
 
 settings = Settings()
@@ -42,7 +42,7 @@ async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.
     hashed = hash_password(password)
     # print("Passw0rd",hashed)
     execute_company_query(db_query['USER']['INSERT'], user.name, hashed, username, user.mobile, user.emailid, user.role,1,user.image,userinfo['role'])
-
+    notification("New user added", f"New user {user.name} has been registered.")
     email_data = EmailSchema()
     email_data.recipient_email = user.emailid
     email_data.body = f"""Hi {user.name.capitalize()},
@@ -79,7 +79,7 @@ def login(user: Login):
         user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASS'], user.username) 
         if user_data and user_data["active"] == 0 :
             return Response(
-                status=True,
+                status=False,
                 code=200,
                 message="Your account is deactivated",
                 data=[]
@@ -197,6 +197,7 @@ def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin, R
     if Role.Admin.value == 2 or userinfo['id'] == id :
     # Check existing user
         EditUser(id,user,userinfo['id'])
+        notification("User Updated", f"User has been updated.")
         return Response(
                 status=True,
                 code=200,
