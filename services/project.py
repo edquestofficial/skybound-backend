@@ -1,9 +1,9 @@
-from datetime import datetime
 from core.role import Role
 from database import execute_company_query,execute_filter_lead, fetch_single_record, update_query
 from core.config import db_query
-from schemas.project import SearchProject
+from schemas.project import UpdateModel
 from utility.pushnotify import send_notify, send_notifications
+from utility.dateutility import ist_now
 
 def create_project(lead_id, user_id):
     execute_company_query(db_query['PROJECT']['INSERT'],lead_id, 'cold', 'open', 1, user_id)
@@ -73,7 +73,7 @@ def fetch_project(proj,userinfo):
 
 
      # 🔹 ROLE BASED CONDITION
-    if Role.Sales.value == role and proj.id is None:
+    if Role.Engineer.value == role and proj.id is None:
         conditions.append("(a.assigned_to IS NULL OR a.assigned_to = ?)")
         values.append(user_id)
     condition_str = " AND ".join(conditions)
@@ -89,7 +89,7 @@ def fetch_project(proj,userinfo):
     return result
 
 def count_project(userinfo):
-    if userinfo['role'] == Role.Admin.value:
+    if userinfo['role'] == Role.Admin.value or userinfo['role'] == Role.EngineerHead.value:
         return execute_company_query(db_query['PROJECT']['COUNT'])
     else :
          return execute_company_query(db_query['PROJECT']['COUNT_BY_USER'],userinfo['id'])
@@ -102,18 +102,18 @@ def addTimeLine(projId, comment, userinfo, docUrls):
     # send notification to all sales person
     if device_tokens:
         title = "Project timeline Updated"
-        message = f"A project timeline has been updated. Project ID: {projId}"
+        message = f"A project timeline has been added for Project ID: {projId}"
         send_notifications(device_tokens, title, message)
     return result
 
-def updateProject(id:int,item:SearchProject, loggedin_userId:int):
+def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
     try :
         proj = fetch_single_record(db_query['PROJECT']['SELECT_BY_PROJID'],id)
     
         if not proj:
            return False
         update_data = item.model_dump(exclude_unset=True)
-        update_data['modify_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        update_data['modify_date'] = ist_now()
         update_data['modify_by'] = loggedin_userId
         if update_data.get('assigned_to') not in (None, ""):
             update_data['assigned_by'] = loggedin_userId
@@ -130,33 +130,35 @@ def updateProject(id:int,item:SearchProject, loggedin_userId:int):
 
         query = db_query['PROJECT']['UPDATE']
         update_query(query,set_clause, values)
-        if update_data.get('assigned_to') not in (None, ""):
+        # if update_data.get('assigned_to') not in (None, ""):
+        if item.assigned_to not in (None, ""):
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_USERID"]
             rows= execute_company_query( query, update_data.get('assigned_to'), Role.EngineerHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
             # send notification to all sales person
             if device_tokens:
                 title = "Project Assigned"
-                message = f"A new project has been Assigned. Project ID: {id}"
+                message = f"A new project has been assigned. Project ID: {id}"
                 send_notifications(device_tokens, title, message)
-        if update_data.get('stage') == "closed":
+        # if update_data.get('stage') == "closed":
+        if rows and item.status and item.status.lower() == "closed":
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
-            rows= execute_company_query( query, Role.EngineerHeadHead.value, Role.Admin.value)
+            rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
             # send notification to all sales person
             if device_tokens:
                 title = "Project Closed"
                 message = f"A project has been closed. Project ID: {id}"
                 send_notifications(device_tokens, title, message)
-        if update_data.get('stage') == "poraised":
-            
+        # if update_data.get('stage') == "poraised":
+        if rows and  item.stage and item.stage.lower() == "reviewraised":    
             query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
             rows= execute_company_query( query, Role.Engineer.value, Role.EngineerHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
             # send notification to all sales person
             if device_tokens:
-                title = "PO Raised"
-                message = f"A new project has been created for Project ID: {id}"
+                title = "Review Raised"
+                message = f"Review Raised for Project ID: {id}"
                 send_notifications(device_tokens, title, message)
            
         return True

@@ -2,7 +2,7 @@ from database import execute_company_query, execute_filter_lead,fetch_single_rec
 from core.config import db_query
 from schemas.lead import EditLead
 from services.project import create_project
-from datetime import datetime
+from utility.dateutility import ist_now
 from core.role import Role
 
 from utility.pushnotify import send_notify, send_notifications
@@ -46,7 +46,7 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
         if not lead:
            return False
         update_data = item.model_dump(exclude_unset=True,  by_alias=False)
-        update_data['modify_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        update_data['modify_date'] = ist_now()
         update_data['modify_by'] = loggedin_userId
         if update_data.get('assigned_to') not in (None, ""):
             update_data['assigned_by'] = loggedin_userId
@@ -56,7 +56,7 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             k: v for k, v in update_data.items()
             if v not in (None, "","0")
         }
-        if item.stage == "poraised" :
+        if item.stage and item.stage.lower() == "poraised":
             update_data['stage']= 'poraised'
         set_clause = ", ".join(f"{key}=?" for key in update_data.keys())
         values = list(update_data.values())
@@ -65,7 +65,8 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
         query = db_query['LEAD']['UPDATE']
         result = update_query(query,set_clause, values)
          # get all sales person device token and send notification
-        if update_data.get('assigned_to') not in (None, ""):
+        # if update_data.get('assigned_to') not in (None, ""):
+        if item.assigned_to not in (None, ""):
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_USERID"]
             rows= execute_company_query( query, update_data.get('assigned_to'), Role.SalesHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
@@ -74,7 +75,7 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
                 title = "Lead Assigned"
                 message = f"A new lead has been Assigned. Lead ID: {id}"
                 send_notifications(device_tokens, title, message)
-        if result and  item.stage == "closed":
+        if result and item.status and item.status.lower() == "closed":
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
             rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
@@ -83,7 +84,7 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
                 title = "Lead Closed"
                 message = f"A lead has been closed. Lead ID: {id}"
                 send_notifications(device_tokens, title, message)
-        if result and  item.stage == "poraised":
+        if result and item.stage and item.stage.lower() == "poraised":
             result  = create_project(id,loggedin_userId)
             query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
             rows= execute_company_query( query, Role.Engineer.value, Role.EngineerHead.value, Role.Admin.value)
@@ -102,7 +103,7 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
 
 
 def count_lead(userinfo):
-    if userinfo['role'] == Role.Admin.value:
+    if userinfo['role'] == Role.Admin.value or userinfo['role'] == Role.SalesHead.value:
         return execute_company_query(db_query['LEAD']['COUNT'])
     else :
          return execute_company_query(db_query['LEAD']['COUNT_BY_USER'],userinfo['id'])
@@ -115,7 +116,7 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
     # send notification to all sales person
     if device_tokens:
         title = "Timeline Updated"
-        message = f"A lead has been closed. Lead ID: {id}"
+        message = f"A timeline has been added to Lead ID: {leadId}"
         send_notifications(device_tokens, title, message)
     return result
 

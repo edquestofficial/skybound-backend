@@ -7,6 +7,7 @@ class SearchProject(BaseModel):
     enquiry_type :str = None
     assigned_to : int | None = None
     status : str | None = None
+    stage : str | None = None
     last_id: int  = 0
     limit: int = 10
 
@@ -16,5 +17,6 @@ class UpdateModel(BaseModel):
     id: list[int] = Field(default_factory=list)
     assigned_to : int | None = None
     status : str | None = None
+    stage : str | None = None
 
     model_config = ConfigDict(extra="forbid")

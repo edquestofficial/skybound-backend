@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException,Depends
 from schemas.email import EmailSchema
 from schemas.user import ChangePassword, EmailUser, User,Login, UserUpdate,SearchUser

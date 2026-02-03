@@ -3,7 +3,7 @@
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_user(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,password TEXT, username TEXT UNIQUE,mobile TEXT,emailid TEXT, role INTEGER, active INTEGER, image TEXT, created_by Integer, created_date TEXT, modify_by Integer, modify_date TEXT)",
     "SELECT_USER_NAME":"SELECT name, active FROM <>_user WHERE username = ? COLLATE NOCASE",
     "SELECT_USER_NAME_PASS":"SELECT id, name,emailid, mobile, username, role, password, active FROM <>_user WHERE username = ? COLLATE NOCASE",
-    "INSERT":"INSERT INTO <>_user (name, password, username, mobile, emailid, role, active, image, created_by, created_date) VALUES (?, ?,?, ?, ?,?,?,?,?, datetime('now'))",
+    "INSERT":"INSERT INTO <>_user (name, password, username, mobile, emailid, role, active, image, created_by, created_date) VALUES (?, ?,?, ?, ?,?,?,?,?, datetime('now', '+5 hours', '+30 minutes'))",
     "SELECT_ALL":"Select id,name, emailid, role,username, mobile, image, active from <>_user",
     "SELECT_USER":"select id, name, username,role, emailid, mobile, active, image from <>_user ",
     "SELECT_USER_BY_ROLE":"select id,name, username, role, emailid, mobile, image, active from <>_user WHERE {conditions}",
@@ -18,7 +18,7 @@
   },
    "LEAD": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
-    "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,1,'open',?, datetime('now'))",
+    "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,1,'open',?, datetime('now', '+5 hours', '+30 minutes'))",
     "SELECT_ALL":"SELECT a.id,a.name,a.company_name, a.city,a.state,a.contact_number, a.enquiry_type, a.email, a.requirement, a.stage, a.next_followup, a.status,a.created_date, a.assigned_to, a.modify_date,  COALESCE(b.name, 'Unassigned') AS assigned_user FROM <>_lead AS a LEFT JOIN <>_user AS b ON a.assigned_to = b.id WHERE 1=1 {conditions} ORDER BY a.id desc LIMIT ?",
     "SELECT_BY_LEADID":"select * from <>_lead where id = ? and active = 1",
     "COUNT":"SELECT CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' ELSE 'Open' END AS status, COUNT(*) AS total FROM <>_lead GROUP BY CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' ELSE 'Open' END;",
@@ -28,7 +28,7 @@
   },
   "PROJECT": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_project(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
-    "INSERT":"INSERT INTO <>_project(lead_id, stage, status, active, created_by, created_date) VALUES (?, ?,?, ?, ?, datetime('now'))",
+    "INSERT":"INSERT INTO <>_project(lead_id, stage, status, active, created_by, created_date) VALUES (?, ?,?, ?, ?, datetime('now', '+5 hours', '+30 minutes'))",
     "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user, c.*  from <>_project as a left join <>_user as b on a.assigned_to = b.id left join <>_lead as c on a.lead_id = c.id WHERE 1=1 {conditions} ORDER BY a.id LIMIT ? ;",
     "SELECT_BY_PROJID":"select * from <>_project where id = ? and active = 1",
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_project GROUP BY status;",
@@ -38,12 +38,12 @@
   },
    "LEAD_TIMELINE": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_leadtimline(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, message TEXT, docs_urls TEXT, created_by Integer,created_date TEXT)",
-    "INSERT":"INSERT INTO <>_leadtimline(lead_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now'))",
+    "INSERT":"INSERT INTO <>_leadtimline(lead_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now', '+5 hours', '+30 minutes'))",
     "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_from FROM <>_leadtimline as a left join <>_user as b on a.created_by = b.id  where a.lead_id = ? "
   },
    "PROJECT_TIMELINE": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_projecttimline(id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER, message TEXT, docs_urls TEXT, created_by Integer,created_date TEXT)",
-    "INSERT":"INSERT INTO <>_projecttimline(project_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now'))",
+    "INSERT":"INSERT INTO <>_projecttimline(project_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now', '+5 hours', '+30 minutes'))",
     "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_from FROM <>_projecttimline as a left join <>_user as b on a.created_by = b.id where project_id = ? "
   },
   "ROLE":{
@@ -52,7 +52,7 @@
   },
   "COMPANY":{
     "CREATE":"CREATE TABLE IF NOT EXISTS company(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE, aliasname TEXT, active INTEGER, created_date TEXT) ;",
-    "INSERT":"INSERT INTO company (name, aliasname, active, created_date) VALUES (?, ?, ?, datetime('now')) ;",
+    "INSERT":"INSERT INTO company (name, aliasname, active, created_date) VALUES (?, ?, ?, datetime('now', '+5 hours', '+30 minutes')) ;",
     "SELECT_COMPANY_NAME":"SELECT name FROM company WHERE name = ? ;",
     "SELECT_COMPANY_ALIASNAME":"SELECT name FROM company WHERE aliasname = ? COLLATE NOCASE ;"
 
@@ -69,7 +69,7 @@
 },
 "NOTIFICATION":{
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_notification(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, device_id TEXT, created_date TEXT)",
-    "INSERT":"INSERT INTO <>_notification (user_id, device_id, created_date) VALUES (?, ?, datetime('now'))",
+    "INSERT":"INSERT INTO <>_notification (user_id, device_id, created_date) VALUES (?, ?, datetime('now', '+5 hours', '+30 minutes'))",
     "SELECT":"SELECT * FROM <>_notification WHERE user_id = ? AND device_id = ? order by id desc limit 1 ",
     "SELECT_ALL":"SELECT id, device_id, created_date FROM <>_notification WHERE user_id = ? ORDER BY id DESC LIMIT ?"
 }
