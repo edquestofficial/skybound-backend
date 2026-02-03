@@ -173,9 +173,7 @@ async def bulk_upload(file: UploadFile = File(...)):
 # callback function to get lead from indiamart api and create lead in skybound
 @lead_router.post("/indiamart/callback")
 def indiamart_callback(payload: Any = Body(...)):
-    try:
-        print("Received lead from indiamart:")
-        
+    try:        
         # Parse the IndiaMART API response
         if isinstance(payload, dict):
             response_data = payload.get("RESPONSE", {})

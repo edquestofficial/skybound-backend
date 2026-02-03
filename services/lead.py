@@ -18,7 +18,6 @@ def create_lead(lead,userinfo):
         else:
             state.setvalue('sb')  # Set a default value if userinfo is None
         result = execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,id)
-        print("Lead Insert Result:", result)
         # get all sales person device token and send notification
         query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
         rows= execute_company_query( query, Role.Sales.value, Role.SalesHead.value, Role.Admin.value)
