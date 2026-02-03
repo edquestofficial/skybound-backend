@@ -29,7 +29,7 @@
   "PROJECT": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_project(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
     "INSERT":"INSERT INTO <>_project(lead_id, stage, status, active, created_by, created_date) VALUES (?, ?,?, ?, ?, datetime('now', '+5 hours', '+30 minutes'))",
-    "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user, c.*  from <>_project as a left join <>_user as b on a.assigned_to = b.id left join <>_lead as c on a.lead_id = c.id WHERE 1=1 {conditions} ORDER BY a.id LIMIT ? ;",
+    "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user, c.*  from <>_project as a left join <>_user as b on a.assigned_to = b.id left join <>_lead as c on a.lead_id = c.id WHERE 1=1 {conditions} ORDER BY a.id desc LIMIT ? ;", 
     "SELECT_BY_PROJID":"select * from <>_project where id = ? and active = 1",
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_project GROUP BY status;",
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
