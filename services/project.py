@@ -63,8 +63,9 @@ def fetch_project(proj,userinfo):
     conditions = []
     values = []
       # 🔹 KEYSET PAGINATION
-    conditions.append("AND a.id > ?")
-    values.append(proj.last_id)
+    if proj.last_id is not None:
+        conditions.append("AND a.id < ?")
+        values.append(proj.last_id)
 
     filters = proj.model_dump(exclude_unset=True)
     filter_conditions, filter_values = build_filters(filters)
@@ -141,7 +142,7 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
                 message = f"A new project has been assigned. Project ID: {id}"
                 send_notifications(device_tokens, title, message)
         # if update_data.get('stage') == "closed":
-        if rows and item.status and item.status.lower() == "closed":
+        if item.status and item.status.lower() == "closed":
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
             rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
@@ -151,7 +152,7 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
                 message = f"A project has been closed. Project ID: {id}"
                 send_notifications(device_tokens, title, message)
         # if update_data.get('stage') == "poraised":
-        if rows and  item.stage and item.stage.lower() == "reviewraised":    
+        if item.stage and item.stage.lower() == "reviewraised":    
             query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
             rows= execute_company_query( query, Role.Engineer.value, Role.EngineerHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]

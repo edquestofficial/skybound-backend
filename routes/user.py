@@ -39,7 +39,6 @@ async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.
         
     password  = random.randint(10_000_000, 99_999_999)
     hashed = hash_password(password)
-    # print("Passw0rd",hashed)
     execute_company_query(db_query['USER']['INSERT'], user.name, hashed, username, user.mobile, user.emailid, user.role,1,user.image,userinfo['role'])
     notification("New user added", f"New user {user.name} has been registered.")
     email_data = EmailSchema()
@@ -229,7 +228,6 @@ async def resetpassword(email:EmailUser,userInfo= Depends(role_required([Role.Ad
             )
     password  = random.randint(10_000_000, 99_999_999)
     hashed = hash_password(password)
-    # print("Passw0rd",hashed)
     
     execute_company_query(db_query['USER']['UPDATE_PASSWORD'],  hashed, emailId)
 
@@ -249,7 +247,6 @@ Thank you,
 Skybound"""
     email_data.subject ="Your Password reset successfully"
     result = await send_email_smtp(email_data)
-    print(result)
     return Response(
             status=True,
             code=200,
@@ -277,7 +274,6 @@ async def changepassword(changepassword:ChangePassword,userInfo= Depends(role_re
             data=[]
         )
     hashed = hash_password(changepassword.newpassword)
-    # print("Passw0rd",hashed)
     
     execute_company_query(db_query['USER']['UPDATE_PASSWORD'],  hashed, user_data['emailid'])
 
