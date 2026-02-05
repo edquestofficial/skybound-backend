@@ -64,7 +64,7 @@ def fetch_project(proj,userinfo):
     values = []
       # 🔹 KEYSET PAGINATION
     if proj.last_id is not None:
-        conditions.append("AND a.id < ?")
+        conditions.append("a.id < ?")
         values.append(proj.last_id)
 
     filters = proj.model_dump(exclude_unset=True)
@@ -78,6 +78,9 @@ def fetch_project(proj,userinfo):
         conditions.append("(a.assigned_to IS NULL OR a.assigned_to = ?)")
         values.append(user_id)
     condition_str = " AND ".join(conditions)
+    
+    if len(conditions) > 0:
+        condition_str = " AND " + condition_str
     values.append(proj.limit)
     result = execute_filter_lead(query,condition_str,values)
     if proj.id is not None:
