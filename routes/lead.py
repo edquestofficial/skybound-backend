@@ -80,7 +80,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales, Ro
 @lead_router.post("/timeline")
 def create( id: int = Form(...),
     comment: str = Form(...),
-    files: List[UploadFile] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+    files: List[UploadFile] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role]))):
     saved_files = []
     docs :str = ""
     if files:

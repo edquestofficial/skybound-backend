@@ -8,8 +8,8 @@ from utility.auth import role_required
 from models.response import Response
 from services.project import create_project,fetch_project, count_project, addTimeLine, updateProject
 from schemas.project import SearchProject, UpdateModel
-project_router = APIRouter()
 
+project_router = APIRouter()
 
 @project_router.post("/")
 def fetch(proj : SearchProject, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
@@ -56,7 +56,7 @@ def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.
 @project_router.post("/timeline")
 def create( id: int = Form(...),
     comment: str = Form(...),
-    files: List[UploadFile] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
+    files: List[UploadFile] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     saved_files = []
     docs :str = ""
     if files:
