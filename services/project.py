@@ -105,7 +105,7 @@ def addTimeLine(projId, comment, userinfo, docUrls):
     device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
     # send notification to all sales person
     if device_tokens:
-        title = "Project timeline Updated"
+        title = "Project timeline updated"
         message = f"A project timeline has been added for Project ID: {projId}"
         send_notifications(device_tokens, title, message)
     return result
@@ -141,7 +141,7 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
             # send notification to all sales person
             if device_tokens:
-                title = "Project Assigned"
+                title = "Project assigned"
                 message = f"A new project has been assigned. Project ID: {id}"
                 send_notifications(device_tokens, title, message)
         # if update_data.get('stage') == "closed":
@@ -151,7 +151,7 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
             # send notification to all sales person
             if device_tokens:
-                title = "Project Closed"
+                title = "Project closed"
                 message = f"A project has been closed. Project ID: {id}"
                 send_notifications(device_tokens, title, message)
         # if update_data.get('stage') == "poraised":
@@ -161,8 +161,8 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
             # send notification to all sales person
             if device_tokens:
-                title = "Review Raised"
-                message = f"Review Raised for Project ID: {id}"
+                title = "Review raised"
+                message = f"Review raised for Project ID: {id}"
                 send_notifications(device_tokens, title, message)
            
         return True

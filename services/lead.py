@@ -24,7 +24,7 @@ def create_lead(lead,userinfo):
         device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
         # send notification to all sales person
         if device_tokens:
-            title = "New Lead added"
+            title = "New lead added"
             message = f"A new lead has been created."
             send_notifications(device_tokens, title, message)
 
@@ -71,8 +71,8 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
             # send notification to all sales person
             if device_tokens:
-                title = "Lead Assigned"
-                message = f"A new lead has been Assigned. Lead ID: {id}"
+                title = "Lead assigned"
+                message = f"A new lead has been assigned. Lead ID: {id}"
                 send_notifications(device_tokens, title, message)
         if result and item.status and item.status.lower() == "closed":
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
@@ -80,7 +80,7 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
             # send notification to all sales person
             if device_tokens:
-                title = "Lead Closed"
+                title = "Lead closed"
                 message = f"A lead has been closed. Lead ID: {id}"
                 send_notifications(device_tokens, title, message)
         if result and item.stage and item.stage.lower() == "poraised":
@@ -90,7 +90,7 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
             # send notification to all sales person
             if device_tokens:
-                title = "Project Created"
+                title = "Project created"
                 message = f"A new project has been created for Lead ID: {id}"
                 send_notifications(device_tokens, title, message)
             return result
@@ -114,7 +114,7 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
     device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
     # send notification to all sales person
     if device_tokens:
-        title = "Timeline Updated"
+        title = "Timeline updated"
         message = f"A timeline has been added to Lead ID: {leadId}"
         send_notifications(device_tokens, title, message)
     return result

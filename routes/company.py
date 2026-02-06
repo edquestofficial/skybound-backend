@@ -47,7 +47,7 @@ def register(company: Company):
         return Response(
                 status=False,
                 code=400,
-                message="Company Name and Alias name is compulsory",
+                message="Company name and alias name is compulsory",
                 data=[]
             )
     

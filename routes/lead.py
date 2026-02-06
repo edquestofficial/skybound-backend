@@ -51,7 +51,7 @@ def edit(update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sal
         return Response(
             status=False,
             code=400,
-            message="please provide the atleast one lead id",
+            message="Please provide the atleast one lead id",
             data=[]
         )
     else:
@@ -73,7 +73,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales, Ro
     return Response(
             status=True,
             code=200,
-            message="Fetch Count successfully",
+            message="Fetch count successfully",
             data=result
         )
 
@@ -128,7 +128,7 @@ async def bulk_upload(file: UploadFile = File(...)):
             return Response(
                 status=False,
                 code=400,
-                message="Invalid file format. Missing required headers.",
+                message="Invalid file format. missing required headers.",
                 error=missing_headers
             )
 # --- 2. Data Processing (ALL FIXES APPLIED) ---        

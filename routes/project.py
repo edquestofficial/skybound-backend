@@ -27,7 +27,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer 
     return Response(
             status=True,
             code=200,
-            message="Fetch Count successfully",
+            message="Fetch count successfully",
             data=result
         )
 
@@ -37,7 +37,7 @@ def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.
         return Response(
             status=False,
             code=400,
-            message="please provide the atleast one lead id",
+            message="Please provide the atleast one lead id",
             data=[]
         )
     else:

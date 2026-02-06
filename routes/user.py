@@ -101,7 +101,7 @@ def login(user: Login):
         return Response(
                 status=True,
                 code=200,
-                message="Login Successfully",
+                message="Login successfully",
                 data=data
             )
       else :
@@ -155,7 +155,7 @@ If you have any questions or need assistance logging in, feel free to contact ou
 
 Thank you,
 Skybound"""
-        email_data.subject ="Your Account Has Been Successfully Created"
+        email_data.subject ="Your account has been successfully created"
         result = await send_email_smtp(email_data)
         return Response(
             status=True,
@@ -195,7 +195,7 @@ def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin, R
     if Role.Admin.value == 2 or userinfo['id'] == id :
     # Check existing user
         EditUser(id,user,userinfo['id'])
-        notification("User Updated", f"User has been updated.")
+        notification("User updated", f"User has been updated.")
         return Response(
                 status=True,
                 code=200,
@@ -245,7 +245,7 @@ If you have any questions or need assistance logging in, feel free to contact ou
 
 Thank you,
 Skybound"""
-    email_data.subject ="Your Password reset successfully"
+    email_data.subject ="Your password reset successfully"
     result = await send_email_smtp(email_data)
     return Response(
             status=True,
@@ -291,7 +291,7 @@ If you have any questions or need assistance logging in, feel free to contact ou
 
 Thank you,
 Skybound"""
-    email_data.subject ="Your Password reset successfully"
+    email_data.subject ="Your password changed successfully"
     result = await send_email_smtp(email_data)
     return Response(
             status=True,
