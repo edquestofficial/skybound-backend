@@ -1,7 +1,7 @@
 
 import os
 import shutil
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from core.role import Role
 from utility.auth import role_required
@@ -56,7 +56,7 @@ def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.
 @project_router.post("/timeline")
 def create( id: int = Form(...),
     comment: str = Form(...),
-    files: List[UploadFile] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
+    files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     saved_files = []
     docs :str = ""
     if files:
