@@ -110,6 +110,7 @@ def count_lead(userinfo):
          return execute_company_query(db_query['LEAD']['COUNT_BY_USER'],userinfo['id'])
     
 def addTimeLine(leadId, comment, userinfo, docUrls):
+    sales_device_tokens = []
     result = execute_company_query(db_query['LEAD_TIMELINE']['INSERT'],leadId,comment,docUrls,userinfo['id'])
     query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
     rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
@@ -118,7 +119,8 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
         query = db_query["LEAD"]["SELECT_DEVICE_TOKEN_BY_LeadID"]
         rows= execute_company_query( query, leadId)
         sales_device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-    device_tokens.extend(sales_device_tokens)
+    if len(sales_device_tokens) > 0:
+        device_tokens.extend(sales_device_tokens)
     # send notification to all sales person
     if device_tokens:
         title = "Timeline updated"

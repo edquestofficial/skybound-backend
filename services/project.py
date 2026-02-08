@@ -99,6 +99,7 @@ def count_project(userinfo):
          return execute_company_query(db_query['PROJECT']['COUNT_BY_USER'],userinfo['id'])
     
 def addTimeLine(projId, comment, userinfo, docUrls):
+    sales_device_tokens = []
     result = execute_company_query(db_query['PROJECT_TIMELINE']['INSERT'],projId,comment,docUrls,userinfo['id'])
     query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
     rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
@@ -107,7 +108,8 @@ def addTimeLine(projId, comment, userinfo, docUrls):
         query = db_query["PROJECT"]["SELECT_DEVICE_TOKEN_BY_PROJID"]
         rows= execute_company_query( query, projId)
         sales_device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-    device_tokens.extend(sales_device_tokens)
+    if len(sales_device_tokens) > 0:
+        device_tokens.extend(sales_device_tokens)
     # send notification to all sales person
     if device_tokens:
         title = "Project timeline updated"
