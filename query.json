@@ -24,7 +24,8 @@
     "COUNT":"SELECT CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' WHEN UPPER(TRIM(status)) LIKE '%INPROGRESS%' THEN 'Inprogress' ELSE 'Open' END AS status, COUNT(*) AS total FROM <>_lead GROUP BY CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' WHEN UPPER(TRIM(status)) LIKE '%INPROGRESS%' THEN 'Inprogress' ELSE 'Open' END;",
     "COUNT_BY_USER":"SELECT CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' WHEN UPPER(TRIM(status)) LIKE '%INPROGRESS%' THEN 'Inprogress' ELSE 'Open' END AS status, COUNT(*) AS total FROM <>_lead WHERE (assigned_to IS NULL OR assigned_to = ?) GROUP BY 1;",
     "UPDATE":"UPDATE <>_lead SET <set_clause> WHERE id = ?",
-    "INSERT_BULK_LEAD":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type,  email, requirement, stage, next_followup, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    "INSERT_BULK_LEAD":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type,  email, requirement, stage, next_followup, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    "SELECT_DEVICE_TOKEN_BY_LeadID":"SELECT DISTINCT n.device_id FROM <>_notification AS n INNER JOIN <>_lead AS l ON n.user_id = l.assigned_to  WHERE l.id = ?  ORDER BY n.id DESC;"
   },
   "PROJECT": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_project(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
@@ -33,7 +34,9 @@
     "SELECT_BY_PROJID":"select * from <>_project where id = ? and active = 1",
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_project GROUP BY status;",
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
-    "UPDATE":"UPDATE <>_project SET <set_clause> WHERE id = ?"
+    "UPDATE":"UPDATE <>_project SET <set_clause> WHERE id = ?",
+    "SELECT_DEVICE_TOKEN_BY_PROJID":"SELECT DISTINCT n.device_id FROM <>_notification AS n INNER JOIN <>_project AS p ON n.user_id = p.assigned_to  WHERE p.id = ?  ORDER BY n.id DESC;"
+
 
   },
    "LEAD_TIMELINE": {

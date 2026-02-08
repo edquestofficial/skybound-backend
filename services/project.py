@@ -103,6 +103,11 @@ def addTimeLine(projId, comment, userinfo, docUrls):
     query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
     rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
     device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+    if userinfo['role'] == Role.Admin.value or userinfo['role'] == Role.EngineerHead.value:
+        query = db_query["PROJECT"]["SELECT_DEVICE_TOKEN_BY_PROJID"]
+        rows= execute_company_query( query, projId)
+        sales_device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+    device_tokens.extend(sales_device_tokens)
     # send notification to all sales person
     if device_tokens:
         title = "Project timeline updated"
@@ -139,10 +144,12 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_USERID"]
             rows= execute_company_query( query, update_data.get('assigned_to'), Role.EngineerHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+            query_user = db_query["USER"]["SELECT_USER_BYID"]
+            user = execute_company_query(query_user, update_data.get('assigned_to'))
             # send notification to all sales person
             if device_tokens:
                 title = "Project assigned"
-                message = f"A new project has been assigned. Project ID: {id}"
+                message = f"A new project({id}) has been assigned to {user[0]['name'] if user else 'Unknown User' }."
                 send_notifications(device_tokens, title, message)
         # if update_data.get('stage') == "closed":
         if item.status and item.status.lower() == "closed":
