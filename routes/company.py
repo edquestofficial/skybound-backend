@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException,Depends
 from schemas.company import Company
-from database import execute_query, init_db,execute_company_query
+from database import execute_query, init_db,execute_company_query, truncate_table
 
 from models.response import Response
 from core.role import Role
@@ -54,12 +54,11 @@ def register(company: Company):
 @router.get("/setupdb")
 def setup_db():
     try :
-        os.remove("skybound.db")
-        query = db_query['COMPANY']['CREATE']+ db_query['STATE']['CREATE']+db_query['STATE']['INSERT']
-
-        init_db(query)
+        # os.remove("skybound.db")
+        # query = db_query['COMPANY']['CREATE']+ db_query['STATE']['CREATE']+db_query['STATE']['INSERT']
+        # init_db(query)
+        truncate_table('<>_notification')
         
-
         return Response(
                 status=True,
                 code=200,

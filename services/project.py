@@ -164,7 +164,7 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
                 message = f"A project has been closed. Project ID: {id}"
                 send_notifications(device_tokens, title, message)
         # if update_data.get('stage') == "poraised":
-        if item.stage and item.stage.lower() == "reviewraised":    
+        if item.status and item.status.lower() == "raise-review":    
             query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
             rows= execute_company_query( query, Role.Engineer.value, Role.EngineerHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]

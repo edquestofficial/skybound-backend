@@ -170,3 +170,21 @@ def get_state(query,*args):
         conn.commit()
         conn.close()
         return [{k: v for k, v in dict(r).items() } for r in rows ]
+
+def truncate_table(table_name):
+    try:
+        conn = get_db()
+        aliasname = state.value
+        if aliasname :
+             table_name = table_name.replace('<>',aliasname)
+        query = f"DELETE FROM {table_name};DELETE FROM sqlite_sequence WHERE name='{table_name}';"
+        conn.executescript(query)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Exception in company Query Exceution", e)
+        return []
+    finally:
+        # This runs NO MATTER WHAT, even after a return statement
+        if conn:
+            conn.close()

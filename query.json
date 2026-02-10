@@ -73,7 +73,10 @@
 "NOTIFICATION":{
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_notification(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, device_id TEXT, created_date TEXT)",
     "INSERT":"INSERT INTO <>_notification (user_id, device_id, created_date) VALUES (?, ?, datetime('now', '+5 hours', '+30 minutes'))",
-    "SELECT":"SELECT * FROM <>_notification WHERE user_id = ? AND device_id = ? order by id desc limit 1 ",
-    "SELECT_ALL":"SELECT id, device_id, created_date FROM <>_notification WHERE user_id = ? ORDER BY id DESC LIMIT ?"
+    "SELECT":"SELECT * FROM <>_notification WHERE device_id = ? order by id desc limit 1 ",
+    "SELECT_ALL":"SELECT id, device_id, created_date FROM <>_notification WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+    "UPDATE":"UPDATE <>_notification SET user_id = ? WHERE device_id = ?",
+    "DELETE":"DELETE FROM <>_notification WHERE device_id = ?"
+      
 }
 }

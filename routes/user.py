@@ -92,9 +92,12 @@ def login(user: Login):
             )
         #get the device id and check if this id already in notification table then do nothing else store in notification table
         if user.device_id:
-            cur = execute_company_query(db_query['NOTIFICATION']['SELECT'],user_data['id'], user.device_id)
-            if not cur:
+            cur = execute_company_query(db_query['NOTIFICATION']['SELECT'], user.device_id)
+            if len(cur) > 1:
+                execute_company_query(db_query['NOTIFICATION']['DELETE'], user.device_id)   
                 execute_company_query(db_query['NOTIFICATION']['INSERT'],user_data['id'], user.device_id)
+            elif cur and cur[0]['user_id'] != user_data['id']:
+                execute_company_query(db_query['NOTIFICATION']['UPDATE'],user_data['id'], user.device_id)
 
         token = create_token(user_data, user.device_id)
         data = {"token":token,"user":{"id":user_data["id"],"email":user_data["emailid"],"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"], "mobile":user_data["mobile"]}}
