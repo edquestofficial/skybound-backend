@@ -48,7 +48,7 @@ jobs:
             uv sync
 
             # Restart FastAPI service
-            sudo systemctl restart fastapi
+            sudo systemctl restart skybound-prod
           EOF
 
       - name: Notify success
