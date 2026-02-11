@@ -51,7 +51,7 @@ def edit(update:EditLead, userinfo = Depends(role_required([Role.Admin, Role.Sal
         return Response(
             status=False,
             code=400,
-            message="please provide the atleast one lead id",
+            message="Please provide the atleast one lead id",
             data=[]
         )
     else:
@@ -73,14 +73,14 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales, Ro
     return Response(
             status=True,
             code=200,
-            message="Fetch Count successfully",
+            message="Fetch count successfully",
             data=result
         )
 
 @lead_router.post("/timeline")
 def create( id: int = Form(...),
     comment: str = Form(...),
-    files: List[UploadFile] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales]))):
+    files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     saved_files = []
     docs :str = ""
     if files:
@@ -128,7 +128,7 @@ async def bulk_upload(file: UploadFile = File(...)):
             return Response(
                 status=False,
                 code=400,
-                message="Invalid file format. Missing required headers.",
+                message="Invalid file format. missing required headers.",
                 error=missing_headers
             )
 # --- 2. Data Processing (ALL FIXES APPLIED) ---        
@@ -173,9 +173,7 @@ async def bulk_upload(file: UploadFile = File(...)):
 # callback function to get lead from indiamart api and create lead in skybound
 @lead_router.post("/indiamart/callback")
 def indiamart_callback(payload: Any = Body(...)):
-    try:
-        print("Received lead from indiamart:")
-        
+    try:        
         # Parse the IndiaMART API response
         if isinstance(payload, dict):
             response_data = payload.get("RESPONSE", {})

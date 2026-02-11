@@ -1,15 +1,15 @@
 
 import os
 import shutil
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from core.role import Role
 from utility.auth import role_required
 from models.response import Response
 from services.project import create_project,fetch_project, count_project, addTimeLine, updateProject
 from schemas.project import SearchProject, UpdateModel
-project_router = APIRouter()
 
+project_router = APIRouter()
 
 @project_router.post("/")
 def fetch(proj : SearchProject, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
@@ -27,7 +27,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer 
     return Response(
             status=True,
             code=200,
-            message="Fetch Count successfully",
+            message="Fetch count successfully",
             data=result
         )
 
@@ -37,7 +37,7 @@ def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.
         return Response(
             status=False,
             code=400,
-            message="please provide the atleast one lead id",
+            message="Please provide the atleast one lead id",
             data=[]
         )
     else:
@@ -56,7 +56,7 @@ def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.
 @project_router.post("/timeline")
 def create( id: int = Form(...),
     comment: str = Form(...),
-    files: List[UploadFile] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer]))):
+    files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     saved_files = []
     docs :str = ""
     if files:

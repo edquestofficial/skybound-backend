@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException,Depends
 from schemas.email import EmailSchema
 from schemas.user import ChangePassword, EmailUser, User,Login, UserUpdate,SearchUser
@@ -13,7 +12,7 @@ from core.role import Role
 from utility.mail import send_email_smtp
 from utility.statemgmt import state
 from utility.auth import role_required
-from services.user import EditUser, fetchUser, reset_password,change_password
+from services.user import EditUser, fetchUser, reset_password,change_password,notification
 import random
 
 settings = Settings()
@@ -40,9 +39,8 @@ async def register(user: User,userinfo = Depends(role_required([Role.Admin,Role.
         
     password  = random.randint(10_000_000, 99_999_999)
     hashed = hash_password(password)
-    # print("Passw0rd",hashed)
     execute_company_query(db_query['USER']['INSERT'], user.name, hashed, username, user.mobile, user.emailid, user.role,1,user.image,userinfo['role'])
-
+    notification("New user added", f"New user {user.name} has been registered.")
     email_data = EmailSchema()
     email_data.recipient_email = user.emailid
     email_data.body = f"""Hi {user.name.capitalize()},
@@ -79,7 +77,7 @@ def login(user: Login):
         user_data = fetch_single_record(db_query['USER']['SELECT_USER_NAME_PASS'], user.username) 
         if user_data and user_data["active"] == 0 :
             return Response(
-                status=True,
+                status=False,
                 code=200,
                 message="Your account is deactivated",
                 data=[]
@@ -94,16 +92,19 @@ def login(user: Login):
             )
         #get the device id and check if this id already in notification table then do nothing else store in notification table
         if user.device_id:
-            cur = execute_company_query(db_query['NOTIFICATION']['SELECT'],user_data['id'], user.device_id)
-            if not cur:
+            cur = execute_company_query(db_query['NOTIFICATION']['SELECT'], user.device_id)
+            if len(cur) > 1:
+                execute_company_query(db_query['NOTIFICATION']['DELETE'], user.device_id)   
                 execute_company_query(db_query['NOTIFICATION']['INSERT'],user_data['id'], user.device_id)
+            elif cur and cur[0]['user_id'] != user_data['id']:
+                execute_company_query(db_query['NOTIFICATION']['UPDATE'],user_data['id'], user.device_id)
 
         token = create_token(user_data, user.device_id)
         data = {"token":token,"user":{"id":user_data["id"],"email":user_data["emailid"],"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"], "mobile":user_data["mobile"]}}
         return Response(
                 status=True,
                 code=200,
-                message="Login Successfully",
+                message="Login successfully",
                 data=data
             )
       else :
@@ -157,7 +158,7 @@ If you have any questions or need assistance logging in, feel free to contact ou
 
 Thank you,
 Skybound"""
-        email_data.subject ="Your Account Has Been Successfully Created"
+        email_data.subject ="Your account has been successfully created"
         result = await send_email_smtp(email_data)
         return Response(
             status=True,
@@ -197,6 +198,7 @@ def edit(id:int,user: UserUpdate,userinfo = Depends(role_required([Role.Admin, R
     if Role.Admin.value == 2 or userinfo['id'] == id :
     # Check existing user
         EditUser(id,user,userinfo['id'])
+        notification("User updated", f"User has been updated.")
         return Response(
                 status=True,
                 code=200,
@@ -229,7 +231,6 @@ async def resetpassword(email:EmailUser,userInfo= Depends(role_required([Role.Ad
             )
     password  = random.randint(10_000_000, 99_999_999)
     hashed = hash_password(password)
-    # print("Passw0rd",hashed)
     
     execute_company_query(db_query['USER']['UPDATE_PASSWORD'],  hashed, emailId)
 
@@ -247,9 +248,8 @@ If you have any questions or need assistance logging in, feel free to contact ou
 
 Thank you,
 Skybound"""
-    email_data.subject ="Your Password reset successfully"
+    email_data.subject ="Your password reset successfully"
     result = await send_email_smtp(email_data)
-    print(result)
     return Response(
             status=True,
             code=200,
@@ -277,7 +277,6 @@ async def changepassword(changepassword:ChangePassword,userInfo= Depends(role_re
             data=[]
         )
     hashed = hash_password(changepassword.newpassword)
-    # print("Passw0rd",hashed)
     
     execute_company_query(db_query['USER']['UPDATE_PASSWORD'],  hashed, user_data['emailid'])
 
@@ -295,7 +294,7 @@ If you have any questions or need assistance logging in, feel free to contact ou
 
 Thank you,
 Skybound"""
-    email_data.subject ="Your Password reset successfully"
+    email_data.subject ="Your password changed successfully"
     result = await send_email_smtp(email_data)
     return Response(
             status=True,
