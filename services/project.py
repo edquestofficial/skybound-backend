@@ -4,7 +4,7 @@ from core.config import db_query
 from schemas.project import UpdateModel
 from utility.pushnotify import send_notify, send_notifications
 from utility.dateutility import ist_now
-
+import json
 def create_project(lead_id, user_id):
     execute_company_query(db_query['PROJECT']['INSERT'],lead_id, 'cold', 'open', 1, user_id)
     return True
@@ -128,6 +128,7 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
         update_data['modify_by'] = loggedin_userId
         if update_data.get('assigned_to') not in (None, ""):
             update_data['assigned_by'] = loggedin_userId
+            update_data['assigned_to'] = json.dumps(update_data['assigned_to'])
             update_data['status']= 'inprogress'
 
         update_data = {
@@ -138,15 +139,16 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
         set_clause = ", ".join(f"{key}=?" for key in update_data.keys())
         values = list(update_data.values())
         values.append(id)
-
+        update_data['assigned_to'] = json.loads(update_data['assigned_to'])
         query = db_query['PROJECT']['UPDATE']
         update_query(query,set_clause, values)
+
         # if update_data.get('assigned_to') not in (None, ""):
         if item.assigned_to not in (None, ""):
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_USERID"]
             device_tokens=list()
-            for i in item.assigned_to:
-                rows= execute_company_query( query, update_data.get('assigned_to'), Role.EngineerHead.value, Role.Admin.value)
+            for i in update_data['assigned_to']:
+                rows= execute_company_query( query, i, Role.EngineerHead.value, Role.Admin.value)
                 device_token = [row['device_id'] for row in rows if row.get('device_id')]
                 device_tokens.extend(device_token)
             query_user = db_query["USER"]["SELECT_USER_BYID"]
