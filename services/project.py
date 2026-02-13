@@ -152,11 +152,14 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
                 device_token = [row['device_id'] for row in rows if row.get('device_id')]
                 device_tokens.extend(device_token)
             query_user = db_query["USER"]["SELECT_USER_BYID"]
-            user = execute_company_query(query_user, update_data.get('assigned_to'))
+            users=list()
+            for i in update_data['assigned_to']:
+                user = execute_company_query(query_user, i)
+                users.append(user[0]['name'])
             # send notification to all sales person
             if device_tokens:
                 title = "Project assigned"
-                message = f"A new project({id}) has been assigned to {user[0]['name'] if user else 'Unknown User' }."
+                message = f"A new project({id}) has been assigned to {json.dumps(users) if users else 'Unknown User' }."
                 send_notifications(device_tokens, title, message)
         # if update_data.get('stage') == "closed":
         if item.status and item.status.lower() == "closed":
