@@ -15,7 +15,7 @@ class SearchProject(BaseModel):
 
 class UpdateModel(BaseModel):
     id: list[int] = Field(default_factory=list)
-    assigned_to : int | None = None
+    assigned_to : list[int] | None = None
     status : str | None = None
     stage : str | None = None
 

@@ -144,8 +144,11 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
         # if update_data.get('assigned_to') not in (None, ""):
         if item.assigned_to not in (None, ""):
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_USERID"]
-            rows= execute_company_query( query, update_data.get('assigned_to'), Role.EngineerHead.value, Role.Admin.value)
-            device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+            device_tokens=list()
+            for i in item.assigned_to:
+                rows= execute_company_query( query, update_data.get('assigned_to'), Role.EngineerHead.value, Role.Admin.value)
+                device_token = [row['device_id'] for row in rows if row.get('device_id')]
+                device_tokens.extend(device_token)
             query_user = db_query["USER"]["SELECT_USER_BYID"]
             user = execute_company_query(query_user, update_data.get('assigned_to'))
             # send notification to all sales person
