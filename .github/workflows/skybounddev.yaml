@@ -3,10 +3,10 @@ name: Model Training Pipeline
 on:
   push:
     branches:
-      - revamp-be
+      - dev
 jobs:
   deploy:
-    name: Build & Deploy Skybound prod (Hostinger VPS)
+    name: Build & Deploy Skybound (Hostinger VPS)
     runs-on: ubuntu-latest
 
     steps:
@@ -20,19 +20,19 @@ jobs:
 
       - name: Deploy to Hostinger VPS
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER2 }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             set -e
 
-            cd skybound-prod
+            cd Skybound-backend
 
             # Pull latest code
             if [ -d ".git" ]; then
               git fetch origin
-              git checkout revamp-be
-              git reset --hard origin/revamp-be
+              git checkout dev
+              git reset --hard origin/dev
               git clean -fd
             else
-              git clone -b revamp-be https://github.com/edquestofficial/skybound-backend.git .
+              git clone -b dev https://github.com/edquestofficial/skybound-backend.git .
             fi
 
             # Install uv if missing
@@ -48,8 +48,8 @@ jobs:
             uv sync
 
             # Restart FastAPI service
-            sudo systemctl restart skybound-prod
+            sudo systemctl restart fastapi
           EOF
 
       - name: Notify success
-        run: echo "Skybound FastAPI deployed successfully on Hostinger VPS 🚀"
+        run: echo "Skybound FastAPI deployed for dev env successfully on Hostinger VPS 🚀"
