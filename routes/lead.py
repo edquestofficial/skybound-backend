@@ -9,7 +9,7 @@ import numpy as np
 from models.response import Response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import bulk_create_lead, create_lead, updateLead, count_lead, fetch_lead, addTimeLine
+from services.lead import bulk_create_lead, create_lead, updateLead, count_lead, fetch_lead, addTimeLine, editTimeLine, deleteTimeline
 
 lead_router = APIRouter()
 
@@ -99,6 +99,46 @@ def create( id: int = Form(...),
             status=True,
             code=200,
             message="Comment added successfully",
+            data=[]
+        )
+@lead_router.post("/timelineEdit")
+def edit_timeline(id: int, docs :str, comment: Optional[str] = Form(...),
+    files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
+    saved_files = []
+    if files:
+        upload_dir = "Lead_Doc"
+        os.makedirs(upload_dir, exist_ok=True)
+
+        for file in files:
+            file_location = f"{upload_dir}/{id}_{file.filename}"
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            saved_files.append(file_location)
+            docs += ",".join(saved_files)
+    
+    if files  or comment :
+        editTimeLine(id, comment, userinfo, docs)
+    return Response(
+            status=True,
+            code=200,
+            message="Comment added successfully",
+            data=[]
+        )
+@lead_router.post("/timelineDelete")
+def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
+    result = deleteTimeline(id, userinfo)
+    if result:
+        return Response(
+            status=True,
+            code=200,
+            message="Timeline deleted successfully",
+            data=[]
+        )
+    else:
+        return Response(
+            status=False,
+            code=400,
+            message="Failed to delete timeline",
             data=[]
         )
 

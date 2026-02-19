@@ -17,3 +17,7 @@ def addTimeLine(comment, userinfo, docUrls):
         message = f"A Company timeline has been added."
         send_notifications(device_tokens, title, message)
     return result
+
+def editTimeLine(timeline_id, comment, userinfo, docUrls):
+    result = execute_company_query(db_query['COMPANY_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
+    return result   

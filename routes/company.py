@@ -7,7 +7,7 @@ from database import execute_query, init_db,execute_company_query, truncate_tabl
 from models.response import Response
 from core.role import Role
 from core.config import db_query
-from services.company import addTimeLine
+from services.company import addTimeLine, editTimeLine
 from utility.auth import role_required
 from utility.statemgmt import state
 import os
@@ -129,5 +129,46 @@ def create_timeline( comment: Optional[str] = Form(...),
             status=True,
             code=200,
             message="Comment added successfully",
+            data=[]
+        )
+
+@router.post("/timelineEdit")
+def edit_timeline(id: int, docs :str, comment: Optional[str] = Form(...),
+    files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
+    saved_files = []
+    if files:
+        upload_dir = "Company_Doc"
+        os.makedirs(upload_dir, exist_ok=True)
+
+        for file in files:
+            file_location = f"{upload_dir}/{file.filename}"
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            saved_files.append(file_location)
+            docs += ",".join(saved_files)
+    
+    if files  or comment :
+        editTimeLine(id, comment, userinfo, docs)
+    return Response(
+            status=True,
+            code=200,
+            message="Timeline edited successfully",
+            data=[]
+        )
+@router.post("/timelineDelete")
+def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
+    result = execute_company_query(db_query['COMPANY_TIMELINE']['DELETE'], id)
+    if result:
+        return Response(
+            status=True,
+            code=200,
+            message="Timeline deleted successfully",
+            data=[]
+        )
+    else:
+        return Response(
+            status=False,
+            code=400,
+            message="Failed to delete timeline",
             data=[]
         )

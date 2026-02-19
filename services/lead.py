@@ -128,6 +128,13 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
         send_notifications(device_tokens, title, message)
     return result
 
+def editTimeLine(timeline_id, comment, userinfo, docUrls):
+    result = execute_company_query(db_query['LEAD_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
+    return result
+
+def deleteTimeline(timeline_id, userinfo):
+    result = execute_company_query(db_query['LEAD_TIMELINE']['DELETE'], userinfo['id'], timeline_id)
+    return result
 
 LIKE_COLUMNS = {
     "city": "a.city",

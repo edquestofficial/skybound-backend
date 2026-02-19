@@ -253,3 +253,10 @@ def assign_project_user(projid, user_ids):
     except Exception as e:
         print("Exception in assign_project_user", e)
         return False
+    
+def editTimeLine(comment, userinfo, docUrls, timeline_id):
+    result = execute_company_query(db_query['PROJECT_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
+    return result
+def deleteTimeline(timeline_id, userinfo):
+    result = execute_company_query(db_query['PROJECT_TIMELINE']['DELETE'], userinfo['id'], timeline_id)
+    return result
