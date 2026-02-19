@@ -171,6 +171,27 @@ def get_state(query,*args):
         conn.close()
         return [{k: v for k, v in dict(r).items() } for r in rows ]
 
+# create multiple table using query with ; separator
+def create_table(query):
+    try:
+        conn = get_db()
+        aliasname = state.value
+        if aliasname :
+            query = query.replace('<>',aliasname)
+        conn.executescript(query)
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print("Exception in create table Exceution", e)
+        return None
+    finally:
+        # This runs NO MATTER WHAT, even after a return statement
+        if conn:
+            conn.close()
+
+
+
 def truncate_table(table_name):
     try:
         conn = get_db()

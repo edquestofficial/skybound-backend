@@ -54,6 +54,64 @@ def build_filters(filters):
     return conditions, values
 
 
+# def fetch_project(proj,userinfo):
+#     user_id = userinfo['id']
+#     role = userinfo['role']
+#     # query = db_query['PROJECT']['SELECT_ALL_NEW']
+#     query = """
+#         SELECT 
+#             p.*,
+#             u.id as user_id,
+#             u.name as user_name
+#         FROM sb_project p
+#         LEFT JOIN sb_project_user_mapping m 
+#             ON p.id = m.project_id
+#         LEFT JOIN sb_user u 
+#             ON m.user_id = u.id
+#         WHERE 1=1
+#     """
+   
+#     params = []
+    # if proj.id is not None:
+    #     query += " AND p.id = ?"
+    #     params.append(proj.id)
+
+    # if proj.city:
+    #     query += " AND p.city = ?"
+    #     params.append(proj.city)
+
+    # if proj.state:
+    #     query += " AND p.state = ?"
+    #     params.append(proj.state)
+
+    # if proj.enquiry_type:
+    #     query += " AND p.enquiry_type = ?"
+    #     params.append(proj.enquiry_type)
+
+    # if proj.status:
+    #     query += " AND p.status = ?"
+    #     params.append(proj.status)
+
+    # if proj.stage:
+    #     query += " AND p.stage = ?"
+    #     params.append(proj.stage)
+
+    # if proj.last_id:
+    #     query += " AND p.id < ?"
+    #     params.append(proj.last_id)
+    
+    # query += "ORDER BY p.id desc LIMIT ?"
+    # params.append(proj.limit)
+    # params_values = ",".join(map(str, params))
+    # result = execute_company_query(query,params_values)
+    # if proj.id is not None:
+    #     query = db_query['PROJECT_TIMELINE']['SELECT']
+    #     rows=execute_company_query(query,proj.id)
+    #     for row in rows:
+    #         urls = row.get("docs_urls", "")
+    #         row["docs_urls"] = urls.split(",") if urls else []
+    #     result[0]['timeline']=rows
+    # return result
 
 
 def fetch_project(proj,userinfo):
@@ -123,16 +181,30 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
     
         if not proj:
            return False
+        # if update_data.get('assigned_to') not in (None, ""):
+        if len(item.assigned_to) > 0:
+            assign_project_user(id, item.assigned_to)
+            # query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_USERIDs"]
+            # query = query.replace("#", ",".join(str(user_id) for user_id in item.assigned_to))
+            # rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
+            # device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+            # query_user = db_query["USER"]["SELECT_USER_BYID"]
+            # user = execute_company_query(query_user, update_data.get('assigned_to'))
+            # # send notification to all sales person
+            # if device_tokens:
+            #     title = "Project assigned"
+            #     message = f"A new project({id}) has been assigned to {user[0]['name'] if user else 'Unknown User' }."
+            #     send_notifications(device_tokens, title, message)
         update_data = item.model_dump(exclude_unset=True)
         update_data['modify_date'] = ist_now()
         update_data['modify_by'] = loggedin_userId
-        if update_data.get('assigned_to') not in (None, ""):
+        if len(item.assigned_to) > 0 :
             update_data['assigned_by'] = loggedin_userId
-            update_data['status']= 'inprogress'
+            update_data['status'] = 'inprogress'
 
         update_data = {
             k: v for k, v in update_data.items()
-            if v not in (None, "","0")
+            if v not in (None, "", "0") and not isinstance(v, list)
         }
        
         set_clause = ", ".join(f"{key}=?" for key in update_data.keys())
@@ -141,18 +213,7 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
 
         query = db_query['PROJECT']['UPDATE']
         update_query(query,set_clause, values)
-        # if update_data.get('assigned_to') not in (None, ""):
-        if item.assigned_to not in (None, ""):
-            query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_USERID"]
-            rows= execute_company_query( query, update_data.get('assigned_to'), Role.EngineerHead.value, Role.Admin.value)
-            device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-            query_user = db_query["USER"]["SELECT_USER_BYID"]
-            user = execute_company_query(query_user, update_data.get('assigned_to'))
-            # send notification to all sales person
-            if device_tokens:
-                title = "Project assigned"
-                message = f"A new project({id}) has been assigned to {user[0]['name'] if user else 'Unknown User' }."
-                send_notifications(device_tokens, title, message)
+        
         # if update_data.get('stage') == "closed":
         if item.status and item.status.lower() == "closed":
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
@@ -177,4 +238,18 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
         return True
         
     except Exception as e:
+        print("Exception in updateProject", e)
         raise 
+
+# this function is used to assign a project to multiple users, it will take project id and list of user id , first delete alll mapping on the basis of proj id then assign the project to those users by inserting records in project_user_mapping table 
+def assign_project_user(projid, user_ids):
+    try:
+        if len(user_ids) == 0:
+            return
+        execute_company_query(db_query['PROJECT']['DELETE_PROJECT_USER_MAPPING'], projid)
+        for user_id in user_ids:
+            execute_company_query(db_query['PROJECT']['INSERT_PROJECT_USER_MAPPING'], projid, user_id)
+        return True
+    except Exception as e:
+        print("Exception in assign_project_user", e)
+        return False

@@ -1,10 +1,11 @@
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 class SearchProject(BaseModel):
     id:int |None = None
-    city :str = None
-    state:str =  None
-    enquiry_type :str = None
+    city :str |None = None
+    state:str |None =  None
+    enquiry_type :str |None = None
     assigned_to : int | None = None
     status : str | None = None
     stage : str | None = None
@@ -15,7 +16,7 @@ class SearchProject(BaseModel):
 
 class UpdateModel(BaseModel):
     id: list[int] = Field(default_factory=list)
-    assigned_to : int | None = None
+    assigned_to : List[int]  = []
     status : str | None = None
     stage : str | None = None
 

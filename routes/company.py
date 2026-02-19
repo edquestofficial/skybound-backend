@@ -1,10 +1,14 @@
-from fastapi import APIRouter, HTTPException,Depends
+import shutil
+from typing import List, Optional
+from fastapi import APIRouter, File, Form, HTTPException,Depends, UploadFile
 from schemas.company import Company
-from database import execute_query, init_db,execute_company_query, truncate_table
+from database import execute_query, init_db,execute_company_query, truncate_table, create_table
 
 from models.response import Response
 from core.role import Role
 from core.config import db_query
+from services.company import addTimeLine
+from utility.auth import role_required
 from utility.statemgmt import state
 import os
 
@@ -55,9 +59,12 @@ def register(company: Company):
 def setup_db():
     try :
         # os.remove("skybound.db")
-        # query = db_query['COMPANY']['CREATE']+ db_query['STATE']['CREATE']+db_query['STATE']['INSERT']
+        # query = db_query['COMPANY']['CREATE']+ db_query['STATE']['CREATE']+db_query['STATE']['INSERT']+db_query['COMPANY_TIMELINE']['CREATE']
         # init_db(query)
-        truncate_table('<>_notification')
+        # truncate_table('<>_notification')
+        # 
+        query = db_query['LEAD_TIMELINE']['DELETE_TABLE']+db_query['LEAD_TIMELINE']['CREATE'] +db_query['PROJECT_TIMELINE']['DELETE_TABLE']+db_query['PROJECT_TIMELINE']['CREATE']+db_query['COMPANY_TIMELINE']['DELETE_TABLE']+db_query['COMPANY_TIMELINE']['CREATE']+ db_query['PROJECT']['CREATE_PROJECT_USER_MAPPING']   
+        create_table(query)
         
         return Response(
                 status=True,
@@ -72,3 +79,55 @@ def setup_db():
                 message="Something went wrong !!+ error:"+ str(e),
                 data=[]
             )
+
+@router.get("/gettimeline")
+def get_timeline( userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
+    try:
+        timeline = execute_company_query(db_query['COMPANY_TIMELINE']['SELECT'])
+        timeline_list = []
+        for row in timeline:
+            timeline_list.append({
+                "id": row['id'],
+                "message": row['message'],
+                "created_by": row['created_by'],
+                "created_at": row['created_date'],
+                "documents": row['docs_urls']
+            })
+        return Response(
+                status=True,
+                code=200,
+                message="Timeline fetched successfully",
+                data=timeline_list
+            )
+    except Exception as e:
+       return Response(
+                status=False,
+                code=400,
+                message="Something went wrong !!+ error:"+ str(e),
+                data=[]
+            )
+
+@router.post("/timeline")
+def create_timeline( comment: Optional[str] = Form(...),
+    files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
+    saved_files = []
+    docs :str = ""
+    if files:
+        upload_dir = "Company_Doc"
+        os.makedirs(upload_dir, exist_ok=True)
+
+        for file in files:
+            file_location = f"{upload_dir}/{file.filename}"
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            saved_files.append(file_location)
+            docs = ",".join(saved_files)
+    
+    if files  or comment :
+        addTimeLine(comment, userinfo, docs)
+    return Response(
+            status=True,
+            code=200,
+            message="Comment added successfully",
+            data=[]
+        )

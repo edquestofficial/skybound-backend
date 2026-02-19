@@ -1,4 +1,3 @@
-
 import os
 import shutil
 from typing import List, Optional
@@ -32,30 +31,37 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer 
         )
 
 @project_router.post("/edit")
-def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
+def edit(update: UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     if len(update.id) == 0:
         return Response(
             status=False,
             code=400,
-            message="Please provide the atleast one lead id",
-            data=[]
+            message="Please provide at least one project ID",
         )
-    else:
-        ids = update.id
-        del update.id
-        for id in ids:
-            loggedin_userId = userinfo['id']
-            updateProject(id,update, loggedin_userId)
-     
-    return Response(
+
+    if len(update.assigned_to) == 0:
+        return Response(
+            status=False,
+            code=400,
+            message="Please assign at least one user to the project",
+        )
+
+    result = updateProject(update.id[0], update, userinfo['id'])
+    if result:
+        return Response(
             status=True,
             code=200,
-            message="Project update successfully",
-            data=[]
+            message="Project updated successfully",
+        )
+    else:
+        return Response(
+            status=False,
+            code=500,
+            message="Failed to update the project",
         )
 @project_router.post("/timeline")
-def create( id: int = Form(...),
-    comment: str = Form(...),
+def create_timeline( id: int = Form(...),
+    comment: Optional[str] = Form(...),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     saved_files = []
     docs :str = ""
@@ -69,7 +75,8 @@ def create( id: int = Form(...),
                 shutil.copyfileobj(file.file, buffer)
             saved_files.append(file_location)
             docs = ",".join(saved_files)
-    addTimeLine(id, comment, userinfo, docs)
+    if files  or comment :
+         addTimeLine(id, comment, userinfo, docs)
     return Response(
             status=True,
             code=200,

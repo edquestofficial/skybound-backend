@@ -79,7 +79,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales, Ro
 
 @lead_router.post("/timeline")
 def create( id: int = Form(...),
-    comment: str = Form(...),
+    comment: Optional[str] = Form(...),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     saved_files = []
     docs :str = ""
@@ -93,7 +93,8 @@ def create( id: int = Form(...),
                 shutil.copyfileobj(file.file, buffer)
             saved_files.append(file_location)
             docs = ",".join(saved_files)
-    addTimeLine(id, comment, userinfo, docs)
+    if files  or comment :
+        addTimeLine(id, comment, userinfo, docs)
     return Response(
             status=True,
             code=200,
