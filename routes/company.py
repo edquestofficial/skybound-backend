@@ -84,20 +84,14 @@ def setup_db():
 def get_timeline( userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
     try:
         timeline = execute_company_query(db_query['COMPANY_TIMELINE']['SELECT'])
-        timeline_list = []
         for row in timeline:
-            timeline_list.append({
-                "id": row['id'],
-                "message": row['message'],
-                "created_by": row['created_by'],
-                "created_at": row['created_date'],
-                "documents": row['docs_urls']
-            })
+            urls = row.get("docs_urls", "")
+            row["docs_urls"] = urls.split(",") if urls else []
         return Response(
                 status=True,
                 code=200,
                 message="Timeline fetched successfully",
-                data=timeline_list
+                data=timeline
             )
     except Exception as e:
        return Response(
@@ -121,7 +115,7 @@ def create_timeline( comment: Optional[str] = Form(...),
             with open(file_location, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             saved_files.append(file_location)
-            docs = ",".join(saved_files)
+        docs = ",".join(saved_files)
     
     if files  or comment :
         addTimeLine(comment, userinfo, docs)
@@ -133,29 +127,31 @@ def create_timeline( comment: Optional[str] = Form(...),
         )
 
 @router.post("/timelineEdit")
-def edit_timeline(id: int = Form(...), docs :str = Form(...),comment: Optional[str] = Form(...),
+def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(...),comment: Optional[str] = Form(...),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
     saved_files = []
+   
     if files:
         upload_dir = "Company_Doc"
         os.makedirs(upload_dir, exist_ok=True)
-
+        if docs_urls and docs_urls[-1] != ",":
+            docs_urls += ","
         for file in files:
             file_location = f"{upload_dir}/{file.filename}"
             with open(file_location, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             saved_files.append(file_location)
-            docs += ",".join(saved_files)
+        docs_urls += ",".join(saved_files)
     
     if files  or comment :
-        editTimeLine(id, comment, userinfo, docs)
+        editTimeLine(id, comment, userinfo, docs_urls)
     return Response(
             status=True,
             code=200,
             message="Timeline edited successfully",
             data=[]
         )
-@router.post("/timelineDelete")
+@router.get("/timelineDelete")
 def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
     execute_company_query(db_query['COMPANY_TIMELINE']['DELETE'], id)
     return Response(

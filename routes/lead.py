@@ -92,7 +92,7 @@ def create( id: int = Form(...),
             with open(file_location, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             saved_files.append(file_location)
-            docs = ",".join(saved_files)
+        docs = ",".join(saved_files)
     if files  or comment :
         addTimeLine(id, comment, userinfo, docs)
     return Response(
@@ -102,29 +102,31 @@ def create( id: int = Form(...),
             data=[]
         )
 @lead_router.post("/timelineEdit")
-def edit_timeline(id: int = Form(...), docs :str = Form(...), comment: Optional[str] = Form(...),
+def edit_timeline(lead_id: int = Form(...), docs_urls :str = Form(...), comment: Optional[str] = Form(...),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     saved_files = []
+    id = lead_id
     if files:
         upload_dir = "Lead_Doc"
         os.makedirs(upload_dir, exist_ok=True)
-
+        if docs_urls and docs_urls[-1] != ",":
+            docs_urls += ","
         for file in files:
             file_location = f"{upload_dir}/{id}_{file.filename}"
             with open(file_location, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             saved_files.append(file_location)
-            docs += ",".join(saved_files)
+        docs_urls += ",".join(saved_files)
     
     if files  or comment :
-        editTimeLine(id, comment, userinfo, docs)
+        editTimeLine(id, comment, userinfo, docs_urls)
     return Response(
             status=True,
             code=200,
-            message="Comment added successfully",
+            message="Comment edited successfully",
             data=[]
         )
-@lead_router.post("/timelineDelete")
+@lead_router.get("/timelineDelete")
 def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     result = deleteTimeline(id, userinfo)
     if result:
@@ -230,9 +232,10 @@ def indiamart_callback(payload: Any = Body(...)):
             "contact_number": response_data.get("SENDER_MOBILE", "").replace("+91-", "").replace("+91", ""),
             "email": response_data.get("SENDER_EMAIL"),
             "enquiry_type": "Product Inquiry",
-            "requirement": response_data.get("QUERY_MESSAGE", "")
+            "requirement": response_data.get("QUERY_MESSAGE", ""),
+            "india_mart_id": response_data.get("UNIQUE_QUERY_ID", "")  
         }
-        
+        print(f"Parsed lead data from IndiaMART code, status, unique_query_id: {payload.get('CODE', {})}, {payload.get('STATUS')}, {payload.get('UNIQUE_QUERY_ID')}")
         # Create Lead object
         lead = Lead(**lead_data)
         response = create_lead(lead, userinfo=None)
@@ -253,9 +256,10 @@ def indiamart_callback(payload: Any = Body(...)):
             )
     except Exception as e:
         print(f"Error processing IndiaMART callback: {str(e)}")
+        print(f"Payload received: {payload}")
         return Response(
             status=False,
-            code=500,
+            code=200,
             message="Error processing IndiaMART callback",
             data=[]
         )

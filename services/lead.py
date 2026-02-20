@@ -129,8 +129,14 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
     return result
 
 def editTimeLine(timeline_id, comment, userinfo, docUrls):
-    result = execute_company_query(db_query['LEAD_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
-    return True
+    try:
+        result = execute_company_query(db_query['LEAD_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
+        return True
+    except Exception as e:
+        print("Error in editing timeline:", e)
+        return False
+    
+    
 
 def deleteTimeline(timeline_id, userinfo):
     result = execute_company_query(db_query['LEAD_TIMELINE']['DELETE'], userinfo['id'], timeline_id)

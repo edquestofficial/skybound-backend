@@ -60,10 +60,11 @@ def edit(update: UpdateModel, userinfo = Depends(role_required([Role.Admin, Role
             message="Failed to update the project",
         )
 @project_router.post("/timeline")
-def create_timeline( id: int = Form(...),
+def create_timeline( proj_id: int = Form(...),
     comment: Optional[str] = Form(...),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     saved_files = []
+    id = proj_id
     docs :str = ""
     if files:
         upload_dir = "Project_Doc"
@@ -74,7 +75,7 @@ def create_timeline( id: int = Form(...),
             with open(file_location, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             saved_files.append(file_location)
-            docs = ",".join(saved_files)
+        docs = ",".join(saved_files)
     if files  or comment :
          addTimeLine(id, comment, userinfo, docs)
     return Response(
@@ -84,22 +85,24 @@ def create_timeline( id: int = Form(...),
             data=[]
         )
 @project_router.post("/timelineEdit")
-def edit_timeline(id: int = Form(...), docs :str = Form(...), comment: Optional[str] = Form(...),
+def edit_timeline(id: int = Form(...), docs_urls :str = Form(...), comment: Optional[str] = Form(...),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     saved_files = []
+   
     if files:
         upload_dir = "Project_Doc"
         os.makedirs(upload_dir, exist_ok=True)
-
+        if docs_urls and docs_urls[-1] != ",":
+            docs_urls += ","
         for file in files:
             file_location = f"{upload_dir}/{id}_{file.filename}"
             with open(file_location, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             saved_files.append(file_location)
-            docs += ",".join(saved_files)
+        docs_urls += ",".join(saved_files)
     
     if files  or comment :
-        editTimeLine(id, comment, userinfo, docs)
+        editTimeLine(id, comment, userinfo, docs_urls)
     return Response(
             status=True,
             code=200,
@@ -107,7 +110,7 @@ def edit_timeline(id: int = Form(...), docs :str = Form(...), comment: Optional[
             data=[]
         )
 
-@project_router.post("/timelineDelete")
+@project_router.get("/timelineDelete")
 def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     result = deleteTimeline(id, userinfo)
     if result:
