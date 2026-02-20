@@ -133,7 +133,7 @@ def create_timeline( comment: Optional[str] = Form(...),
         )
 
 @router.post("/timelineEdit")
-def edit_timeline(id: int, docs :str, comment: Optional[str] = Form(...),
+def edit_timeline(id: int = Form(...), docs :str = Form(...),comment: Optional[str] = Form(...),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
     saved_files = []
     if files:
@@ -157,18 +157,11 @@ def edit_timeline(id: int, docs :str, comment: Optional[str] = Form(...),
         )
 @router.post("/timelineDelete")
 def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
-    result = execute_company_query(db_query['COMPANY_TIMELINE']['DELETE'], id)
-    if result:
-        return Response(
+    execute_company_query(db_query['COMPANY_TIMELINE']['DELETE'], id)
+    return Response(
             status=True,
             code=200,
             message="Timeline deleted successfully",
             data=[]
         )
-    else:
-        return Response(
-            status=False,
-            code=400,
-            message="Failed to delete timeline",
-            data=[]
-        )
+   

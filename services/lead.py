@@ -130,11 +130,11 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
 
 def editTimeLine(timeline_id, comment, userinfo, docUrls):
     result = execute_company_query(db_query['LEAD_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
-    return result
+    return True
 
 def deleteTimeline(timeline_id, userinfo):
     result = execute_company_query(db_query['LEAD_TIMELINE']['DELETE'], userinfo['id'], timeline_id)
-    return result
+    return True
 
 LIKE_COLUMNS = {
     "city": "a.city",

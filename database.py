@@ -209,3 +209,27 @@ def truncate_table(table_name):
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
             conn.close()
+
+def execute_project_query(query,*args):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        aliasname = state.value
+        if aliasname :
+             query = query.replace('<>',aliasname)
+        if args:
+            cur = conn.execute(query, *args)   # ← pass args as tuple
+        else:
+            cur = conn.execute(query)
+        rows = cur.fetchall()
+        conn.commit()
+        conn.close()
+        
+        return [dict(r) for r in rows]
+    except Exception as e:
+        print("Exception in company Query Exceution", e)
+        return []
+    finally:
+        # This runs NO MATTER WHAT, even after a return statement
+        if conn:
+            conn.close()

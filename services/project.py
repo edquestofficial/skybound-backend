@@ -1,5 +1,5 @@
 from core.role import Role
-from database import execute_company_query,execute_filter_lead, fetch_single_record, update_query
+from database import execute_company_query,execute_filter_lead, fetch_single_record, update_query, execute_project_query
 from core.config import db_query
 from schemas.project import UpdateModel
 from utility.pushnotify import send_notify, send_notifications
@@ -54,94 +54,44 @@ def build_filters(filters):
     return conditions, values
 
 
-# def fetch_project(proj,userinfo):
-#     user_id = userinfo['id']
-#     role = userinfo['role']
-#     # query = db_query['PROJECT']['SELECT_ALL_NEW']
-#     query = """
-#         SELECT 
-#             p.*,
-#             u.id as user_id,
-#             u.name as user_name
-#         FROM sb_project p
-#         LEFT JOIN sb_project_user_mapping m 
-#             ON p.id = m.project_id
-#         LEFT JOIN sb_user u 
-#             ON m.user_id = u.id
-#         WHERE 1=1
-#     """
-   
-#     params = []
-    # if proj.id is not None:
-    #     query += " AND p.id = ?"
-    #     params.append(proj.id)
-
-    # if proj.city:
-    #     query += " AND p.city = ?"
-    #     params.append(proj.city)
-
-    # if proj.state:
-    #     query += " AND p.state = ?"
-    #     params.append(proj.state)
-
-    # if proj.enquiry_type:
-    #     query += " AND p.enquiry_type = ?"
-    #     params.append(proj.enquiry_type)
-
-    # if proj.status:
-    #     query += " AND p.status = ?"
-    #     params.append(proj.status)
-
-    # if proj.stage:
-    #     query += " AND p.stage = ?"
-    #     params.append(proj.stage)
-
-    # if proj.last_id:
-    #     query += " AND p.id < ?"
-    #     params.append(proj.last_id)
-    
-    # query += "ORDER BY p.id desc LIMIT ?"
-    # params.append(proj.limit)
-    # params_values = ",".join(map(str, params))
-    # result = execute_company_query(query,params_values)
-    # if proj.id is not None:
-    #     query = db_query['PROJECT_TIMELINE']['SELECT']
-    #     rows=execute_company_query(query,proj.id)
-    #     for row in rows:
-    #         urls = row.get("docs_urls", "")
-    #         row["docs_urls"] = urls.split(",") if urls else []
-    #     result[0]['timeline']=rows
-    # return result
-
-
 def fetch_project(proj,userinfo):
     user_id = userinfo['id']
     role = userinfo['role']
-    query = db_query['PROJECT']['SELECT_ALL']
-    conditions = []
-    values = []
-      # 🔹 KEYSET PAGINATION
-    if proj.last_id is not None:
-        conditions.append("a.id < ?")
-        values.append(proj.last_id)
-
-    filters = proj.model_dump(exclude_unset=True)
-    filter_conditions, filter_values = build_filters(filters)
-    conditions.extend(filter_conditions)
-    values.extend(filter_values)
-
-
-     # 🔹 ROLE BASED CONDITION
-    if Role.Engineer.value == role and proj.id is None:
-        conditions.append("(a.assigned_to IS NULL OR a.assigned_to = ?)")
-        values.append(user_id)
-    condition_str = " AND ".join(conditions)
-    
-    if len(conditions) > 0:
-        condition_str = " AND " + condition_str
-    values.append(proj.limit)
-    result = execute_filter_lead(query,condition_str,values)
+    query = db_query['PROJECT']['SELECT_ALL_PROJECT']
+    params = []
     if proj.id is not None:
+        query += " AND p.id = ?"
+        params.append(proj.id)
+
+    if proj.city:
+        query += " AND c.city = ?"
+        params.append(proj.city)
+
+    if proj.state:
+        query += " AND c.state = ?"
+        params.append(proj.state)
+
+    if proj.enquiry_type:
+        query += " AND c.enquiry_type = ?"
+        params.append(proj.enquiry_type)
+
+    if proj.status:
+        query += " AND p.status = ?"
+        params.append(proj.status)
+
+    if proj.stage:
+        query += " AND p.stage = ?"
+        params.append(proj.stage)
+
+    if proj.last_id:
+        query += " AND p.id < ?"
+        params.append(proj.last_id)
+    
+    query += " GROUP BY p.id ORDER BY p.id desc LIMIT ?"
+    params.append(proj.limit)
+    result = execute_project_query(query,params)
+    
+    if result and proj.id is not None:
         query = db_query['PROJECT_TIMELINE']['SELECT']
         rows=execute_company_query(query,proj.id)
         for row in rows:
@@ -149,6 +99,43 @@ def fetch_project(proj,userinfo):
             row["docs_urls"] = urls.split(",") if urls else []
         result[0]['timeline']=rows
     return result
+
+
+# def fetch_project(proj,userinfo):
+#     user_id = userinfo['id']
+#     role = userinfo['role']
+#     query = db_query['PROJECT']['SELECT_ALL']
+#     conditions = []
+#     values = []
+#       # 🔹 KEYSET PAGINATION
+#     if proj.last_id is not None:
+#         conditions.append("a.id < ?")
+#         values.append(proj.last_id)
+
+#     filters = proj.model_dump(exclude_unset=True)
+#     filter_conditions, filter_values = build_filters(filters)
+#     conditions.extend(filter_conditions)
+#     values.extend(filter_values)
+
+
+#      # 🔹 ROLE BASED CONDITION
+#     if Role.Engineer.value == role and proj.id is None:
+#         conditions.append("(a.assigned_to IS NULL OR a.assigned_to = ?)")
+#         values.append(user_id)
+#     condition_str = " AND ".join(conditions)
+    
+#     if len(conditions) > 0:
+#         condition_str = " AND " + condition_str
+#     values.append(proj.limit)
+#     result = execute_filter_lead(query,condition_str,values)
+#     if proj.id is not None:
+#         query = db_query['PROJECT_TIMELINE']['SELECT']
+#         rows=execute_company_query(query,proj.id)
+#         for row in rows:
+#             urls = row.get("docs_urls", "")
+#             row["docs_urls"] = urls.split(",") if urls else []
+#         result[0]['timeline']=rows
+#     return result
 
 def count_project(userinfo):
     if userinfo['role'] == Role.Admin.value or userinfo['role'] == Role.EngineerHead.value:
@@ -259,4 +246,4 @@ def editTimeLine(comment, userinfo, docUrls, timeline_id):
     return result
 def deleteTimeline(timeline_id, userinfo):
     result = execute_company_query(db_query['PROJECT_TIMELINE']['DELETE'], userinfo['id'], timeline_id)
-    return result
+    return True

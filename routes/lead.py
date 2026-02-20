@@ -102,7 +102,7 @@ def create( id: int = Form(...),
             data=[]
         )
 @lead_router.post("/timelineEdit")
-def edit_timeline(id: int, docs :str, comment: Optional[str] = Form(...),
+def edit_timeline(id: int = Form(...), docs :str = Form(...), comment: Optional[str] = Form(...),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     saved_files = []
     if files:

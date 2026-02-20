@@ -32,7 +32,7 @@
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_project(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
     "INSERT":"INSERT INTO <>_project(lead_id, stage, status, active, created_by, created_date) VALUES (?, ?,?, ?, ?, datetime('now', '+5 hours', '+30 minutes'))",
     "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user, c.*  from <>_project as a left join <>_user as b on a.assigned_to = b.id left join <>_lead as c on a.lead_id = c.id WHERE 1=1 {conditions} ORDER BY a.id desc LIMIT ? ;",
-    "SELECT_ALL_NEW":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user, c.*  from <>_project as a left join <>_user as b on a.assigned_to = b.id left join <>_lead as c on a.lead_id = c.id WHERE 1=1 {conditions} ORDER BY a.id desc LIMIT ? ;", 
+    "SELECT_ALL_PROJECT":"SELECT p.id,p.lead_id, p.next_followup,p.status,p.assigned_by,p.active, p.created_by,p.modify_by, p.created_date, p.modify_date, GROUP_CONCAT(u.id) AS assigned_to, GROUP_CONCAT(u.name) AS assigned_user,c.city, c.state, c.enquiry_type, c.name, c.contact_number, c.email, c.company_name, c.requirement FROM <>_project p LEFT JOIN <>_project_user_mapping m  ON p.id = m.project_id LEFT JOIN <>_user u ON m.user_id = u.id left join <>_lead as c on p.lead_id = c.id WHERE 1=1;", 
     "SELECT_BY_PROJID":"select * from <>_project where id = ? and active = 1",
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_project GROUP BY status;",
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",

@@ -84,7 +84,7 @@ def create_timeline( id: int = Form(...),
             data=[]
         )
 @project_router.post("/timelineEdit")
-def edit_timeline(id: int, docs :str, comment: Optional[str] = Form(...),
+def edit_timeline(id: int = Form(...), docs :str = Form(...), comment: Optional[str] = Form(...),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     saved_files = []
     if files:
