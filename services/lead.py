@@ -204,6 +204,17 @@ def to_sqlite_datetime(value):
         return value.isoformat()
     return str(value)
 
+def delete_lead(lead_id):
+    try:
+        query = db_query['LEAD']['DELETE']
+        placeholders = ",".join(["?"] * len(lead_id.split(",")))
+        query = query.replace("placeholder", placeholders)
+        result = execute_company_query(query, *lead_id.split(","))
+        return result
+    except Exception as e:
+        print("Error in lead deletion:", e)
+        return False
+
 def bulk_create_lead(data_rows,userinfo):
     try :
         for lead in data_rows:

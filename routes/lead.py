@@ -9,7 +9,7 @@ import numpy as np
 from models.response import Response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import bulk_create_lead, create_lead, updateLead, count_lead, fetch_lead, addTimeLine
+from services.lead import bulk_create_lead, create_lead, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead
 
 lead_router = APIRouter()
 
@@ -169,17 +169,28 @@ async def bulk_upload(file: UploadFile = File(...)):
             error=str(e)
         )
 
+@lead_router.get("/delete")
+def lead_delete(lead_id: str, userinfo = Depends(role_required([Role.Admin])) ):
 
+    delete_lead(lead_id)
+    return Response(
+            status=True,
+            code=200,
+            message=f"Lead with ID {lead_id} deleted successfully.",
+            data=[]
+        )
 # callback function to get lead from indiamart api and create lead in skybound
 @lead_router.post("/indiamart/callback")
 def indiamart_callback(payload: Any = Body(...)):
-    try:        
+    try:      
+        status_code = payload.get("CODE", "")  
         # Parse the IndiaMART API response
         if isinstance(payload, dict):
             response_data = payload.get("RESPONSE", {})
         else:
             response_data = payload.dict().get("RESPONSE", {}) if hasattr(payload, 'dict') else {}
-        
+        print(f"Received IndiaMART callback with data: {response_data}")
+        print(f"Full payload: {payload}")   
         # Map IndiaMART fields to Lead schema
         lead_data = {
             "name": response_data.get("SENDER_NAME", ""),
@@ -193,6 +204,14 @@ def indiamart_callback(payload: Any = Body(...)):
         }
         
         # Create Lead object
+        if status_code != "200":
+            print(f"payload not inserted: {payload}")   
+            return Response(
+                status=False,
+                code=200,
+                message="IndiaMART API returned an error",
+                data=[]
+            )
         lead = Lead(**lead_data)
         response = create_lead(lead, userinfo=None)
         
@@ -214,7 +233,7 @@ def indiamart_callback(payload: Any = Body(...)):
         print(f"Error processing IndiaMART callback: {str(e)}")
         return Response(
             status=False,
-            code=500,
+            code=200,
             message="Error processing IndiaMART callback",
             data=[]
         )
