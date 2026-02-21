@@ -61,7 +61,7 @@ def edit(update: UpdateModel, userinfo = Depends(role_required([Role.Admin, Role
         )
 @project_router.post("/timeline")
 def create_timeline( proj_id: int = Form(...),
-    comment: Optional[str] = Form(...),
+    comment: Optional[str] = Form(None),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     saved_files = []
     id = proj_id
@@ -85,7 +85,7 @@ def create_timeline( proj_id: int = Form(...),
             data=[]
         )
 @project_router.post("/timelineEdit")
-def edit_timeline(id: int = Form(...), docs_urls :str = Form(...), comment: Optional[str] = Form(...),
+def edit_timeline(id: int = Form(...), docs_urls :str = Form(...), comment: Optional[str] = Form(None),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     saved_files = []
    

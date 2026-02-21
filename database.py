@@ -233,3 +233,25 @@ def execute_project_query(query,*args):
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
             conn.close()
+
+def execute_insert_query(query,*args):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        aliasname = state.value
+        if aliasname :
+             query = query.replace('<>',aliasname)
+        if args:
+            cur = conn.execute(query, args)   # ← pass args as tuple
+        else:
+            cur = conn.execute(query)
+        conn.commit()
+        conn.close()
+        return cur.lastrowid
+    except Exception as e:
+        print("Exception in company Query Exceution", e)
+        return []
+    finally:
+        # This runs NO MATTER WHAT, even after a return statement
+        if conn:
+            conn.close()

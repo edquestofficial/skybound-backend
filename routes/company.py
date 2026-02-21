@@ -102,7 +102,7 @@ def get_timeline( userinfo = Depends(role_required([Role.Admin, Role.Engineer, R
             )
 
 @router.post("/timeline")
-def create_timeline( comment: Optional[str] = Form(...),
+def create_timeline( comment: Optional[str] = Form(None),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
     saved_files = []
     docs :str = ""
@@ -127,7 +127,7 @@ def create_timeline( comment: Optional[str] = Form(...),
         )
 
 @router.post("/timelineEdit")
-def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(...),comment: Optional[str] = Form(...),
+def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(...),comment: Optional[str] = Form(None),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
     saved_files = []
    

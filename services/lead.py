@@ -1,4 +1,4 @@
-from database import execute_company_query, execute_filter_lead,fetch_single_record, update_query
+from database import execute_company_query, execute_filter_lead,fetch_single_record, update_query, execute_insert_query
 from core.config import db_query
 from schemas.lead import EditLead
 from services.project import create_project
@@ -17,7 +17,7 @@ def create_lead(lead,userinfo):
             id = userinfo['id']
         else:
             state.setvalue('sb')  # Set a default value if userinfo is None
-        result = execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,id)
+        inserted_id = execute_insert_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,id)
         # get all sales person device token and send notification
         query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
         rows= execute_company_query( query, Role.Sales.value, Role.SalesHead.value, Role.Admin.value)
@@ -25,7 +25,7 @@ def create_lead(lead,userinfo):
         # send notification to all sales person
         if device_tokens:
             title = "New lead added"
-            message = f"A new lead has been created."
+            message = f"A new lead {inserted_id} has been created."
             send_notifications(device_tokens, title, message)
 
         return True

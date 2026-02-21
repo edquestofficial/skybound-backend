@@ -79,7 +79,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales, Ro
 
 @lead_router.post("/timeline")
 def create( id: int = Form(...),
-    comment: Optional[str] = Form(...),
+    comment: Optional[str] = Form(None),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     saved_files = []
     docs :str = ""
@@ -102,7 +102,7 @@ def create( id: int = Form(...),
             data=[]
         )
 @lead_router.post("/timelineEdit")
-def edit_timeline(lead_id: int = Form(...), docs_urls :str = Form(...), comment: Optional[str] = Form(...),
+def edit_timeline(lead_id: int = Form(...), docs_urls :Optional[str] = Form(None), comment: Optional[str] = Form(None),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     saved_files = []
     id = lead_id

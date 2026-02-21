@@ -15,6 +15,7 @@ app = FastAPI(title="Skybound App", swagger_ui_parameters={"persistAuthorization
 
 app.mount("/Lead_Doc", StaticFiles(directory="Lead_Doc"), name="images")
 app.mount("/Project_Doc", StaticFiles(directory="Project_Doc"), name="images")
+app.mount("/Company_Doc", StaticFiles(directory="Company_Doc"), name="images")
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     error_list =[]

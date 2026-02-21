@@ -12,7 +12,7 @@ class Lead(BaseModel):
         description="Must be a valid 10-digit Indian phone number"
     )
     enquiry_type:str|None = None
-    email: Optional[EmailStr] = None
+    email: str = None
     requirement: str |None = None
 
     model_config = ConfigDict(extra="forbid")
