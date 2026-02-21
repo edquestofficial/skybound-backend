@@ -204,7 +204,7 @@ def indiamart_callback(payload: Any = Body(...)):
         }
         
         # Create Lead object
-        if status_code != "200":
+        if status_code != 200:
             print(f"payload not inserted: {payload}")   
             return Response(
                 status=False,
