@@ -43,13 +43,15 @@ jobs:
             export PATH="$HOME/.cache/uv/bin:$PATH"
 
             # Setup virtualenv
-            uv venv .venv
+            rm -rf .venv
+            uv venv
             source .venv/bin/activate
-            uv sync
-
+            uv sync --frozen
+            
             # Restart FastAPI service
+            sudo systemctl daemon-reload
             sudo systemctl restart skybound-prod
           EOF
 
       - name: Notify success
-        run: echo "Skybound FastAPI deployed successfully on Hostinger VPS 🚀"
+        run: echo "Skybound prod deployed successfully on Hostinger VPS 🚀"
