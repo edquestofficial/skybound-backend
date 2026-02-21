@@ -35,7 +35,7 @@ class EditLead(BaseModel):
         pattern=r"^[6-9]\d{9}$",      # Indian 10-digit mobile
         description="Must be a valid 10-digit Indian phone number"
     )
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     requirement: Optional[str] = None
     status: Optional[LeadStatus] = None
     stage: Optional[LeadStage] = None
