@@ -102,15 +102,16 @@ def create( id: int = Form(...),
             data=[]
         )
 @lead_router.post("/timelineEdit")
-def edit_timeline(lead_id: int = Form(...), docs_urls :Optional[str] = Form(None), comment: Optional[str] = Form(None),
+def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(None), comment: Optional[str] = Form(None),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     saved_files = []
-    id = lead_id
     if files:
         upload_dir = "Lead_Doc"
         os.makedirs(upload_dir, exist_ok=True)
         if docs_urls and docs_urls[-1] != ",":
             docs_urls += ","
+        else:            
+            docs_urls = ""
         for file in files:
             file_location = f"{upload_dir}/{id}_{file.filename}"
             with open(file_location, "wb") as buffer:

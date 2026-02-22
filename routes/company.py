@@ -136,6 +136,8 @@ def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(None),com
         os.makedirs(upload_dir, exist_ok=True)
         if docs_urls and docs_urls[-1] != ",":
             docs_urls += ","
+        else:            
+            docs_urls = ""
         for file in files:
             file_location = f"{upload_dir}/{file.filename}"
             with open(file_location, "wb") as buffer:
