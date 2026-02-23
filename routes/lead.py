@@ -9,7 +9,8 @@ import numpy as np
 from models.response import Response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import bulk_create_lead, create_lead, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead
+from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead, getLeadByDate
+from datetime import datetime
 
 lead_router = APIRouter()
 
@@ -183,14 +184,11 @@ def lead_delete(lead_id: str, userinfo = Depends(role_required([Role.Admin])) ):
 @lead_router.post("/indiamart/callback")
 def indiamart_callback(payload: Any = Body(...)):
     try:      
-        status_code = payload.get("CODE", "")  
         # Parse the IndiaMART API response
         if isinstance(payload, dict):
             response_data = payload.get("RESPONSE", {})
         else:
-            response_data = payload.dict().get("RESPONSE", {}) if hasattr(payload, 'dict') else {}
-        print(f"Received IndiaMART callback with data: {response_data}")
-        print(f"Full payload: {payload}")   
+            response_data = payload.dict().get("RESPONSE", {}) if hasattr(payload, 'dict') else {} 
         # Map IndiaMART fields to Lead schema
         lead_data = {
             "name": response_data.get("SENDER_NAME", ""),
@@ -202,18 +200,23 @@ def indiamart_callback(payload: Any = Body(...)):
             "enquiry_type": "Product Inquiry",
             "requirement": response_data.get("QUERY_MESSAGE", "")
         }
-        
-        # Create Lead object
-        if status_code != 200:
-            print(f"payload not inserted: {payload}")   
+        QUERY_TIME = response_data.get("QUERY_TIME", "")  
+        # '2026-02-20 09:26:59'
+        format_code = "%Y-%m-%d %H:%M:%S"
+        datetime_object = datetime.strptime(QUERY_TIME, format_code).date()
+        #get lead by Lead Date
+        duplicate_lead = getLeadByDate(QUERY_TIME)
+        if duplicate_lead and len(duplicate_lead)>0:
+            print(f"Lead already exists for the date {datetime_object}, skipping creation.")
             return Response(
                 status=False,
                 code=200,
-                message="IndiaMART API returned an error",
+                message="Lead already exists for the given date",
                 data=[]
             )
+        
         lead = Lead(**lead_data)
-        response = create_lead(lead, userinfo=None)
+        response = create_lead_by_indiamart(lead, lead_date=QUERY_TIME)
         
         if response is not None:
             return Response(

@@ -6,11 +6,12 @@ class Lead(BaseModel):
     company_name: str
     city: str
     state: str 
-    contact_number: Optional[str] = Field(
-        default=None,
-        pattern=r"^[6-9]\d{9}$",      # Indian 10-digit mobile
-        description="Must be a valid 10-digit Indian phone number"
-    )
+    # contact_number: Optional[str] = Field(
+    #     default=None,
+    #     pattern=r"^[6-9]\d{9}$",      # Indian 10-digit mobile
+    #     description="Must be a valid 10-digit Indian phone number"
+    # )
+    contact_number: Optional[str] = None
     enquiry_type:str|None = None
     email: Optional[EmailStr] = None
     requirement: str |None = None
