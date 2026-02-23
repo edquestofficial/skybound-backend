@@ -47,10 +47,11 @@ def execute_company_query(query,*args):
             cur = conn.execute(query, args)   # ← pass args as tuple
         else:
             cur = conn.execute(query)
-        rows = cur.fetchall()
-        conn.commit()
-        conn.close()
         
+        if query.strip().upper().startswith(("INSERT", "UPDATE", "DELETE")):
+            conn.commit()
+        
+        rows = cur.fetchall()        
         return [dict(r) for r in rows]
     except Exception as e:
         print("Exception in company Query Exceution", e)
@@ -73,7 +74,6 @@ def fetch_single_record(query,*args):
             cur = conn.execute(query)
 
         data = cur.fetchone()
-        conn.close()
         return data
     except Exception as e:
         print("Exception in company Query Exceution", e)

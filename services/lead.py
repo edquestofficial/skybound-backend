@@ -33,6 +33,13 @@ def create_lead(lead,userinfo):
         print("Error in lead creation:", e)
         return None
 
+def create_lead_by_indiamart(lead,lead_date):
+    try :
+        result = execute_company_query(db_query['LEAD']['INSERT_INDIAMART'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,None,lead_date)
+        return True
+    except Exception as e:
+        print("Error in lead creation:", e)
+        return None
 
 def fetch_single(id):
     return execute_company_query(db_query['LEAD']['SELECT_BY_LEADID'],id)
@@ -216,6 +223,26 @@ def to_sqlite_datetime(value):
     if hasattr(value, "isoformat"):
         return value.isoformat()
     return str(value)
+
+def delete_lead(lead_id):
+    try:
+        query = db_query['LEAD']['DELETE']
+        placeholders = ",".join(["?"] * len(lead_id.split(",")))
+        query = query.replace("placeholder", placeholders)
+        result = execute_company_query(query, *lead_id.split(","))
+        return result
+    except Exception as e:
+        print("Error in lead deletion:", e)
+        return False
+
+def getLeadByDate(leaddate):
+    try:
+        query = db_query['LEAD']['SELECT_BY_DATETIME']
+        result = fetch_single_record(query, leaddate)
+        return result
+    except Exception as e:
+        print("Error in fetching leads by date:", e)
+        return None
 
 def bulk_create_lead(data_rows,userinfo):
     try :

@@ -9,7 +9,8 @@ import numpy as np
 from models.response import Response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import bulk_create_lead, create_lead, updateLead, count_lead, fetch_lead, addTimeLine, editTimeLine, deleteTimeline
+from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead, getLeadByDate
+from datetime import datetime, editTimeLine, deleteTimeline
 
 lead_router = APIRouter()
 
@@ -213,17 +214,25 @@ async def bulk_upload(file: UploadFile = File(...)):
             error=str(e)
         )
 
+@lead_router.get("/delete")
+def lead_delete(lead_id: str, userinfo = Depends(role_required([Role.Admin])) ):
 
+    delete_lead(lead_id)
+    return Response(
+            status=True,
+            code=200,
+            message=f"Lead with ID {lead_id} deleted successfully.",
+            data=[]
+        )
 # callback function to get lead from indiamart api and create lead in skybound
 @lead_router.post("/indiamart/callback")
 def indiamart_callback(payload: Any = Body(...)):
-    try:        
+    try:      
         # Parse the IndiaMART API response
         if isinstance(payload, dict):
             response_data = payload.get("RESPONSE", {})
         else:
-            response_data = payload.dict().get("RESPONSE", {}) if hasattr(payload, 'dict') else {}
-        
+            response_data = payload.dict().get("RESPONSE", {}) if hasattr(payload, 'dict') else {} 
         # Map IndiaMART fields to Lead schema
         lead_data = {
             "name": response_data.get("SENDER_NAME", ""),
@@ -236,10 +245,23 @@ def indiamart_callback(payload: Any = Body(...)):
             "requirement": response_data.get("QUERY_MESSAGE", ""),
             "india_mart_id": response_data.get("UNIQUE_QUERY_ID", "")  
         }
-        print(f"Parsed lead data from IndiaMART code, status, unique_query_id: {payload.get('CODE', {})}, {payload.get('STATUS')}, {payload.get('UNIQUE_QUERY_ID')}")
-        # Create Lead object
+        QUERY_TIME = response_data.get("QUERY_TIME", "")  
+        # '2026-02-20 09:26:59'
+        format_code = "%Y-%m-%d %H:%M:%S"
+        datetime_object = datetime.strptime(QUERY_TIME, format_code).date()
+        #get lead by Lead Date
+        duplicate_lead = getLeadByDate(QUERY_TIME)
+        if duplicate_lead and len(duplicate_lead)>0:
+            print(f"Lead already exists for the date {datetime_object}, skipping creation.")
+            return Response(
+                status=False,
+                code=200,
+                message="Lead already exists for the given date",
+                data=[]
+            )
+        
         lead = Lead(**lead_data)
-        response = create_lead(lead, userinfo=None)
+        response = create_lead_by_indiamart(lead, lead_date=QUERY_TIME)
         
         if response is not None:
             return Response(
