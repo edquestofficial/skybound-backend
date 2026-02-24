@@ -6,7 +6,7 @@ class SearchProject(BaseModel):
     city :str |None = None
     state:str |None =  None
     enquiry_type :str |None = None
-    assigned_to : int | None = None
+    assigned_to : List[int] | None = None
     status : str | None = None
     stage : str | None = None
     last_id: int |None = None

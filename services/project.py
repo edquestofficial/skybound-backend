@@ -87,6 +87,36 @@ def fetch_project(proj,userinfo):
         query += " AND p.id < ?"
         params.append(proj.last_id)
     
+    if Role.Engineer.value == role and proj.id is None:
+        query += """ AND 
+        (
+        p.id IN (
+            SELECT project_id 
+            FROM sb_project_user_mapping 
+            WHERE user_id = ?
+        )
+        OR
+        p.id NOT IN (
+            SELECT project_id 
+            FROM sb_project_user_mapping
+        )
+    )"""
+        params.append(user_id)
+
+    if Role.Admin.value == role or Role.EngineerHead.value == role:
+        if proj.assigned_to:
+            placeholders = ",".join(["?"] * len(proj.assigned_to))
+            query += f"""
+            AND p.id IN (
+                SELECT project_id 
+                FROM sb_project_user_mapping 
+                WHERE user_id IN ({placeholders})
+            )
+            """
+            assigned_users = [int(x) for x in proj.assigned_to]
+            params.extend(assigned_users)
+        
+    
     query += " GROUP BY p.id ORDER BY p.id desc LIMIT ?"
     params.append(proj.limit)
     result = execute_project_query(query,params)
