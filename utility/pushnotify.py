@@ -31,12 +31,11 @@ def send_notifications(device_tokens: List[str], title: str, message: str):
     """Send push notification to multiple device tokens using Firebase Cloud Messaging."""
     if not device_tokens:
         return
-
-    print("Sending notification to tokens:", device_tokens, "with title:", title, "and message:", message)
+    set_val = set(device_tokens)
     responses = []
-    
+    print("Sending notifications to tokens:", set_val)
     # Send message to each token
-    for token in device_tokens:
+    for token in set_val:
         try:
             notification_message = messaging.Message(
                 token=token,

@@ -7,7 +7,7 @@ from database import execute_query, init_db,execute_company_query, truncate_tabl
 from models.response import Response
 from core.role import Role
 from core.config import db_query
-from services.company import addTimeLine, editTimeLine
+from services.company import addTimeLine, editTimeLine, deleteTimeline
 from utility.auth import role_required
 from utility.statemgmt import state
 import os
@@ -155,7 +155,7 @@ def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(None),com
         )
 @router.get("/timelineDelete")
 def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
-    execute_company_query(db_query['COMPANY_TIMELINE']['DELETE'],userinfo['id'] ,id)
+    deleteTimeline(id, userinfo)
     return Response(
             status=True,
             code=200,

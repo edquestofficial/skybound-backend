@@ -201,17 +201,19 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
         # if update_data.get('assigned_to') not in (None, ""):
         if len(item.assigned_to) > 0:
             assign_project_user(id, item.assigned_to)
-            # query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_USERIDs"]
-            # query = query.replace("#", ",".join(str(user_id) for user_id in item.assigned_to))
-            # rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
-            # device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-            # query_user = db_query["USER"]["SELECT_USER_BYID"]
-            # user = execute_company_query(query_user, update_data.get('assigned_to'))
-            # # send notification to all sales person
-            # if device_tokens:
-            #     title = "Project assigned"
-            #     message = f"A new project({id}) has been assigned to {user[0]['name'] if user else 'Unknown User' }."
-            #     send_notifications(device_tokens, title, message)
+            query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_USERIDs"]
+            query = query.replace("#", ",".join(str(user_id) for user_id in item.assigned_to))
+            rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
+            device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+            query_user = db_query["USER"]["SELECT_USER_BYID_PROJECT"]
+            query_user = query_user.replace("placeholder", ",".join(str(user_id) for user_id in item.assigned_to))
+            user = execute_company_query(query_user)
+            user_name = [",".join(str(row['name']) for row in user)]
+            # send notification to all sales person
+            if device_tokens:
+                title = "Project assigned"
+                message = f"A new project({id}) has been assigned to {user_name}."
+                send_notifications(device_tokens, title, message)
         update_data = item.model_dump(exclude_unset=True)
         update_data['modify_date'] = ist_now()
         update_data['modify_by'] = loggedin_userId
@@ -273,7 +275,24 @@ def assign_project_user(projid, user_ids):
     
 def editTimeLine(timeline_id,comment, userinfo, docUrls):
     result = execute_company_query(db_query['PROJECT_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
+    query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
+    rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
+    device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+    # send notification to all sales person
+    if device_tokens:
+        title = "Project timeline updated"
+        message = f"A timeline has been updated"
+        send_notifications(device_tokens, title, message)
+    
     return result
 def deleteTimeline(timeline_id, userinfo):
     result = execute_company_query(db_query['PROJECT_TIMELINE']['DELETE'], userinfo['id'], timeline_id)
+    query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
+    rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
+    device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+    # send notification to all sales person
+    if device_tokens:
+        title = "Project timeline deleted"
+        message = f"A timeline has been deleted"
+        send_notifications(device_tokens, title, message)
     return True

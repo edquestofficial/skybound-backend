@@ -8,11 +8,13 @@
     "SELECT_USER":"select id, name, username,role, emailid, mobile, active, image from <>_user ",
     "SELECT_USER_BY_ROLE":"select id,name, username, role, emailid, mobile, image, active from <>_user WHERE {conditions}",
     "SELECT_USER_BYID":"select id,name, role, username, emailid, mobile, active, image from <>_user where id = ? ",
+    "SELECT_USER_BYID_PROJECT":"select id,name, role, username, emailid, mobile, active, image from <>_user where id in( placeholder ) and active = 1",
     "SELECT_USER_BYEMAILID":"select id,name, role, username, emailid, mobile, active, image from <>_user where emailid = ? Limit 1 ",
     "UPDATE":"UPDATE <>_user SET <set_clause> WHERE id = ?",
     "UPDATE_PASSWORD":"UPDATE <>_user SET password = ? WHERE emailid = ?",
     "SELECT_USER_NAME_PASSById":"SELECT id, name, username, role, password,emailid, active FROM <>_user WHERE id = ? ",
     "SELECT_SALESPERSON_DEVICE_TOKEN":"SELECT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.role in ( ?, ?,?) ORDER BY n.id DESC",
+    "SELECT_ALL_DEVICE_TOKEN":"SELECT distinct device_id FROM <>_notification",
     "SELECT_DEVICE_TOKEN_BY_USERID":"SELECT DISTINCT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.id = ? OR u.role IN (?, ?) ORDER BY n.id DESC;",
     "SELECT_DEVICE_TOKEN_BY_USERIDs":"SELECT DISTINCT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.id IN (#) OR u.role IN (?, ?) ORDER BY n.id DESC;",
     "SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN":"SELECT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.role in ( ?, ?) ORDER BY n.id DESC"

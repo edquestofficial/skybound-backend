@@ -35,7 +35,17 @@ def create_lead(lead,userinfo):
 
 def create_lead_by_indiamart(lead,lead_date):
     try :
-        result = execute_company_query(db_query['LEAD']['INSERT_INDIAMART'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,None,lead_date)
+        inserted_id = execute_company_query(db_query['LEAD']['INSERT_INDIAMART'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,None,lead_date)
+        # get all sales person device token and send notification
+        query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
+        rows= execute_company_query( query, Role.Sales.value, Role.SalesHead.value, Role.Admin.value)
+        device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+        # send notification to all sales person
+        if device_tokens:
+            title = "New lead added"
+            message = f"A new lead {inserted_id} has been created."
+            send_notifications(device_tokens, title, message)
+
         return True
     except Exception as e:
         print("Error in lead creation:", e)
@@ -138,6 +148,14 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
 def editTimeLine(timeline_id, comment, userinfo, docUrls):
     try:
         result = execute_company_query(db_query['LEAD_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
+        query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
+        rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
+        device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+        # send notification to all sales person
+        if device_tokens:
+            title = "Timeline updated"
+            message = f"A timeline has been edited to Lead ID: {timeline_id}"
+            send_notifications(device_tokens, title, message)
         return True
     except Exception as e:
         print("Error in editing timeline:", e)
@@ -146,8 +164,17 @@ def editTimeLine(timeline_id, comment, userinfo, docUrls):
     
 
 def deleteTimeline(timeline_id, userinfo):
-    result = execute_company_query(db_query['LEAD_TIMELINE']['DELETE'], userinfo['id'], timeline_id)
-    return True
+        result = execute_company_query(db_query['LEAD_TIMELINE']['DELETE'], userinfo['id'], timeline_id)
+        query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
+        rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
+        device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+        # send notification to all sales person
+        if device_tokens:
+            title = "Timeline updated"
+            message = f"A timeline has been edited to Lead ID: {timeline_id}"
+            send_notifications(device_tokens, title, message)
+
+        return True
 
 LIKE_COLUMNS = {
     "city": "a.city",

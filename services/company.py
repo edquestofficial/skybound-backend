@@ -7,17 +7,41 @@ def addTimeLine(comment, userinfo, docUrls):
     device_tokens = []
     result = execute_company_query(db_query['COMPANY_TIMELINE']['INSERT'],comment,docUrls,userinfo['id'])
     if result:
-        query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
-        rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value, Role.SalesHead.value)
+        query = db_query["USER"]["SELECT_ALL_DEVICE_TOKEN"]
+        rows= execute_company_query(query)
         device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
    
     # send notification to all sales person
     if device_tokens:
-        title = "Company timeline updated"
+        title = "Company timeline added"
         message = f"A Company timeline has been added."
         send_notifications(device_tokens, title, message)
     return result
 
 def editTimeLine(timeline_id, comment, userinfo, docUrls):
     result = execute_company_query(db_query['COMPANY_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
-    return result   
+    if result:
+        query = db_query["USER"]["SELECT_ALL_DEVICE_TOKEN"]
+        rows= execute_company_query(query)
+        device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+   
+    # send notification to all sales person
+    if device_tokens:
+        title = "Company timeline updated"
+        message = f"A Company timeline has been updated."
+        send_notifications(device_tokens, title, message)
+    return result  
+
+def deleteTimeline(timeline_id, userinfo):
+    result = execute_company_query(db_query['COMPANY_TIMELINE']['DELETE'],userinfo['id'] ,timeline_id)
+    if result:
+        query = db_query["USER"]["SELECT_ALL_DEVICE_TOKEN"]
+        rows= execute_company_query(query)
+        device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+   
+    # send notification to all sales person
+    if device_tokens:
+        title = "Company timeline deleted"
+        message = f"A Company timeline has been deleted."
+        send_notifications(device_tokens, title, message)
+    return result 
