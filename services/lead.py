@@ -154,7 +154,7 @@ def editTimeLine(timeline_id, comment, userinfo, docUrls):
         # send notification to all sales person
         if device_tokens:
             title = "Timeline updated"
-            message = f"A timeline has been edited to Lead ID: {timeline_id}"
+            message = f"A timeline has been edited."
             send_notifications(device_tokens, title, message)
         return True
     except Exception as e:
@@ -170,8 +170,8 @@ def deleteTimeline(timeline_id, userinfo):
         device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
         # send notification to all sales person
         if device_tokens:
-            title = "Timeline updated"
-            message = f"A timeline has been edited to Lead ID: {timeline_id}"
+            title = "Timeline deleted"
+            message = f"A timeline has been deleted."
             send_notifications(device_tokens, title, message)
 
         return True

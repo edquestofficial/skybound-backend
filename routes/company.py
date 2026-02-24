@@ -118,13 +118,28 @@ def create_timeline( comment: Optional[str] = Form(None),
         docs = ",".join(saved_files)
     
     if files  or comment :
-        addTimeLine(comment, userinfo, docs)
-    return Response(
-            status=True,
-            code=200,
-            message="Comment added successfully",
-            data=[]
-        )
+        result = addTimeLine(comment, userinfo, docs)
+        if result:
+            return Response(
+                    status=True,
+                    code=200,
+                    message="Comment added successfully",
+                    data=[]
+                )
+        else:
+            return Response(    
+                status=False,
+                code=400,
+                message="Failed to add comment",
+                data=[]
+            ) 
+    else:
+            return Response(    
+                status=False,
+                code=400,
+                message="Failed to add comment",
+                data=[]
+            )   
 
 @router.post("/timelineEdit")
 def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(None),comment: Optional[str] = Form(None),
@@ -146,13 +161,28 @@ def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(None),com
         docs_urls += ",".join(saved_files)
     
     if files  or comment :
-        editTimeLine(id, comment, userinfo, docs_urls)
-    return Response(
-            status=True,
-            code=200,
-            message="Timeline edited successfully",
-            data=[]
-        )
+        result = editTimeLine(id, comment, userinfo, docs_urls)
+        if result:
+            return Response(
+                    status=True,
+                    code=200,
+                    message="Comment edited successfully",
+                    data=[]
+                )
+        else:
+            return Response(    
+                status=False,
+                code=400,
+                message="Failed to edit comment",
+                data=[]
+            ) 
+    else:
+            return Response(    
+                status=False,
+                code=400,
+                message="Failed to edit comment",
+                data=[]
+            )   
 @router.get("/timelineDelete")
 def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
     deleteTimeline(id, userinfo)

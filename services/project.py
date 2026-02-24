@@ -208,7 +208,7 @@ def updateProject(id:int,item:UpdateModel, loggedin_userId:int):
             query_user = db_query["USER"]["SELECT_USER_BYID_PROJECT"]
             query_user = query_user.replace("placeholder", ",".join(str(user_id) for user_id in item.assigned_to))
             user = execute_company_query(query_user)
-            user_name = [",".join(str(row['name']) for row in user)]
+            user_name = ",".join(str(row['name']) for row in user)
             # send notification to all sales person
             if device_tokens:
                 title = "Project assigned"
