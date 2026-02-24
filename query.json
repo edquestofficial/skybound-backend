@@ -20,12 +20,12 @@
     "SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN":"SELECT n.device_id FROM <>_notification AS n INNER JOIN <>_user AS u ON n.user_id = u.id WHERE u.role in ( ?, ?) ORDER BY n.id DESC"
   },
    "LEAD": {
-    "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT, lead_uniqueid TEXT, vendor TEXT) ;",
     "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,1,'open',?, datetime('now', '+5 hours', '+30 minutes'))",
-    "INSERT_INDIAMART":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,1,'open',?, ?)",
+    "INSERT_INDIAMART":"INSERT INTO <>_lead(name, company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date, lead_uniqueid, vendor) VALUES (?,?,?,?,?,?,?,?,1,'open',?,datetime('now', '+5 hours', '+30 minutes'),?,?)",
     "SELECT_ALL":"SELECT a.id,a.name,a.company_name, a.city,a.state,a.contact_number, a.enquiry_type, a.email, a.requirement, a.stage, a.next_followup, a.status,a.created_date, a.assigned_to, a.modify_date,  COALESCE(b.name, 'Unassigned') AS assigned_user FROM <>_lead AS a LEFT JOIN <>_user AS b ON a.assigned_to = b.id WHERE 1=1 {conditions} ORDER BY a.id desc LIMIT ?",
     "SELECT_BY_LEADID":"select * from <>_lead where id = ? and active = 1",
-    "SELECT_BY_DATETIME":"select * from <>_lead where created_date = ? and active = 1",
+    "SELECT_BY_UNIQUEID":"select * from <>_lead where lead_uniqueid = ? and active = 1",
     "COUNT":"SELECT CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' WHEN UPPER(TRIM(status)) LIKE '%INPROGRESS%' THEN 'Inprogress' ELSE 'Open' END AS status, COUNT(*) AS total FROM <>_lead GROUP BY CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' WHEN UPPER(TRIM(status)) LIKE '%INPROGRESS%' THEN 'Inprogress' ELSE 'Open' END;",
     "COUNT_BY_USER":"SELECT CASE WHEN status IS NULL OR TRIM(status) = '' THEN NULL WHEN UPPER(TRIM(status)) LIKE '%CLOSE%' THEN 'Closed' WHEN UPPER(TRIM(status)) LIKE '%OPEN%' THEN 'Open' WHEN UPPER(TRIM(status)) LIKE '%INPROGRESS%' THEN 'Inprogress' ELSE 'Open' END AS status, COUNT(*) AS total FROM <>_lead WHERE (assigned_to IS NULL OR assigned_to = ?) GROUP BY 1;",
     "UPDATE":"UPDATE <>_lead SET <set_clause> WHERE id = ?",
@@ -64,7 +64,8 @@
     "INSERT":"INSERT INTO <>_projecttimline(project_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now', '+5 hours', '+30 minutes')) ;",
     "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_from FROM <>_projecttimline as a left join <>_user as b on a.created_by = b.id where a.isActive = 1 AND a.project_id = ? ;",
     "UPDATE":"UPDATE <>_projecttimline SET message = ?, docs_urls = ?, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;",
-    "DELETE":"UPDATE <>_projecttimline SET isActive = 0, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;"
+    "DELETE":"UPDATE <>_projecttimline SET isActive = 0, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;",
+    "SELECT_BY_TIMELINEID":"select project_id from <>_projecttimline where id = ? and isActive = 1"
   },
   "ROLE":{
     "CREATE":"CREATE TABLE IF NOT EXISTS user_role(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE)",

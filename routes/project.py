@@ -39,14 +39,14 @@ def edit(update: UpdateModel, userinfo = Depends(role_required([Role.Admin, Role
             message="Please provide at least one project ID",
         )
 
-    if len(update.assigned_to) == 0:
-        return Response(
-            status=False,
-            code=400,
-            message="Please assign at least one user to the project",
-        )
+    # if len(update.assigned_to) == 0:
+    #     return Response(
+    #         status=False,
+    #         code=400,
+    #         message="Please assign at least one user to the project",
+    #     )
 
-    result = updateProject(update.id[0], update, userinfo['id'])
+    result = updateProject(update, userinfo['id'])
     if result:
         return Response(
             status=True,

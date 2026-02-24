@@ -33,7 +33,7 @@ def send_notifications(device_tokens: List[str], title: str, message: str):
         return
     set_val = set(device_tokens)
     responses = []
-    print("Sending notifications to tokens:", set_val)
+    # print("Sending notifications to tokens:",title, message, set_val)
     # Send message to each token
     for token in set_val:
         try:

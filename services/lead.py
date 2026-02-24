@@ -1,4 +1,4 @@
-from database import execute_company_query, execute_filter_lead,fetch_single_record, update_query, execute_insert_query
+from database import execute_company_query, execute_filter_lead,fetch_single_record, update_query, execute_insert_query, create_table
 from core.config import db_query
 from schemas.lead import EditLead
 from services.project import create_project
@@ -33,9 +33,9 @@ def create_lead(lead,userinfo):
         print("Error in lead creation:", e)
         return None
 
-def create_lead_by_indiamart(lead,lead_date):
+def create_lead_by_indiamart(lead,indiamart_id):
     try :
-        inserted_id = execute_company_query(db_query['LEAD']['INSERT_INDIAMART'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,None,lead_date)
+        inserted_id = execute_insert_query(db_query['LEAD']['INSERT_INDIAMART'], lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,None,indiamart_id,'indiamart')
         # get all sales person device token and send notification
         query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
         rows= execute_company_query( query, Role.Sales.value, Role.SalesHead.value, Role.Admin.value)
@@ -262,13 +262,13 @@ def delete_lead(lead_id):
         print("Error in lead deletion:", e)
         return False
 
-def getLeadByDate(leaddate):
+def getLeadByUniqueID(uniqueId):
     try:
-        query = db_query['LEAD']['SELECT_BY_DATETIME']
-        result = fetch_single_record(query, leaddate)
+        query = db_query['LEAD']['SELECT_BY_UNIQUEID']
+        result = fetch_single_record(query, uniqueId)
         return result
     except Exception as e:
-        print("Error in fetching leads by date:", e)
+        print("Error in fetching leads by unique id:", e)
         return None
 
 def bulk_create_lead(data_rows,userinfo):
@@ -280,5 +280,14 @@ def bulk_create_lead(data_rows,userinfo):
         return True
     except Exception as e:
         print("Error in bulk lead creation:", e)
-        return False     
+        return False  
+
+def addColumn():
+    try:
+        query = "ALTER TABLE <>_lead ADD COLUMN lead_uniqueid TEXT ; ALTER TABLE <>_lead ADD COLUMN vendor TEXT ;"
+        create_table(query)
+        return True
+    except Exception as e:
+        print("Error in adding column:", e)
+        return False   
 
