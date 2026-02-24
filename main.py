@@ -26,7 +26,16 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                     
     return JSONResponse(status_code=400, content=error_list)
     
-    
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+            
+            status_code=440,
+            content={
+                "status": False,
+                "message": "Logged out due to internal error. Please log in again.",
+            }
+    ) 
 
 app.add_middleware(
     CORSMiddleware,

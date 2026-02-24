@@ -26,11 +26,10 @@ def execute_query(query,*args):
             cur = conn.execute(query)
         data = cur.fetchone()
         conn.commit()
-        conn.close()
         return data
     except Exception as e:
         print("Exception in Query Exceution", e)
-        return None
+        raise e
     finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
@@ -55,7 +54,7 @@ def execute_company_query(query,*args):
         return [dict(r) for r in rows]
     except Exception as e:
         print("Exception in company Query Exceution", e)
-        return []
+        raise e
     finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
@@ -77,7 +76,7 @@ def fetch_single_record(query,*args):
         return data
     except Exception as e:
         print("Exception in company Query Exceution", e)
-        return None
+        raise e
     finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
@@ -92,11 +91,10 @@ def update_query(query,set_clause,values):
                 query = query.replace('<>',aliasname)
             conn.execute(query, values)
             conn.commit()
-            conn.close()
             return True
         except Exception as e:
             print("Exception in update Exceution", e)
-            return None
+            raise e
         finally:
         # This runs NO MATTER WHAT, even after a return statement
             if conn:
@@ -114,11 +112,10 @@ def execute_select_query(base_query,conditions,values):
             cur =conn.execute(base_query, values)
             rows = cur.fetchall()
             conn.commit()
-            conn.close()
             return [{k: v for k, v in dict(r).items() } for r in rows ]
      except Exception as e:
             print("Exception in select User Exceution", e)
-            return None
+            raise e
      finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
@@ -129,11 +126,10 @@ def excute_simple_query(query,*args):
         conn = get_db()
         conn.execute(query,args)
         conn.commit()
-        conn.close()
         return True
     except Exception as e:
         print("Exception in simple Query Exceution", e)
-        return None
+        raise e
     finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
@@ -152,11 +148,10 @@ def execute_filter_lead(base_query,conditions,values):
             cur =conn.execute(base_query, values)
             rows = cur.fetchall()
             conn.commit()
-            conn.close()
             return [{k: v for k, v in dict(r).items() } for r in rows ]
      except Exception as e:
             print("Exception in select User Exceution", e)
-            return []
+            raise e
      finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
@@ -180,11 +175,10 @@ def create_table(query):
             query = query.replace('<>',aliasname)
         conn.executescript(query)
         conn.commit()
-        conn.close()
         return True
     except Exception as e:
         print("Exception in create table Exceution", e)
-        return None
+        raise e
     finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
@@ -201,10 +195,9 @@ def truncate_table(table_name):
         query = f"DELETE FROM {table_name};DELETE FROM sqlite_sequence WHERE name='{table_name}';"
         conn.executescript(query)
         conn.commit()
-        conn.close()
     except Exception as e:
         print("Exception in company Query Exceution", e)
-        return []
+        raise e
     finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
@@ -223,12 +216,10 @@ def execute_project_query(query,*args):
             cur = conn.execute(query)
         rows = cur.fetchall()
         conn.commit()
-        conn.close()
-        
         return [dict(r) for r in rows]
     except Exception as e:
         print("Exception in company Query Exceution", e)
-        return []
+        raise e
     finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
@@ -246,11 +237,10 @@ def execute_insert_query(query,*args):
         else:
             cur = conn.execute(query)
         conn.commit()
-        conn.close()
         return cur.lastrowid
     except Exception as e:
         print("Exception in company Query Exceution", e)
-        return []
+        raise e
     finally:
         # This runs NO MATTER WHAT, even after a return statement
         if conn:
