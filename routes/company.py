@@ -155,7 +155,7 @@ def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(None),com
         )
 @router.get("/timelineDelete")
 def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead, Role.Sales, Role.SalesHead, Role.HR, Role.Customer]))):
-    execute_company_query(db_query['COMPANY_TIMELINE']['DELETE'], id)
+    execute_company_query(db_query['COMPANY_TIMELINE']['DELETE'],userinfo['id'] ,id)
     return Response(
             status=True,
             code=200,
