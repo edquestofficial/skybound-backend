@@ -134,7 +134,7 @@ def send_notification_admin_shead_assigned_user(id,title,message):
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
             rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-            query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_LeadID"]
+            query = db_query["LEAD"]["SELECT_DEVICE_TOKEN_BY_LeadID"]
             rows= execute_company_query( query, id)
             device_tokens.extend([row['device_id'] for row in rows if row.get('device_id')])
             # send notification to all sales person
