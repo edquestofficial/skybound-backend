@@ -42,7 +42,7 @@
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_project GROUP BY status;",
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
     "UPDATE":"UPDATE <>_project SET <set_clause> WHERE id = ?",
-    "SELECT_DEVICE_TOKEN_BY_PROJID":"SELECT DISTINCT n.device_id FROM <>_notification AS n INNER JOIN <>_project AS p ON n.user_id = p.assigned_to  WHERE p.id = ?  ORDER BY n.id DESC;",
+    "SELECT_DEVICE_TOKEN_BY_PROJID":"SELECT DISTINCT n.device_id FROM <>_notification AS n INNER JOIN <>_project_user_mapping AS p ON n.user_id = p.user_id  WHERE p.project_id = ?  ORDER BY n.id DESC;",
     "CREATE_PROJECT_USER_MAPPING":"CREATE TABLE IF NOT EXISTS <>_project_user_mapping(id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER, user_id INTEGER)", 
     "INSERT_PROJECT_USER_MAPPING":"INSERT INTO <>_project_user_mapping(project_id, user_id) VALUES (?, ?)",
     "DELETE_PROJECT_USER_MAPPING":"DELETE FROM <>_project_user_mapping WHERE project_id = ?",
@@ -56,7 +56,8 @@
     "INSERT":"INSERT INTO <>_leadtimline(lead_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now', '+5 hours', '+30 minutes')) ;",
     "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_from FROM <>_leadtimline as a left join <>_user as b on a.created_by = b.id  where a.isActive = 1 AND a.lead_id = ? ;",
     "UPDATE":"UPDATE <>_leadtimline SET message = ?, docs_urls = ?, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;",
-    "DELETE":"UPDATE <>_leadtimline SET isActive = 0, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;"
+    "DELETE":"UPDATE <>_leadtimline SET isActive = 0, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;",
+    "SELECT_BY_TIMELINEID":"select lead_id from <>_leadtimline where id = ? and isActive = 1 "
   },
    "PROJECT_TIMELINE": {
     "DELETE_TABLE":"DROP TABLE IF EXISTS <>_projecttimline;",
@@ -104,5 +105,8 @@
   "UPDATE":"UPDATE <>_companytimeline SET message = ?, docs_urls = ?, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;",
   "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_from FROM <>_companytimeline as a left join <>_user as b on a.created_by = b.id where a.isActive = 1 ;",
   "DELETE":"UPDATE <>_companytimeline SET isActive = 0, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;"
+},
+"CLEANUP": {
+  "DELETE_DATA":"DELETE FROM <>_lead;DELETE FROM <>_project;DELETE FROM <>_project_user_mapping;DELETE FROM <>_leadtimline;DELETE FROM <>_companytimeline;DELETE FROM <>_projecttimline;"
 }
 }

@@ -137,22 +137,8 @@ def count_project(userinfo):
          return execute_company_query(db_query['PROJECT']['COUNT_BY_USER'],userinfo['id'])
     
 def addTimeLine(projId, comment, userinfo, docUrls):
-    sales_device_tokens = []
     result = execute_company_query(db_query['PROJECT_TIMELINE']['INSERT'],projId,comment,docUrls,userinfo['id'])
-    query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
-    rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
-    device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-    if userinfo['role'] == Role.Admin.value or userinfo['role'] == Role.EngineerHead.value:
-        query = db_query["PROJECT"]["SELECT_DEVICE_TOKEN_BY_PROJID"]
-        rows= execute_company_query( query, projId)
-        sales_device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-    if len(sales_device_tokens) > 0:
-        device_tokens.extend(sales_device_tokens)
-    # send notification to all sales person
-    if device_tokens:
-        title = "Project timeline added"
-        message = f"A project timeline has been added for Project ID: {projId}"
-        send_notifications(device_tokens, title, message)
+    send_notification_admin_sengg_assigned_user(projId,"Project timeline added", f"A new timeline has been added for Project ID: {projId}")
     return result
 
 def updateProject(item:UpdateModel, loggedin_userId:int):
@@ -202,34 +188,11 @@ def updateProject(item:UpdateModel, loggedin_userId:int):
             query = db_query['PROJECT']['UPDATE']
             update_query(query,set_clause, values)
             
-            # if update_data.get('stage') == "closed":
             if item.status and item.status.lower() == "closed":
-                query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
-                rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
-                device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-                # send notification to all sales person
-                if device_tokens:
-                    title = "Project closed"
-                    message = f"A project has been closed. Project ID: {id}"
-                    data = {
-                        "tabName": "Projects",
-                        "id": str(id)
-                        }
-                    send_notifications(device_tokens, title, message, data)
-            # if update_data.get('stage') == "poraised":
+                send_notification_admin_sengg_assigned_user(id,"Project closed", f"A project has been closed. Project ID: {id}")
+        
             if item.status and item.status.lower() == "raise-review":    
-                query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
-                rows= execute_company_query( query, Role.Engineer.value, Role.EngineerHead.value, Role.Admin.value)
-                device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-                # send notification to all sales person
-                if device_tokens:
-                    title = "Review raised"
-                    message = f"Review raised for Project ID: {id}"
-                    data = {
-                        "tabName": "Projects",
-                        "id": str(id)
-                        }
-                    send_notifications(device_tokens, title, message, data)
+                send_notification_admin_sengg_assigned_user(id,"Project review raised", f"A project review has been raised. Project ID: {id}")
            
         return True
         
@@ -252,20 +215,11 @@ def assign_project_user(projid, user_ids):
     
 def editTimeLine(timeline_id,comment, userinfo, docUrls):
     result = execute_company_query(db_query['PROJECT_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
-    query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
-    rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
-    device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+    
     query_timeline = db_query["PROJECT_TIMELINE"]["SELECT_BY_TIMELINEID"]
     proj_id = execute_company_query(query_timeline, timeline_id)
     # send notification to all sales person
-    if device_tokens:
-        title = "Project timeline updated"
-        message = f"A timeline has been updated for Project ID: {proj_id[0]['project_id']}"
-        data = {
-                        "tabName": "Projects",
-                        "id": str(proj_id[0]['project_id'])
-                        }
-        send_notifications(device_tokens, title, message, data)
+    send_notification_admin_sengg_assigned_user(proj_id[0]['project_id'],"Project timeline updated", f"A timeline has been updated for Project ID: {proj_id[0]['project_id']}")
     
     return result
 def deleteTimeline(timeline_id, userinfo):
@@ -279,3 +233,18 @@ def deleteTimeline(timeline_id, userinfo):
         message = f"A timeline has been deleted"
         send_notifications(device_tokens, title, message)
     return True
+
+def send_notification_admin_sengg_assigned_user(projId, title, message):
+    query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
+    rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
+    device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+    query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_PROJID"]
+    rows= execute_company_query( query, projId)
+    device_tokens.extend([row['device_id'] for row in rows if row.get('device_id')])
+    # send notification to all sales person
+    if device_tokens:
+        data = {
+            "tabName": "Projects",
+            "id": str(projId)
+        }
+        send_notifications(device_tokens, title, message, data)
