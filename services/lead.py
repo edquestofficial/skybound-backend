@@ -26,7 +26,11 @@ def create_lead(lead,userinfo):
         if device_tokens:
             title = "New lead added"
             message = f"A new lead {inserted_id} has been created."
-            send_notifications(device_tokens, title, message)
+            data = {
+                "tabName": "Leads",
+                "id": str(inserted_id)
+            }
+            send_notifications(device_tokens, title, message, data)
 
         return True
     except Exception as e:
@@ -44,7 +48,11 @@ def create_lead_by_indiamart(lead,indiamart_id):
         if device_tokens:
             title = "New lead added"
             message = f"A new lead {inserted_id} has been created."
-            send_notifications(device_tokens, title, message)
+            data = {
+                "tabName": "Leads",
+                "id": str(inserted_id)
+            }
+            send_notifications(device_tokens, title, message, data)
 
         return True
     except Exception as e:
@@ -92,7 +100,12 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             if device_tokens:
                 title = "Lead assigned"
                 message = f"A new lead({id}) has been assigned to {user[0]['name'] if user else 'Unknown User' }."
-                send_notifications(device_tokens, title, message)
+                data = {
+                "tabName": "Leads",
+                "id": str(id)
+                }
+                send_notifications(device_tokens, title, message, data)
+            
         if result and item.status and item.status.lower() == "closed":
             query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
             rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
@@ -101,18 +114,26 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             if device_tokens:
                 title = "Lead closed"
                 message = f"A lead has been closed. Lead ID: {id}"
-                send_notifications(device_tokens, title, message)
+                data = {
+                "tabName": "Leads",
+                "id": str(id)
+                }
+                send_notifications(device_tokens, title, message, data)
         if result and item.stage and item.stage.lower() == "poraised":
-            result  = create_project(id,loggedin_userId)
+            project_id  = create_project(id,loggedin_userId)
             query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
             rows= execute_company_query( query, Role.Engineer.value, Role.EngineerHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
             # send notification to all sales person
             if device_tokens:
                 title = "Project created"
-                message = f"A new project has been created for Lead ID: {id}"
-                send_notifications(device_tokens, title, message)
-            return result
+                message = f"A new project {project_id} has been created for Lead ID: {id}"
+                data = {
+                        "tabName": "Projects",
+                        "id": str(project_id)
+                        }
+                send_notifications(device_tokens, title, message, data)
+            return True
         
         else :
             return True
@@ -142,7 +163,12 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
     if device_tokens:
         title = "Timeline updated"
         message = f"A timeline has been added to Lead ID: {leadId}"
-        send_notifications(device_tokens, title, message)
+        data = {
+                "tabName": "Leads",
+                "id": str(leadId)
+                }
+        send_notifications(device_tokens, title, message, data)
+        
     return result
 
 def editTimeLine(timeline_id, comment, userinfo, docUrls):

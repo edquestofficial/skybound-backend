@@ -1,13 +1,12 @@
 from core.role import Role
-from database import execute_company_query,execute_filter_lead, fetch_single_record, update_query, execute_project_query
+from database import execute_company_query,execute_filter_lead, fetch_single_record, update_query, execute_project_query, execute_insert_query
 from core.config import db_query
 from schemas.project import UpdateModel
 from utility.pushnotify import send_notify, send_notifications
 from utility.dateutility import ist_now
 
 def create_project(lead_id, user_id):
-    execute_company_query(db_query['PROJECT']['INSERT'],lead_id, 'cold', 'open', 1, user_id)
-    return True
+   return execute_insert_query(db_query['PROJECT']['INSERT'],lead_id, 'cold', 'open', 1, user_id)
 
 def build_conditions(update_data: dict) -> str:
     a_keys = {"id", "assigned_to", "status"}
@@ -131,42 +130,6 @@ def fetch_project(proj,userinfo):
     return result
 
 
-# def fetch_project(proj,userinfo):
-#     user_id = userinfo['id']
-#     role = userinfo['role']
-#     query = db_query['PROJECT']['SELECT_ALL']
-#     conditions = []
-#     values = []
-#       # 🔹 KEYSET PAGINATION
-#     if proj.last_id is not None:
-#         conditions.append("a.id < ?")
-#         values.append(proj.last_id)
-
-#     filters = proj.model_dump(exclude_unset=True)
-#     filter_conditions, filter_values = build_filters(filters)
-#     conditions.extend(filter_conditions)
-#     values.extend(filter_values)
-
-
-#      # 🔹 ROLE BASED CONDITION
-#     if Role.Engineer.value == role and proj.id is None:
-#         conditions.append("(a.assigned_to IS NULL OR a.assigned_to = ?)")
-#         values.append(user_id)
-#     condition_str = " AND ".join(conditions)
-    
-#     if len(conditions) > 0:
-#         condition_str = " AND " + condition_str
-#     values.append(proj.limit)
-#     result = execute_filter_lead(query,condition_str,values)
-#     if proj.id is not None:
-#         query = db_query['PROJECT_TIMELINE']['SELECT']
-#         rows=execute_company_query(query,proj.id)
-#         for row in rows:
-#             urls = row.get("docs_urls", "")
-#             row["docs_urls"] = urls.split(",") if urls else []
-#         result[0]['timeline']=rows
-#     return result
-
 def count_project(userinfo):
     if userinfo['role'] == Role.Admin.value or userinfo['role'] == Role.EngineerHead.value:
         return execute_company_query(db_query['PROJECT']['COUNT'])
@@ -215,7 +178,11 @@ def updateProject(item:UpdateModel, loggedin_userId:int):
                 if device_tokens:
                     title = "Project assigned"
                     message = f"A new project Id: {id} has been assigned to {user_name}."
-                    send_notifications(device_tokens, title, message)
+                    data = {
+                        "tabName": "Projects",
+                        "id": str(id)
+                        }
+                    send_notifications(device_tokens, title, message, data)
             update_data = item.model_dump(exclude_unset=True)
             update_data['modify_date'] = ist_now()
             update_data['modify_by'] = loggedin_userId
@@ -244,7 +211,11 @@ def updateProject(item:UpdateModel, loggedin_userId:int):
                 if device_tokens:
                     title = "Project closed"
                     message = f"A project has been closed. Project ID: {id}"
-                    send_notifications(device_tokens, title, message)
+                    data = {
+                        "tabName": "Projects",
+                        "id": str(id)
+                        }
+                    send_notifications(device_tokens, title, message, data)
             # if update_data.get('stage') == "poraised":
             if item.status and item.status.lower() == "raise-review":    
                 query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
@@ -254,7 +225,11 @@ def updateProject(item:UpdateModel, loggedin_userId:int):
                 if device_tokens:
                     title = "Review raised"
                     message = f"Review raised for Project ID: {id}"
-                    send_notifications(device_tokens, title, message)
+                    data = {
+                        "tabName": "Projects",
+                        "id": str(id)
+                        }
+                    send_notifications(device_tokens, title, message, data)
            
         return True
         
@@ -286,7 +261,11 @@ def editTimeLine(timeline_id,comment, userinfo, docUrls):
     if device_tokens:
         title = "Project timeline updated"
         message = f"A timeline has been updated for Project ID: {proj_id[0]['project_id']}"
-        send_notifications(device_tokens, title, message)
+        data = {
+                        "tabName": "Projects",
+                        "id": str(proj_id[0]['project_id'])
+                        }
+        send_notifications(device_tokens, title, message, data)
     
     return result
 def deleteTimeline(timeline_id, userinfo):
