@@ -238,7 +238,7 @@ def send_notification_admin_sengg_assigned_user(projId, title, message):
     query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
     rows= execute_company_query( query, Role.EngineerHead.value, Role.Admin.value)
     device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-    query = db_query["USER"]["SELECT_DEVICE_TOKEN_BY_PROJID"]
+    query = db_query["PROJECT"]["SELECT_DEVICE_TOKEN_BY_PROJID"]
     rows= execute_company_query( query, projId)
     device_tokens.extend([row['device_id'] for row in rows if row.get('device_id')])
     # send notification to all sales person

@@ -8,7 +8,7 @@ def addTimeLine(comment, userinfo, docUrls):
     inserted_id = execute_insert_query(db_query['COMPANY_TIMELINE']['INSERT'],comment,docUrls,userinfo['id'])
     
     query = db_query["USER"]["SELECT_ALL_DEVICE_TOKEN"]
-    rows= execute_company_query(query)
+    rows= execute_company_query(query, userinfo['id'])
     device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
    
     # send notification to all sales person
@@ -25,7 +25,7 @@ def addTimeLine(comment, userinfo, docUrls):
 def editTimeLine(timeline_id, comment, userinfo, docUrls):
     execute_company_query(db_query['COMPANY_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
     query = db_query["USER"]["SELECT_ALL_DEVICE_TOKEN"]
-    rows= execute_company_query(query)
+    rows= execute_company_query(query, userinfo['id'])
     device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
    
     # send notification to all sales person
@@ -41,12 +41,12 @@ def editTimeLine(timeline_id, comment, userinfo, docUrls):
 
 def deleteTimeline(timeline_id, userinfo):
     execute_company_query(db_query['COMPANY_TIMELINE']['DELETE'],userinfo['id'] ,timeline_id)
-    send_notification_all_user("Company timeline deleted", f"A Company timeline has been deleted.")
+    send_notification_all_user(userinfo['id'],"Company timeline deleted", f"A Company timeline has been deleted.")
     return True 
 
-def send_notification_all_user(title, message):
+def send_notification_all_user(id,title, message):
     query = db_query["USER"]["SELECT_ALL_DEVICE_TOKEN"]
-    rows= execute_company_query(query)
+    rows= execute_company_query(query, id)
     device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
    
     # send notification to all sales person
