@@ -157,25 +157,7 @@ def addTimeLine(leadId, comment, userinfo, docUrls):
     sales_device_tokens = []
     result = execute_company_query(db_query['LEAD_TIMELINE']['INSERT'],leadId,comment,docUrls,userinfo['id'])
     send_notification_admin_shead_assigned_user(leadId,"Timeline added", f"A new timeline has been added to Lead ID: {leadId}")
-    # query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
-    # rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
-    # device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-    # if userinfo['role'] == Role.Admin.value or userinfo['role'] == Role.SalesHead.value:
-    #     query = db_query["LEAD"]["SELECT_DEVICE_TOKEN_BY_LeadID"]
-    #     rows= execute_company_query( query, leadId)
-    #     sales_device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-    # if len(sales_device_tokens) > 0:
-    #     device_tokens.extend(sales_device_tokens)
-    # # send notification to all sales person
-    # if device_tokens:
-    #     title = "Timeline added"
-    #     message = f"A timeline has been added to Lead ID: {leadId}"
-    #     data = {
-    #             "tabName": "Leads",
-    #             "id": str(leadId)
-    #             }
-    #     send_notifications(device_tokens, title, message, data)
-        
+    
     return result
 
 def editTimeLine(timeline_id, comment, userinfo, docUrls):
@@ -183,21 +165,7 @@ def editTimeLine(timeline_id, comment, userinfo, docUrls):
         result = execute_company_query(db_query['LEAD_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
         query = db_query["LEAD_TIMELINE"]["SELECT_BY_TIMELINEID"]
         lead_id = execute_company_query(query, timeline_id)
-        send_notification_admin_shead_assigned_user(lead_id,"Timeline updated", f"A timeline has been updated for lead ID: {timeline_id}")
-        # query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
-        # rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
-        # device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-        # edit_timeline_query = db_query["LEAD_TIMELINE"]["SELECT_BY_TIMELINEID"]
-        # timeline_data = execute_company_query(edit_timeline_query, timeline_id) 
-        # # send notification to all sales person
-        # if device_tokens:
-        #     title = "Timeline updated"
-        #     message = f"A timeline has been edited for lead ID: {timeline_data[0]['lead_id']}   "
-        #     data = {
-        #             "tabName": "Leads",
-        #             "id": str(timeline_data[0]['lead_id'])
-        #             }
-        #     send_notifications(device_tokens, title, message, data)
+        send_notification_admin_shead_assigned_user(lead_id[0]['lead_id'],"Timeline updated", f"A timeline has been updated for lead ID: {timeline_id}")
         return True
     except Exception as e:
         print("Error in editing timeline:", e)
