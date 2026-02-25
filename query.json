@@ -107,6 +107,6 @@
   "DELETE":"UPDATE <>_companytimeline SET isActive = 0, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;"
 },
 "CLEANUP": {
-  "DELETE_DATA":"DELETE FROM <>_lead;DELETE FROM <>_project;DELETE FROM <>_project_user_mapping;DELETE FROM <>_leadtimline;DELETE FROM <>_companytimeline;DELETE FROM <>_projecttimline;"
+  "DELETE_DATA":"DELETE FROM <>_lead;DELETE FROM <>_project;DELETE FROM <>_project_user_mapping;DELETE FROM <>_leadtimline;DELETE FROM <>_companytimeline;DELETE FROM <>_projecttimline;DELETE FROM <>_notification;"
 }
 }

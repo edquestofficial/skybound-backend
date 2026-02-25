@@ -14,6 +14,7 @@ from utility.statemgmt import state
 from utility.auth import role_required
 from services.user import EditUser, fetchUser, reset_password,change_password,notification
 import random
+from  utility.statemgmt import state
 
 settings = Settings()
 
@@ -96,6 +97,7 @@ def login(user: Login):
                 execute_company_query(db_query['NOTIFICATION']['INSERT'],user_data['id'], user.device_id)
 
         token = create_token(user_data, user.device_id)
+        state.set_device_tokens(user.device_id)
         data = {"token":token,"user":{"id":user_data["id"],"email":user_data["emailid"],"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"], "mobile":user_data["mobile"]}}
         return Response(
                 status=True,
@@ -123,6 +125,7 @@ def verify_password(plain_pass: str, hashed_pass: str) -> bool:
 def create_token(userDetails:User, device_id: str):
     payload = {"id":userDetails["id"], "name":userDetails["name"],"role":userDetails["role"],
                "device_id": device_id}
+    
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 

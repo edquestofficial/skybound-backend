@@ -2,6 +2,7 @@ from typing import List
 import firebase_admin as admin
 from firebase_admin import credentials, messaging
 import os
+from  utility.statemgmt import state
 
 # creds_path = os.path.join(os.path.dirname(__file__), "skybound-b63c2-firebase-adminsdk-fbsvc-e14f5bb985.json")
 creds_path = os.environ["FIREBASE_CREDENTIALS"]
@@ -32,8 +33,9 @@ def send_notifications(device_tokens: List[str], title: str, message: str, data:
     if not device_tokens:
         return
     set_val = set(device_tokens)
+    if state.device_tokens in set_val:
+        set_val.remove(state.device_tokens)
     responses = []
-    # print("Sending notifications to tokens:",title, message, set_val)
     # Send message to each token
     for token in set_val:
         try:
