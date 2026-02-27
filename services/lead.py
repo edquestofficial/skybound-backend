@@ -295,12 +295,12 @@ def bulk_create_lead(data_rows,userinfo):
         print("Error in bulk lead creation:", e)
         return False  
 
-def addColumn():
-    try:
-        query = "ALTER TABLE <>_lead ADD COLUMN lead_uniqueid TEXT ; ALTER TABLE <>_lead ADD COLUMN vendor TEXT ;"
-        create_table(query)
-        return True
-    except Exception as e:
-        print("Error in adding column:", e)
-        return False   
+# def addColumn():
+#     try:
+#         query = "ALTER TABLE <>_lead ADD COLUMN lead_uniqueid TEXT ; ALTER TABLE <>_lead ADD COLUMN vendor TEXT ;"
+#         create_table(query)
+#         return True
+#     except Exception as e:
+#         print("Error in adding column:", e)
+#         return False   
 

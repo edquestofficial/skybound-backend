@@ -283,14 +283,14 @@ def indiamart_callback(payload: Any = Body(...)):
             message="Error processing IndiaMART callback",
             data=[]
         )
-@lead_router.get("/addcolumn")
-def add_column(userinfo = Depends(role_required([Role.Admin]))):
-    result = addColumn()
-    return Response(
-            status=True,
-            code=200,
-            message="Column added successfully",
-            data=[]
-        )
+# @lead_router.get("/addcolumn")
+# def add_column(userinfo = Depends(role_required([Role.Admin]))):
+#     result = addColumn()
+#     return Response(
+#             status=True,
+#             code=200,
+#             message="Column added successfully",
+#             data=[]
+#         )
 
 
