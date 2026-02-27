@@ -108,13 +108,16 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             
         if result and item.status and item.status.lower() == "closed":
             send_notification_admin_shead_assigned_user(id,"Lead closed", f"A lead has been closed. Lead ID: {id}")
-           
+        
+        print("item stage :", item.stage)
         if result and item.stage and item.stage.lower() == "poraised":
+            print("Creating project for lead id :", id)
             project_id  = create_project(id,loggedin_userId)
             send_notification_admin_shead_assigned_user(id,"Lead PO Raised", f"A new PO raised for Lead ID: {id}")
             query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
             rows= execute_company_query( query, Role.Engineer.value, Role.EngineerHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+            print("Device tokens for project notification:", device_tokens)
             # send notification to all sales person
             if device_tokens:
                 title = "Project created"
