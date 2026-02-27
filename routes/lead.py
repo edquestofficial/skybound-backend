@@ -36,7 +36,7 @@ def create(lead: Lead,userinfo = Depends(role_required([Role.Admin,Role.SalesHea
 
 @lead_router.post("/")
 def fetch( lead :SearchLead, userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
-   
+    print("fetch lead called with:", lead)
     result = fetch_lead(lead,userinfo)
     return Response(
             status=True,
