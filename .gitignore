@@ -16,5 +16,4 @@ routes/face_embeddings.index
 routes/face_metadata.json
 .vscode
 *.db
-.github/workflows/deploy.yml
-
+.github/workflows/*.yml
