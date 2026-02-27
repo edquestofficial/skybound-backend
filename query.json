@@ -77,7 +77,6 @@
     "INSERT":"INSERT INTO company (name, aliasname, active, created_date) VALUES (?, ?, ?, datetime('now', '+5 hours', '+30 minutes')) ;",
     "SELECT_COMPANY_NAME":"SELECT name FROM company WHERE name = ? ;",
     "SELECT_COMPANY_ALIASNAME":"SELECT name FROM company WHERE aliasname = ? COLLATE NOCASE ;"
-
 },
 "STATE":{
     "CREATE":"CREATE TABLE IF NOT EXISTS state(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE) ;",
