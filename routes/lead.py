@@ -9,7 +9,7 @@ import numpy as np
 from models.response import Response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead, getLeadByUniqueID, editTimeLine, deleteTimeline, addColumn
+from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead, getLeadByUniqueID, editTimeLine, deleteTimeline
 from datetime import datetime
 
 lead_router = APIRouter()

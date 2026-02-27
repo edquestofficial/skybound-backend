@@ -173,6 +173,7 @@ def create_table(query):
         aliasname = state.value
         if aliasname :
             query = query.replace('<>',aliasname)
+        print("Executing create table query:", query)
         conn.executescript(query)
         conn.commit()
         return True
