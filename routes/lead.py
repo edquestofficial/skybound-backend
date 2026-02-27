@@ -9,7 +9,7 @@ import numpy as np
 from models.response import Response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead, getLeadByDate
+from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead, getLeadByUniqueID, editTimeLine, deleteTimeline, addColumn
 from datetime import datetime
 
 lead_router = APIRouter()
@@ -80,7 +80,7 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales, Ro
 
 @lead_router.post("/timeline")
 def create( id: int = Form(...),
-    comment: str = Form(...),
+    comment: Optional[str] = Form(None),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
     saved_files = []
     docs :str = ""
@@ -93,12 +93,56 @@ def create( id: int = Form(...),
             with open(file_location, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             saved_files.append(file_location)
-            docs = ",".join(saved_files)
-    addTimeLine(id, comment, userinfo, docs)
+        docs = ",".join(saved_files)
+    if files  or comment :
+        addTimeLine(id, comment, userinfo, docs)
     return Response(
             status=True,
             code=200,
             message="Comment added successfully",
+            data=[]
+        )
+@lead_router.post("/timelineEdit")
+def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(None), comment: Optional[str] = Form(None),
+    files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
+    saved_files = []
+    if files:
+        upload_dir = "Lead_Doc"
+        os.makedirs(upload_dir, exist_ok=True)
+        if docs_urls and docs_urls[-1] != ",":
+            docs_urls += ","
+        else:            
+            docs_urls = ""
+        for file in files:
+            file_location = f"{upload_dir}/{id}_{file.filename}"
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            saved_files.append(file_location)
+        docs_urls += ",".join(saved_files)
+    
+    if files  or comment :
+        editTimeLine(id, comment, userinfo, docs_urls)
+    return Response(
+            status=True,
+            code=200,
+            message="Comment edited successfully",
+            data=[]
+        )
+@lead_router.get("/timelineDelete")
+def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
+    result = deleteTimeline(id, userinfo)
+    if result:
+        return Response(
+            status=True,
+            code=200,
+            message="Timeline deleted successfully",
+            data=[]
+        )
+    else:
+        return Response(
+            status=False,
+            code=400,
+            message="Failed to delete timeline",
             data=[]
         )
 
@@ -200,23 +244,21 @@ def indiamart_callback(payload: Any = Body(...)):
             "enquiry_type": "Product Inquiry",
             "requirement": response_data.get("QUERY_MESSAGE", "")
         }
-        QUERY_TIME = response_data.get("QUERY_TIME", "")  
-        # '2026-02-20 09:26:59'
-        format_code = "%Y-%m-%d %H:%M:%S"
-        datetime_object = datetime.strptime(QUERY_TIME, format_code).date()
-        #get lead by Lead Date
-        duplicate_lead = getLeadByDate(QUERY_TIME)
+        indiamart_id = response_data.get("UNIQUE_QUERY_ID", "")  
+       
+        #get lead by indiamart_id
+        duplicate_lead = getLeadByUniqueID(indiamart_id)
         if duplicate_lead and len(duplicate_lead)>0:
-            print(f"Lead already exists for the date {datetime_object}, skipping creation.")
+            print(f"Lead already exists for the lead {indiamart_id}, skipping creation.")
             return Response(
                 status=False,
                 code=200,
-                message="Lead already exists for the given date",
+                message="Lead already exists for the given indiamart_id",
                 data=[]
             )
         
         lead = Lead(**lead_data)
-        response = create_lead_by_indiamart(lead, lead_date=QUERY_TIME)
+        response = create_lead_by_indiamart(lead, indiamart_id)
         
         if response is not None:
             return Response(
@@ -234,10 +276,20 @@ def indiamart_callback(payload: Any = Body(...)):
             )
     except Exception as e:
         print(f"Error processing IndiaMART callback: {str(e)}")
+        print(f"Payload received: {payload}")
         return Response(
             status=False,
             code=200,
             message="Error processing IndiaMART callback",
+            data=[]
+        )
+@lead_router.get("/addcolumn")
+def add_column(userinfo = Depends(role_required([Role.Admin]))):
+    result = addColumn()
+    return Response(
+            status=True,
+            code=200,
+            message="Column added successfully",
             data=[]
         )
 

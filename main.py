@@ -15,6 +15,7 @@ app = FastAPI(title="Skybound App", swagger_ui_parameters={"persistAuthorization
 
 app.mount("/Lead_Doc", StaticFiles(directory="Lead_Doc"), name="images")
 app.mount("/Project_Doc", StaticFiles(directory="Project_Doc"), name="images")
+app.mount("/Company_Doc", StaticFiles(directory="Company_Doc"), name="images")
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     error_list =[]
@@ -25,7 +26,16 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                     
     return JSONResponse(status_code=400, content=error_list)
     
-    
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+            
+            status_code=440,
+            content={
+                "status": False,
+                "message": "Logged out due to internal error. Please log in again.",
+            }
+    ) 
 
 app.add_middleware(
     CORSMiddleware,

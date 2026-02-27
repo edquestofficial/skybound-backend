@@ -1,4 +1,3 @@
-
 import os
 import shutil
 from typing import List, Optional
@@ -6,7 +5,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from core.role import Role
 from utility.auth import role_required
 from models.response import Response
-from services.project import create_project,fetch_project, count_project, addTimeLine, updateProject
+from services.project import fetch_project, count_project, addTimeLine, updateProject, editTimeLine, deleteTimeline
 from schemas.project import SearchProject, UpdateModel
 
 project_router = APIRouter()
@@ -32,32 +31,35 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer 
         )
 
 @project_router.post("/edit")
-def edit(update:UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
+def edit(update: UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
+    
     if len(update.id) == 0:
+        print(f'Data received for update: {update.id}  ')
         return Response(
             status=False,
             code=400,
-            message="Please provide the atleast one lead id",
-            data=[]
+            message="Please provide at least one project ID",
         )
-    else:
-        ids = update.id
-        del update.id
-        for id in ids:
-            loggedin_userId = userinfo['id']
-            updateProject(id,update, loggedin_userId)
-     
-    return Response(
+
+    result = updateProject(update, userinfo['id'])
+    if result:
+        return Response(
             status=True,
             code=200,
-            message="Project update successfully",
-            data=[]
+            message="Project updated successfully",
+        )
+    else:
+        return Response(
+            status=False,
+            code=500,
+            message="Failed to update the project",
         )
 @project_router.post("/timeline")
-def create( id: int = Form(...),
-    comment: str = Form(...),
+def create_timeline( proj_id: int = Form(...),
+    comment: Optional[str] = Form(None),
     files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     saved_files = []
+    id = proj_id
     docs :str = ""
     if files:
         upload_dir = "Project_Doc"
@@ -68,11 +70,57 @@ def create( id: int = Form(...),
             with open(file_location, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             saved_files.append(file_location)
-            docs = ",".join(saved_files)
-    addTimeLine(id, comment, userinfo, docs)
+        docs = ",".join(saved_files)
+    if files  or comment :
+         addTimeLine(id, comment, userinfo, docs)
     return Response(
             status=True,
             code=200,
             message="Comment added successfully",
             data=[]
+        )
+@project_router.post("/timelineEdit")
+def edit_timeline(id: int = Form(...), docs_urls :Optional[str] = Form(None), comment: Optional[str] = Form(None),
+    files: Optional[List[UploadFile]] = File(None),userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
+    saved_files = []
+   
+    if files:
+        upload_dir = "Project_Doc"
+        os.makedirs(upload_dir, exist_ok=True)
+        if docs_urls and docs_urls[-1] != ",":
+            docs_urls += ","
+        else:            
+            docs_urls = ""
+        for file in files:
+            file_location = f"{upload_dir}/{id}_{file.filename}"
+            with open(file_location, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            saved_files.append(file_location)
+        docs_urls += ",".join(saved_files)
+    
+    if files  or comment :
+        editTimeLine(id, comment, userinfo, docs_urls)
+    return Response(
+            status=True,
+            code=200,
+            message="Timeline edited successfully",
+            data=[]
+        )
+
+@project_router.get("/timelineDelete")
+def delete_timeline(id: int, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
+    result = deleteTimeline(id, userinfo)
+    if result:
+        return Response(
+            status=True,
+            code=200,
+            message="Timeline deleted successfully",
+            data=[]
+        )
+    else:
+        return Response(
+            status=False,
+            code=400,
+            message="Something went wrong !!",
+            data=[] 
         )

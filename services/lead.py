@@ -1,4 +1,4 @@
-from database import execute_company_query, execute_filter_lead,fetch_single_record, update_query
+from database import execute_company_query, execute_filter_lead,fetch_single_record, update_query, execute_insert_query, create_table
 from core.config import db_query
 from schemas.lead import EditLead
 from services.project import create_project
@@ -17,7 +17,7 @@ def create_lead(lead,userinfo):
             id = userinfo['id']
         else:
             state.setvalue('sb')  # Set a default value if userinfo is None
-        result = execute_company_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,id)
+        inserted_id = execute_insert_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,id)
         # get all sales person device token and send notification
         query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
         rows= execute_company_query( query, Role.Sales.value, Role.SalesHead.value, Role.Admin.value)
@@ -25,17 +25,35 @@ def create_lead(lead,userinfo):
         # send notification to all sales person
         if device_tokens:
             title = "New lead added"
-            message = f"A new lead has been created."
-            send_notifications(device_tokens, title, message)
+            message = f"A new lead {inserted_id} has been created."
+            data = {
+                "tabName": "Leads",
+                "id": str(inserted_id)
+            }
+            send_notifications(device_tokens, title, message, data)
 
         return True
     except Exception as e:
         print("Error in lead creation:", e)
         return None
 
-def create_lead_by_indiamart(lead,lead_date):
+def create_lead_by_indiamart(lead,indiamart_id):
     try :
-        result = execute_company_query(db_query['LEAD']['INSERT_INDIAMART'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,None,lead_date)
+        inserted_id = execute_insert_query(db_query['LEAD']['INSERT_INDIAMART'], lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,None,indiamart_id,'indiamart')
+        # get all sales person device token and send notification
+        query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
+        rows= execute_company_query( query, Role.Sales.value, Role.SalesHead.value, Role.Admin.value)
+        device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+        # send notification to all sales person
+        if device_tokens:
+            title = "New lead added"
+            message = f"A new lead {inserted_id} has been created."
+            data = {
+                "tabName": "Leads",
+                "id": str(inserted_id)
+            }
+            send_notifications(device_tokens, title, message, data)
+
         return True
     except Exception as e:
         print("Error in lead creation:", e)
@@ -82,33 +100,55 @@ def updateLead(id:int,item:EditLead, loggedin_userId:int):
             if device_tokens:
                 title = "Lead assigned"
                 message = f"A new lead({id}) has been assigned to {user[0]['name'] if user else 'Unknown User' }."
-                send_notifications(device_tokens, title, message)
+                data = {
+                "tabName": "Leads",
+                "id": str(id)
+                }
+                send_notifications(device_tokens, title, message, data)
+            
         if result and item.status and item.status.lower() == "closed":
-            query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
-            rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
-            device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-            # send notification to all sales person
-            if device_tokens:
-                title = "Lead closed"
-                message = f"A lead has been closed. Lead ID: {id}"
-                send_notifications(device_tokens, title, message)
+            send_notification_admin_shead_assigned_user(id,"Lead closed", f"A lead has been closed. Lead ID: {id}")
+        
+        print("item stage :", item.stage)
         if result and item.stage and item.stage.lower() == "poraised":
-            result  = create_project(id,loggedin_userId)
+            print("Creating project for lead id :", id)
+            project_id  = create_project(id,loggedin_userId)
+            send_notification_admin_shead_assigned_user(id,"Lead PO Raised", f"A new PO raised for Lead ID: {id}")
             query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
             rows= execute_company_query( query, Role.Engineer.value, Role.EngineerHead.value, Role.Admin.value)
             device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+            print("Device tokens for project notification:", device_tokens)
             # send notification to all sales person
             if device_tokens:
                 title = "Project created"
-                message = f"A new project has been created for Lead ID: {id}"
-                send_notifications(device_tokens, title, message)
-            return result
+                message = f"A new project {project_id} has been created for Lead ID: {id}"
+                data = {
+                        "tabName": "Projects",
+                        "id": str(project_id)
+                        }
+                send_notifications(device_tokens, title, message, data)
+            return True
         
         else :
             return True
     except Exception as e:
         raise 
-
+def send_notification_admin_shead_assigned_user(id,title,message):
+            query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
+            rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
+            device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+            query = db_query["LEAD"]["SELECT_DEVICE_TOKEN_BY_LeadID"]
+            rows= execute_company_query( query, id)
+            device_tokens.extend([row['device_id'] for row in rows if row.get('device_id')])
+            # send notification to all sales person
+            if device_tokens:
+                title = title
+                message = message
+                data = {
+                "tabName": "Leads",
+                "id": str(id)
+                }
+                send_notifications(device_tokens, title, message, data)
 
 def count_lead(userinfo):
     if userinfo['role'] == Role.Admin.value or userinfo['role'] == Role.SalesHead.value:
@@ -119,22 +159,35 @@ def count_lead(userinfo):
 def addTimeLine(leadId, comment, userinfo, docUrls):
     sales_device_tokens = []
     result = execute_company_query(db_query['LEAD_TIMELINE']['INSERT'],leadId,comment,docUrls,userinfo['id'])
-    query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
-    rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
-    device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-    if userinfo['role'] == Role.Admin.value or userinfo['role'] == Role.SalesHead.value:
-        query = db_query["LEAD"]["SELECT_DEVICE_TOKEN_BY_LeadID"]
-        rows= execute_company_query( query, leadId)
-        sales_device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
-    if len(sales_device_tokens) > 0:
-        device_tokens.extend(sales_device_tokens)
-    # send notification to all sales person
-    if device_tokens:
-        title = "Timeline updated"
-        message = f"A timeline has been added to Lead ID: {leadId}"
-        send_notifications(device_tokens, title, message)
+    send_notification_admin_shead_assigned_user(leadId,"Timeline added", f"A new timeline has been added to Lead ID: {leadId}")
+    
     return result
 
+def editTimeLine(timeline_id, comment, userinfo, docUrls):
+    try:
+        result = execute_company_query(db_query['LEAD_TIMELINE']['UPDATE'],comment,docUrls,userinfo['id'], timeline_id)
+        query = db_query["LEAD_TIMELINE"]["SELECT_BY_TIMELINEID"]
+        lead_id = execute_company_query(query, timeline_id)
+        send_notification_admin_shead_assigned_user(lead_id[0]['lead_id'],"Timeline updated", f"A timeline has been updated for lead ID: {timeline_id}")
+        return True
+    except Exception as e:
+        print("Error in editing timeline:", e)
+        return False
+    
+    
+
+def deleteTimeline(timeline_id, userinfo):
+        result = execute_company_query(db_query['LEAD_TIMELINE']['DELETE'], userinfo['id'], timeline_id)
+        query = db_query["USER"]["SELECT_DEVICE_TOKEN_SALESHEAD_ADMIN"]
+        rows= execute_company_query( query, Role.SalesHead.value, Role.Admin.value)
+        device_tokens = [row['device_id'] for row in rows if row.get('device_id')]
+        # send notification to all sales person
+        if device_tokens:
+            title = "Timeline deleted"
+            message = f"A timeline has been deleted."
+            send_notifications(device_tokens, title, message)
+
+        return True
 
 LIKE_COLUMNS = {
     "city": "a.city",
@@ -222,13 +275,13 @@ def delete_lead(lead_id):
         print("Error in lead deletion:", e)
         return False
 
-def getLeadByDate(leaddate):
+def getLeadByUniqueID(uniqueId):
     try:
-        query = db_query['LEAD']['SELECT_BY_DATETIME']
-        result = fetch_single_record(query, leaddate)
+        query = db_query['LEAD']['SELECT_BY_UNIQUEID']
+        result = fetch_single_record(query, uniqueId)
         return result
     except Exception as e:
-        print("Error in fetching leads by date:", e)
+        print("Error in fetching leads by unique id:", e)
         return None
 
 def bulk_create_lead(data_rows,userinfo):
@@ -240,5 +293,14 @@ def bulk_create_lead(data_rows,userinfo):
         return True
     except Exception as e:
         print("Error in bulk lead creation:", e)
-        return False     
+        return False  
+
+def addColumn():
+    try:
+        query = "ALTER TABLE <>_lead ADD COLUMN lead_uniqueid TEXT ; ALTER TABLE <>_lead ADD COLUMN vendor TEXT ;"
+        create_table(query)
+        return True
+    except Exception as e:
+        print("Error in adding column:", e)
+        return False   
 
