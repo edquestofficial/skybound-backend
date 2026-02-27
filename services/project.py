@@ -143,6 +143,7 @@ def addTimeLine(projId, comment, userinfo, docUrls):
 
 def updateProject(item:UpdateModel, loggedin_userId:int):
     try :
+        print("Data received for update in service layer:", item)   
         for id in item.id:
             proj = fetch_single_record(db_query['PROJECT']['SELECT_BY_PROJID'],id)
         
