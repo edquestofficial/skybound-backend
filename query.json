@@ -43,7 +43,7 @@
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
     "UPDATE":"UPDATE <>_project SET <set_clause> WHERE id = ?",
     "SELECT_DEVICE_TOKEN_BY_PROJID":"SELECT DISTINCT n.device_id FROM <>_notification AS n INNER JOIN <>_project_user_mapping AS p ON n.user_id = p.user_id  WHERE p.project_id = ?  ORDER BY n.id DESC;",
-    "CREATE_PROJECT_USER_MAPPING":"CREATE TABLE IF NOT EXISTS <>_project_user_mapping(id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER, user_id INTEGER)", 
+    "CREATE_PROJECT_USER_MAPPING":"CREATE TABLE IF NOT EXISTS <>_project_user_mapping(id INTEGER PRIMARY KEY AUTOINCREMENT, project_id INTEGER, user_id INTEGER) ;", 
     "INSERT_PROJECT_USER_MAPPING":"INSERT INTO <>_project_user_mapping(project_id, user_id) VALUES (?, ?)",
     "DELETE_PROJECT_USER_MAPPING":"DELETE FROM <>_project_user_mapping WHERE project_id = ?",
     "SELECT_USERS_BY_PROJECTID":"SELECT u.id, u.name FROM <>_user AS u INNER JOIN <>_project_user_mapping AS pum ON u.id = pum.user_id WHERE pum.project_id = ?"
@@ -107,6 +107,7 @@
   "DELETE":"UPDATE <>_companytimeline SET isActive = 0, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;"
 },
 "CLEANUP": {
-  "DELETE_DATA":"DELETE FROM <>_lead;DELETE FROM <>_project;DELETE FROM <>_project_user_mapping;DELETE FROM <>_leadtimline;DELETE FROM <>_companytimeline;DELETE FROM <>_projecttimline;DELETE FROM <>_notification;"
+  "LEAD_CASCADE_DATA":"DELETE FROM <>_lead;DELETE FROM <>_project;DELETE FROM <>_project_user_mapping;DELETE FROM <>_leadtimline;DELETE FROM <>_companytimeline;DELETE FROM <>_projecttimline;DELETE FROM <>_notification;",
+  "ADD_COLUMN":"ALTER TABLE <>_lead ADD COLUMN lead_uniqueid TEXT ; ALTER TABLE <>_lead ADD COLUMN vendor TEXT ;"
 }
 }

@@ -33,8 +33,6 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Engineer 
 @project_router.post("/edit")
 def edit(update: UpdateModel, userinfo = Depends(role_required([Role.Admin, Role.Engineer, Role.EngineerHead]))):
     
-    print("Data received for update:", update)
-    
     if len(update.id) == 0:
         print(f'Data received for update: {update.id}  ')
         return Response(
@@ -42,13 +40,6 @@ def edit(update: UpdateModel, userinfo = Depends(role_required([Role.Admin, Role
             code=400,
             message="Please provide at least one project ID",
         )
-
-    # if len(update.assigned_to) == 0:
-    #     return Response(
-    #         status=False,
-    #         code=400,
-    #         message="Please assign at least one user to the project",
-    #     )
 
     result = updateProject(update, userinfo['id'])
     if result:
