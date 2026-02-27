@@ -65,7 +65,8 @@ def setup_db():
         # init_db(query)
         # truncate_table('<>_notification')
         # 
-        query = db_query['COMPANY_TIMELINE']['CREATE']+db_query['PROJECT']['CREATE_PROJECT_USER_MAPPING']+db_query['CLEANUP']['ADD_COLUMN']  
+        # query = db_query['COMPANY_TIMELINE']['CREATE']+db_query['PROJECT']['CREATE_PROJECT_USER_MAPPING']+db_query['CLEANUP']['ADD_COLUMN']  
+        query = db_query['CLEANUP']['ADD_COLUMN_timeline']
         create_table(query)
         
         return Response(
