@@ -71,7 +71,7 @@ def setup_db():
         return Response(
                 status=True,
                 code=200,
-                message="DB created successfully",
+                message="DB query executed successfully",
                 data=[]
             )
     except Exception as e:

@@ -16,4 +16,14 @@ routes/face_embeddings.index
 routes/face_metadata.json
 .vscode
 *.db
+<<<<<<< Updated upstream
 .github/workflows/*.yml
+=======
+.github/workflows/*.yaml
+Company_Doc/
+Lead_Doc/
+Project_Doc/
+
+
+
+>>>>>>> Stashed changes
