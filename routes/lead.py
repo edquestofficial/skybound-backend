@@ -9,7 +9,7 @@ import numpy as np
 from models.response import Response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead, getLeadByUniqueID, editTimeLine, deleteTimeline, addColumn
+from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead, getLeadByUniqueID, editTimeLine, deleteTimeline
 from datetime import datetime
 
 lead_router = APIRouter()
@@ -36,7 +36,7 @@ def create(lead: Lead,userinfo = Depends(role_required([Role.Admin,Role.SalesHea
 
 @lead_router.post("/")
 def fetch( lead :SearchLead, userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead]))):
-   
+    print("fetch lead called with:", lead)
     result = fetch_lead(lead,userinfo)
     return Response(
             status=True,
@@ -283,14 +283,14 @@ def indiamart_callback(payload: Any = Body(...)):
             message="Error processing IndiaMART callback",
             data=[]
         )
-@lead_router.get("/addcolumn")
-def add_column(userinfo = Depends(role_required([Role.Admin]))):
-    result = addColumn()
-    return Response(
-            status=True,
-            code=200,
-            message="Column added successfully",
-            data=[]
-        )
+# @lead_router.get("/addcolumn")
+# def add_column(userinfo = Depends(role_required([Role.Admin]))):
+#     result = addColumn()
+#     return Response(
+#             status=True,
+#             code=200,
+#             message="Column added successfully",
+#             data=[]
+#         )
 
 

@@ -77,7 +77,6 @@
     "INSERT":"INSERT INTO company (name, aliasname, active, created_date) VALUES (?, ?, ?, datetime('now', '+5 hours', '+30 minutes')) ;",
     "SELECT_COMPANY_NAME":"SELECT name FROM company WHERE name = ? ;",
     "SELECT_COMPANY_ALIASNAME":"SELECT name FROM company WHERE aliasname = ? COLLATE NOCASE ;"
-
 },
 "STATE":{
     "CREATE":"CREATE TABLE IF NOT EXISTS state(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT UNIQUE) ;",
@@ -108,11 +107,7 @@
 },
 "CLEANUP": {
   "LEAD_CASCADE_DATA":"DELETE FROM <>_lead;DELETE FROM <>_project;DELETE FROM <>_project_user_mapping;DELETE FROM <>_leadtimline;DELETE FROM <>_companytimeline;DELETE FROM <>_projecttimline;DELETE FROM <>_notification;",
-<<<<<<< Updated upstream
-  "ADD_COLUMN":"ALTER TABLE <>_lead ADD COLUMN lead_uniqueid TEXT ; ALTER TABLE <>_lead ADD COLUMN vendor TEXT ;"
-=======
   "ADD_COLUMN":"ALTER TABLE <>_lead ADD COLUMN lead_uniqueid TEXT ; ALTER TABLE <>_lead ADD COLUMN vendor TEXT ;",
   "ADD_COLUMN_timeline":"ALTER TABLE <>_leadtimline ADD COLUMN modify_by Integer ; ALTER TABLE <>_leadtimline ADD COLUMN modified_date TEXT ; ALTER TABLE <>_projecttimline ADD COLUMN modify_by Integer; ALTER TABLE <>_projecttimline ADD COLUMN modified_date TEXT;"
->>>>>>> Stashed changes
 }
 }
