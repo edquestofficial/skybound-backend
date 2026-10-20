@@ -34,6 +34,8 @@ def register(company: Company):
             execute_company_query(db_query['NOTIFICATION']['CREATE'])
             execute_company_query(db_query['COMPANY_TIMELINE']['CREATE'])
             execute_company_query(db_query['PROJECT']['CREATE_PROJECT_USER_MAPPING'])
+            execute_company_query(db_query['VISIT']['CREATE'])
+            execute_company_query(db_query['SALES_ENTRY']['CREATE'])
             
             return Response(
                     status=True,
@@ -66,8 +68,10 @@ def setup_db():
         # truncate_table('<>_notification')
         # 
         # query = db_query['COMPANY_TIMELINE']['CREATE']+db_query['PROJECT']['CREATE_PROJECT_USER_MAPPING']+db_query['CLEANUP']['ADD_COLUMN']  
-        query = db_query['CLEANUP']['ADD_COLUMN_timeline']
-        create_table(query)
+        create_table(db_query['VISIT']['CREATE'])
+        create_table(db_query['SALES_ENTRY']['CREATE'])
+        # query = db_query['CLEANUP']['ADD_COLUMN_timeline']
+        # create_table(query)
         
         return Response(
                 status=True,

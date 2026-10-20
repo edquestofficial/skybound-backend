@@ -155,7 +155,45 @@ def count_lead(userinfo):
         return execute_company_query(db_query['LEAD']['COUNT'])
     else :
          return execute_company_query(db_query['LEAD']['COUNT_BY_USER'],userinfo['id'])
-    
+
+def fetch_sales_calls(userinfo, start_date=None, end_date=None):
+    sales_user_id = userinfo['id'] if userinfo['role'] == Role.Sales.value else None
+    rows = execute_company_query(
+        db_query['LEAD_TIMELINE']['SELECT_SALES_CALLS'],
+        Role.Sales.value,
+        sales_user_id,
+        sales_user_id,
+        start_date,
+        start_date,
+        end_date,
+    )
+
+    calls_by_date = {}
+    for row in rows:
+        call_date = row["call_date"]
+        if call_date not in calls_by_date:
+            calls_by_date[call_date] = {
+                "date": call_date,
+                "calls": [],
+            }
+        calls_by_date[call_date]["calls"].append({
+            "lead": {
+                "id": row["lead_id"],
+                "name": row["lead_name"],
+                "status": row["lead_status"],
+                "vendor": row["vendor"],
+            },
+            "sales_person": {
+                "id": row["sales_person_id"],
+                "name": row["sales_person_name"],
+            },
+        })
+    calls = list(calls_by_date.values())
+    return {
+        "total_calls": len(calls),
+        "calls": calls,
+    }
+
 def addTimeLine(leadId, comment, userinfo, docUrls):
     sales_device_tokens = []
     result = execute_company_query(db_query['LEAD_TIMELINE']['INSERT'],leadId,comment,docUrls,userinfo['id'])
@@ -303,4 +341,3 @@ def bulk_create_lead(data_rows,userinfo):
 #     except Exception as e:
 #         print("Error in adding column:", e)
 #         return False   
-
