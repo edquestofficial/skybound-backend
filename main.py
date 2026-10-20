@@ -10,6 +10,8 @@ from routes.company import router as company_router
 from routes.lead import lead_router
 from routes.project import project_router
 from routes.state import state_router
+from routes.visit import visit_router
+from routes.sales_entry import sales_entry_router
 
 app = FastAPI(title="Skybound App", swagger_ui_parameters={"persistAuthorization": True} )
 
@@ -28,6 +30,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    logging.getLogger(__name__).exception(
+        "Unhandled exception processing %s %s",
+        request.method,
+        request.url.path,
+    )
     return JSONResponse(
             
             status_code=440,
@@ -62,6 +69,8 @@ app.include_router(lead_router, prefix="/lead")
 app.include_router(project_router, prefix="/project")
 app.include_router(company_router, prefix="/company")
 app.include_router(state_router, prefix="/state")
+app.include_router(visit_router, prefix="/visit")
+app.include_router(sales_entry_router, prefix="/sales-entry")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info", reload=True)

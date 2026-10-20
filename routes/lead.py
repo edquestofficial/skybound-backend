@@ -2,15 +2,16 @@ import io
 import os
 import shutil
 from typing import List, Optional, Any
-from fastapi import APIRouter, File, Form, HTTPException,Depends, UploadFile, Body
+from fastapi import APIRouter, File, Form, HTTPException,Depends, UploadFile, Body, Query
 from schemas.lead import Lead, EditLead, SearchLead
 import pandas as pd
 import numpy as np
 from models.response import Response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, addTimeLine, delete_lead, getLeadByUniqueID, editTimeLine, deleteTimeline
-from datetime import datetime
+from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, fetch_sales_calls, addTimeLine, delete_lead, getLeadByUniqueID, editTimeLine, deleteTimeline
+from datetime import date, timedelta
+from calendar import monthrange
 
 lead_router = APIRouter()
 
@@ -77,6 +78,70 @@ def dashboardCount( userinfo = Depends(role_required([Role.Admin, Role.Sales, Ro
             message="Fetch count successfully",
             data=result
         )
+
+@lead_router.get("/calls")
+def sales_calls(
+    period: Optional[str] = Query(None),
+    month: Optional[int] = Query(None, ge=1, le=12),
+    week: Optional[int] = Query(None, ge=1, le=53),
+    year: Optional[int] = Query(None, ge=1, le=9999),
+    userinfo = Depends(role_required([Role.Admin, Role.Sales, Role.SalesHead])),
+):
+    if period not in (None, "monthly", "weekly"):
+        raise HTTPException(
+            status_code=422,
+            detail="Period must be either 'monthly' or 'weekly'",
+        )
+
+    if period is None:
+        if month is not None and week is None and year is not None:
+            period = "monthly"
+        elif week is not None and month is not None and year is not None:
+            period = "weekly"
+        elif month is not None or week is not None or year is not None:
+            raise HTTPException(
+                status_code=422,
+                detail="Provide month and year, and provide week when selecting weekly data",
+            )
+
+    start_date = None
+    end_date = None
+    if period == "monthly":
+        if month is None or year is None or week is not None:
+            raise HTTPException(
+                status_code=422,
+                detail="Monthly filtering requires month and year only",
+            )
+        start_date = date(year, month, 1)
+        end_date = date(year, month, monthrange(year, month)[1])
+    elif period == "weekly":
+        if week is None or year is None or month is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Weekly filtering requires month, year, and week",
+            )
+        month_start = date(year, month, 1)
+        month_end = date(year, month, monthrange(year, month)[1])
+        first_week_start = month_start - timedelta(
+            days=(month_start.weekday() + 1) % 7
+        )
+        last_week = (month_end - first_week_start).days // 7 + 1
+        if week > last_week:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Month {month} of {year} has no week {week}",
+            )
+        selected_week_start = first_week_start + timedelta(weeks=week - 1)
+        start_date = max(month_start, selected_week_start)
+        end_date = min(month_end, selected_week_start + timedelta(days=6))
+
+    result = fetch_sales_calls(userinfo, start_date, end_date)
+    return Response(
+        status=True,
+        code=200,
+        message="Sales calls fetched successfully",
+        data=result,
+    )
 
 @lead_router.post("/timeline")
 def create( id: int = Form(...),
@@ -292,5 +357,3 @@ def indiamart_callback(payload: Any = Body(...)):
 #             message="Column added successfully",
 #             data=[]
 #         )
-
-

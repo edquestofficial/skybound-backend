@@ -17,6 +17,6 @@ routes/face_metadata.json
 .vscode
 *.db
 .github/workflows/*.yaml
-
-
-
+Company_Doc/
+Lead_Doc/
+Project_Doc/

@@ -52,7 +52,7 @@ class SearchLead(BaseModel):
     city: str |None = None
     state: str |None = None
     enquiry_type:str |None = None
-    status: Optional[LeadStatus] = None
+    status: Optional[str] = None
     assigned_to: Optional[int] = None
     last_id:int |None = None
     limit: int = 10

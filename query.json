@@ -37,7 +37,7 @@
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_project(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT)",
     "INSERT":"INSERT INTO <>_project(lead_id, stage, status, active, created_by, created_date) VALUES (?, ?,?, ?, ?, datetime('now', '+5 hours', '+30 minutes'))",
     "SELECT_ALL":"select a.*, COALESCE(b.name, 'Unassigned') AS assigned_user, c.*  from <>_project as a left join <>_user as b on a.assigned_to = b.id left join <>_lead as c on a.lead_id = c.id WHERE 1=1 {conditions} ORDER BY a.id desc LIMIT ? ;",
-    "SELECT_ALL_PROJECT":"SELECT p.id,p.lead_id, p.next_followup,p.status,p.assigned_by,p.active, p.created_by,p.modify_by, p.created_date, p.modify_date, GROUP_CONCAT(u.id) AS assigned_to, GROUP_CONCAT(u.name) AS assigned_user,c.city, c.state, c.enquiry_type, c.name, c.contact_number, c.email, c.company_name, c.requirement FROM <>_project p LEFT JOIN <>_project_user_mapping m  ON p.id = m.project_id LEFT JOIN <>_user u ON m.user_id = u.id left join <>_lead as c on p.lead_id = c.id WHERE 1=1 ", 
+    "SELECT_ALL_PROJECT":"SELECT p.id,p.lead_id, p.next_followup,p.status,p.assigned_by,p.active, p.created_by,p.modify_by, p.created_date, p.modify_date, GROUP_CONCAT(u.id) AS assigned_to, GROUP_CONCAT(u.name) AS assigned_user,c.city, c.state, c.enquiry_type, c.name, c.assigned_to as sales_id, su.name AS sales_name, c.contact_number, c.email, c.company_name, c.requirement FROM <>_project p LEFT JOIN <>_project_user_mapping m  ON p.id = m.project_id LEFT JOIN <>_user u ON m.user_id = u.id LEFT JOIN <>_lead as c on p.lead_id = c.id LEFT JOIN <>_user su  ON c.assigned_to = su.id WHERE 1=1 ", 
     "SELECT_BY_PROJID":"select * from <>_project where id = ? and active = 1",
     "COUNT":"SELECT status, COUNT(*) AS total FROM <>_project GROUP BY status;",
     "COUNT_BY_USER":"SELECT status, COUNT(*) AS total FROM <>_project where (assigned_to is NULL) OR assigned_to = ? GROUP BY status;",
@@ -50,11 +50,22 @@
 
 
   },
+  "VISIT": {
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_visit(id INTEGER PRIMARY KEY AUTOINCREMENT, visit_date TEXT NOT NULL, visit_location TEXT NOT NULL, contacted_person TEXT NOT NULL, designation TEXT, outcome TEXT NOT NULL CHECK(outcome IN ('Positive', 'Follow-up', 'Not Interested')), remark TEXT NOT NULL, created_by INTEGER NOT NULL, created_date TEXT NOT NULL DEFAULT (datetime('now', '+5 hours', '+30 minutes')))",
+    "INSERT":"INSERT INTO <>_visit(visit_date, visit_location, contacted_person, designation, outcome, remark, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    "SELECT_ALL":"SELECT v.id, v.visit_date, v.visit_location, v.contacted_person, v.designation, v.outcome, v.remark, v.created_by AS sales_person_id, u.name AS sales_person_name, v.created_date FROM <>_visit AS v INNER JOIN <>_user AS u ON u.id = v.created_by WHERE (? IS NULL OR v.created_by = ?) ORDER BY v.visit_date DESC, v.created_date DESC, v.id DESC"
+  },
+  "SALES_ENTRY": {
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_sales_entry(id INTEGER PRIMARY KEY AUTOINCREMENT, entry_date TEXT NOT NULL DEFAULT (date('now', '+5 hours', '+30 minutes')), quotation_sent_amount NUMERIC NOT NULL DEFAULT 0 CHECK(quotation_sent_amount >= 0), po_received_amount NUMERIC NOT NULL DEFAULT 0 CHECK(po_received_amount >= 0), po_expected_tomorrow_amount NUMERIC NOT NULL DEFAULT 0 CHECK(po_expected_tomorrow_amount >= 0), po_expected_this_week_amount NUMERIC NOT NULL DEFAULT 0 CHECK(po_expected_this_week_amount >= 0), created_by INTEGER NOT NULL, created_date TEXT NOT NULL DEFAULT (datetime('now', '+5 hours', '+30 minutes')))",
+    "INSERT":"INSERT INTO <>_sales_entry(quotation_sent_amount, po_received_amount, po_expected_tomorrow_amount, po_expected_this_week_amount, created_by) VALUES (?, ?, ?, ?, ?)",
+    "SELECT_ALL":"SELECT s.id, s.entry_date, s.quotation_sent_amount, s.po_received_amount, s.po_expected_tomorrow_amount, s.po_expected_this_week_amount, s.created_by AS sales_person_id, u.name AS sales_person_name, s.created_date FROM <>_sales_entry AS s INNER JOIN <>_user AS u ON u.id = s.created_by WHERE (? IS NULL OR s.created_by = ?) ORDER BY s.entry_date DESC, s.created_date DESC, s.id DESC"
+  },
    "LEAD_TIMELINE": {
     "DELETE_TABLE":"DROP TABLE IF EXISTS <>_leadtimline;",
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_leadtimline(id INTEGER PRIMARY KEY AUTOINCREMENT, lead_id INTEGER, message TEXT, docs_urls TEXT, isActive INTEGER DEFAULT 1, created_by Integer,created_date TEXT, modify_by Integer, modified_date TEXT) ;",
     "INSERT":"INSERT INTO <>_leadtimline(lead_id, message, docs_urls, created_by, created_date) VALUES (?, ?,?, ?, datetime('now', '+5 hours', '+30 minutes')) ;",
     "SELECT":"SELECT a.*, COALESCE(b.name, 'Unassigned') AS created_from FROM <>_leadtimline as a left join <>_user as b on a.created_by = b.id  where a.isActive = 1 AND a.lead_id = ? ;",
+    "SELECT_SALES_CALLS":"SELECT DISTINCT DATE(t.created_date) AS call_date, l.id AS lead_id, l.name AS lead_name, l.status AS lead_status, l.vendor AS vendor, u.id AS sales_person_id, u.name AS sales_person_name FROM <>_leadtimline AS t INNER JOIN <>_lead AS l ON l.id = t.lead_id INNER JOIN <>_user AS u ON u.id = t.created_by WHERE t.isActive = 1 AND l.active = 1 AND t.message IS NOT NULL AND TRIM(t.message) != '' AND u.role = ? AND (? IS NULL OR u.id = ?) AND (? IS NULL OR DATE(t.created_date) BETWEEN ? AND ?) ORDER BY call_date DESC, sales_person_name, lead_id;",
     "UPDATE":"UPDATE <>_leadtimline SET message = ?, docs_urls = ?, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;",
     "DELETE":"UPDATE <>_leadtimline SET isActive = 0, modify_by = ?, modified_date = datetime('now', '+5 hours', '+30 minutes') WHERE id = ? ;",
     "SELECT_BY_TIMELINEID":"select lead_id from <>_leadtimline where id = ? and isActive = 1 "
@@ -108,6 +119,6 @@
 "CLEANUP": {
   "LEAD_CASCADE_DATA":"DELETE FROM <>_lead;DELETE FROM <>_project;DELETE FROM <>_project_user_mapping;DELETE FROM <>_leadtimline;DELETE FROM <>_companytimeline;DELETE FROM <>_projecttimline;DELETE FROM <>_notification;",
   "ADD_COLUMN":"ALTER TABLE <>_lead ADD COLUMN lead_uniqueid TEXT ; ALTER TABLE <>_lead ADD COLUMN vendor TEXT ;",
-  "ADD_COLUMN_timeline":"ALTER TABLE <>_leadtimline ADD COLUMN isActive INTEGER DEFAULT 1 ; ALTER TABLE <>_projecttimline ADD COLUMN isActive INTEGER DEFAULT 1;"
+  "ADD_COLUMN_timeline":"ALTER TABLE <>_leadtimline ADD COLUMN modify_by Integer ; ALTER TABLE <>_leadtimline ADD COLUMN modified_date TEXT ; ALTER TABLE <>_projecttimline ADD COLUMN modify_by Integer; ALTER TABLE <>_projecttimline ADD COLUMN modified_date TEXT;"
 }
 }
