@@ -122,18 +122,21 @@ def sales_calls(
             )
         month_start = date(year, month, 1)
         month_end = date(year, month, monthrange(year, month)[1])
-        first_week_start = month_start - timedelta(
-            days=(month_start.weekday() + 1) % 7
-        )
-        last_week = (month_end - first_week_start).days // 7 + 1
-        if week > last_week:
+        try:
+            selected_week_start = date.fromisocalendar(year, week, 1)
+        except ValueError:
             raise HTTPException(
                 status_code=422,
-                detail=f"Month {month} of {year} has no week {week}",
+                detail=f"Year {year} has no ISO week {week}",
             )
-        selected_week_start = first_week_start + timedelta(weeks=week - 1)
+        selected_week_end = selected_week_start + timedelta(days=6)
         start_date = max(month_start, selected_week_start)
-        end_date = min(month_end, selected_week_start + timedelta(days=6))
+        end_date = min(month_end, selected_week_end)
+        if start_date > end_date:
+            raise HTTPException(
+                status_code=422,
+                detail=f"ISO week {week} of {year} does not overlap month {month}",
+            )
 
     result = fetch_sales_calls(userinfo, start_date, end_date)
     return Response(

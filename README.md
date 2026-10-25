@@ -112,9 +112,9 @@ Administrators can view the complete workflow and its communications. Sales head
 Calls may be filtered by month or week:
 
 - Monthly: `GET /lead/calls?period=monthly&month=10&year=2026`
-- A week within a month: `GET /lead/calls?period=weekly&month=10&year=2026&week=1`
+- ISO week 43 within October 2026: `GET /lead/calls?period=weekly&month=10&year=2026&week=43`
 
-Weeks run Sunday through Saturday, and numbering restarts at 1 for each month. Week 1 is the Sunday-to-Saturday week intersecting the first day of the month, with dates outside the selected month excluded. The final week may be a partial week. For weekly data, send `month`, `year`, and `week` together. For monthly data, send `month` and `year`. Omitting all period filters returns calls across all dates.
+Weekly filters use ISO week numbers, running Monday through Sunday and numbered within the year. Results are limited to the requested month, so only the portion of the selected ISO week that falls within that month is returned. For example, ISO week 43 of 2026 overlaps October 19–25. For weekly data, send `month`, `year`, and `week` together. For monthly data, send `month` and `year`. Omitting all period filters returns calls across all dates.
 
 Each nested call contains a `lead` object with only `id`, `name`, `status`, and `vendor`, and a `sales_person` object with only `id` and `name`. `total_calls` is the number of date groups returned.
 
