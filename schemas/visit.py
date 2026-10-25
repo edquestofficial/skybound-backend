@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 class VisitOutcome(str, Enum):
     positive = "Positive"
     follow_up = "Follow-up"
-    not_interested = "Not Interested"
+    negative = "Negative"
 
 
 class CreateVisit(BaseModel):
