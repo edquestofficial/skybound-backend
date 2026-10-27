@@ -21,7 +21,7 @@
   },
    "LEAD": {
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_lead(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT,company_name TEXT, city TEXT,state TEXT, contact_number TEXT, enquiry_type TEXT, email TEXT, requirement TEXT, stage TEXT, next_followup TEXT, status TEXT, assigned_to Integer, assigned_by Integer, active INTEGER, created_by Integer,created_date TEXT, modify_by Integer, modify_date TEXT, lead_uniqueid TEXT, vendor TEXT) ;",
-    "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date) VALUES (?,?,?,?,?,?,?,?,1,'open',?, datetime('now', '+5 hours', '+30 minutes'))",
+    "INSERT":"INSERT INTO <>_lead(name ,company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date,vendor) VALUES (?,?,?,?,?,?,?,?,1,'open',?, datetime('now', '+5 hours', '+30 minutes'),?)",
     "INSERT_INDIAMART":"INSERT INTO <>_lead(name, company_name, city, state, contact_number, enquiry_type, email, requirement, active, status, created_by, created_date, lead_uniqueid, vendor) VALUES (?,?,?,?,?,?,?,?,1,'open',?,datetime('now', '+5 hours', '+30 minutes'),?,?)",
     "SELECT_ALL":"SELECT a.id,a.name,a.company_name, a.city,a.state,a.contact_number, a.enquiry_type, a.email, a.requirement, a.stage, a.next_followup, a.status,a.created_date, a.assigned_to, a.modify_date,  COALESCE(b.name, 'Unassigned') AS assigned_user FROM <>_lead AS a LEFT JOIN <>_user AS b ON a.assigned_to = b.id WHERE 1=1 {conditions} ORDER BY a.id desc LIMIT ?",
     "SELECT_BY_LEADID":"select * from <>_lead where id = ? and active = 1",
@@ -59,6 +59,16 @@
     "CREATE":"CREATE TABLE IF NOT EXISTS <>_sales_entry(id INTEGER PRIMARY KEY AUTOINCREMENT, entry_date TEXT NOT NULL DEFAULT (date('now', '+5 hours', '+30 minutes')), quotation_sent_amount NUMERIC NOT NULL DEFAULT 0 CHECK(quotation_sent_amount >= 0), po_received_amount NUMERIC NOT NULL DEFAULT 0 CHECK(po_received_amount >= 0), po_expected_tomorrow_amount NUMERIC NOT NULL DEFAULT 0 CHECK(po_expected_tomorrow_amount >= 0), po_expected_this_week_amount NUMERIC NOT NULL DEFAULT 0 CHECK(po_expected_this_week_amount >= 0), created_by INTEGER NOT NULL, created_date TEXT NOT NULL DEFAULT (datetime('now', '+5 hours', '+30 minutes')))",
     "INSERT":"INSERT INTO <>_sales_entry(quotation_sent_amount, po_received_amount, po_expected_tomorrow_amount, po_expected_this_week_amount, created_by) VALUES (?, ?, ?, ?, ?)",
     "SELECT_ALL":"SELECT s.id, s.entry_date, s.quotation_sent_amount, s.po_received_amount, s.po_expected_tomorrow_amount, s.po_expected_this_week_amount, s.created_by AS sales_person_id, u.name AS sales_person_name, s.created_date FROM <>_sales_entry AS s INNER JOIN <>_user AS u ON u.id = s.created_by WHERE (? IS NULL OR s.created_by = ?) ORDER BY s.entry_date DESC, s.created_date DESC, s.id DESC"
+  },
+  "INCENTIVE": {
+    "CREATE_MONTHLY_TARGET":"CREATE TABLE IF NOT EXISTS <>_sales_monthly_target(id INTEGER PRIMARY KEY AUTOINCREMENT, salesperson_id INTEGER NOT NULL, month INTEGER NOT NULL CHECK(month BETWEEN 1 AND 12), year INTEGER NOT NULL, target_amount NUMERIC NOT NULL CHECK(target_amount > 0), UNIQUE(salesperson_id, year, month))",
+    "CREATE_ANNUAL_SALARY":"CREATE TABLE IF NOT EXISTS <>_sales_annual_salary(id INTEGER PRIMARY KEY AUTOINCREMENT, salesperson_id INTEGER NOT NULL, year INTEGER NOT NULL, annual_salary NUMERIC NOT NULL CHECK(annual_salary >= 0), UNIQUE(salesperson_id, year))",
+    "UPSERT_MONTHLY_TARGET":"INSERT INTO <>_sales_monthly_target(salesperson_id, month, year, target_amount) VALUES (?, ?, ?, ?) ON CONFLICT(salesperson_id, year, month) DO UPDATE SET target_amount = excluded.target_amount",
+    "UPSERT_ANNUAL_SALARY":"INSERT INTO <>_sales_annual_salary(salesperson_id, year, annual_salary) VALUES (?, ?, ?) ON CONFLICT(salesperson_id, year) DO UPDATE SET annual_salary = excluded.annual_salary",
+    "SELECT_SALESPERSON":"SELECT id, name FROM <>_user WHERE id = ? AND role = ?",
+    "SELECT_MONTHLY_TARGET":"SELECT target_amount FROM <>_sales_monthly_target WHERE salesperson_id = ? AND month = ? AND year = ?",
+    "SELECT_ANNUAL_SALARY":"SELECT annual_salary FROM <>_sales_annual_salary WHERE salesperson_id = ? AND year = ?",
+    "SUM_MONTHLY_PO_RECEIVED":"SELECT COALESCE(SUM(po_received_amount), 0) AS sales_amount FROM <>_sales_entry WHERE created_by = ? AND substr(entry_date, 1, 7) = ?"
   },
    "LEAD_TIMELINE": {
     "DELETE_TABLE":"DROP TABLE IF EXISTS <>_leadtimline;",
