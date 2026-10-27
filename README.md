@@ -331,6 +331,15 @@ Base prefix: `/sales-entry`
 - `POST /sales-entry/` — save a sales entry (Sales role only)
 - `GET /sales-entry/` — fetch entries (Sales users see their own; SalesHead and Admin see all)
 
+The GET endpoint accepts optional period filters:
+
+- `?date=DD-MM-YYYY` (also accepts `YYYY-MM-DD`) — entries for the specified date
+- `?week=43&year=2026` — entries for the specified ISO week (Monday-Sunday)
+- `?month=10&year=2026` — entries for the specified calendar month
+- `?year=2026` — entries for the specified calendar year
+
+Only one of `date`, `week`, or `month` can be used at a time. `year` is required with `week` or `month`; without any filters, all entries are returned. Invalid combinations or week/year pairs return HTTP 422.
+
 The entry follows [salesEntry.jpeg](./salesEntry.jpeg) and accepts JSON amounts for quotation sent, PO received, PO expected tomorrow, and PO expected this week. Amounts default to `0` and must be non-negative, with up to two decimal places. The entry date and salesperson are recorded by the backend from the current India time and authenticated token. Entries are stored per company; the table is initialized automatically for existing companies when the API is used.
 
 ```json
