@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.role import Role
@@ -18,9 +20,31 @@ sales_entry_router = APIRouter()
 
 @sales_entry_router.get("/")
 def get_sales_entries(
+    entry_date: str | None = Query(
+        default=None,
+        alias="date",
+        description="Date in DD-MM-YYYY or YYYY-MM-DD format",
+    ),
+    week: int | None = Query(default=None, ge=1, le=53),
+    month: int | None = Query(default=None, ge=1, le=12),
+    year: int | None = Query(default=None, ge=1, le=9999),
     userinfo=Depends(role_required([Role.Sales, Role.SalesHead, Role.Admin])),
 ):
-    result = fetch_sales_entries(userinfo)
+    parsed_date = None
+    if entry_date is not None:
+        for date_format in ("%d-%m-%Y", "%Y-%m-%d"):
+            try:
+                parsed_date = datetime.strptime(entry_date, date_format).date()
+                break
+            except ValueError:
+                continue
+        if parsed_date is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Date must be a valid date in DD-MM-YYYY or YYYY-MM-DD format",
+            )
+
+    result = fetch_sales_entries(userinfo, parsed_date, week, month, year)
     return Response(
         status=True,
         code=200,

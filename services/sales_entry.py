@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import HTTPException
@@ -24,17 +25,90 @@ def create_sales_entry(entry, userinfo):
     return {"sales_entry_id": entry_id, "entry_date": ist_now().split(" ")[0]}
 
 
-def fetch_sales_entries(userinfo):
+def _period_date_range(entry_date=None, week=None, month=None, year=None):
+    selected_periods = sum(
+        value is not None for value in (entry_date, week, month)
+    )
+    if selected_periods > 1:
+        raise HTTPException(
+            status_code=422,
+            detail="Provide only one of date, week, or month",
+        )
+    if entry_date is not None and year is not None:
+        raise HTTPException(
+            status_code=422,
+            detail="Do not provide year with date",
+        )
+    if entry_date is not None:
+        start_date = entry_date
+        end_date = (
+            None if start_date == date.max else start_date + timedelta(days=1)
+        )
+    elif week is not None:
+        if year is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Year is required with week",
+            )
+        try:
+            start_date = date.fromisocalendar(year, week, 1)
+        except ValueError as error:
+            raise HTTPException(
+                status_code=422,
+                detail="Week is not valid for the specified year",
+            ) from error
+        end_date = (
+            None
+            if start_date > date.max - timedelta(days=7)
+            else start_date + timedelta(days=7)
+        )
+    elif month is not None:
+        if year is None:
+            raise HTTPException(
+                status_code=422,
+                detail="Year is required with month",
+            )
+        start_date = date(year, month, 1)
+        if month == 12 and year == 9999:
+            end_date = None
+        elif month == 12:
+            end_date = date(year + 1, 1, 1)
+        else:
+            end_date = date(year, month + 1, 1)
+    elif year is not None:
+        start_date = date(year, 1, 1)
+        end_date = date(year + 1, 1, 1) if year < 9999 else None
+    else:
+        return None, None
+
+    return (
+        start_date.isoformat(),
+        end_date.isoformat() if end_date is not None else None,
+    )
+
+
+def fetch_sales_entries(
+    userinfo,
+    entry_date=None,
+    week=None,
+    month=None,
+    year=None,
+):
     create_table(db_query["SALES_ENTRY"]["CREATE"])
     sales_user_id = (
         userinfo["id"]
         if userinfo["role"] == Role.Sales.value
         else None
     )
+    start_date, end_date = _period_date_range(entry_date, week, month, year)
     return execute_company_query(
         db_query["SALES_ENTRY"]["SELECT_ALL"],
         sales_user_id,
         sales_user_id,
+        start_date,
+        start_date,
+        end_date,
+        end_date,
     )
 
 
