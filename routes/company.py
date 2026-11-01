@@ -2,7 +2,14 @@ import shutil
 from typing import List, Optional
 from fastapi import APIRouter, File, Form, HTTPException,Depends, UploadFile
 from schemas.company import Company
-from database import execute_query, init_db,execute_company_query, truncate_table, create_table
+from database import (
+    create_table,
+    execute_company_query,
+    execute_query,
+    get_db,
+    init_db,
+    truncate_table,
+)
 
 from models.response import Response
 from core.role import Role
@@ -70,10 +77,43 @@ def setup_db():
         # truncate_table('<>_notification')
         # 
         # query = db_query['COMPANY_TIMELINE']['CREATE']+db_query['PROJECT']['CREATE_PROJECT_USER_MAPPING']+db_query['CLEANUP']['ADD_COLUMN']  
-        # create_table(db_query['VISIT']['CREATE'])
         # create_table(db_query['SALES_ENTRY']['CREATE'])
-        create_table(db_query['INCENTIVE']['CREATE_MONTHLY_TARGET'])
-        create_table(db_query['INCENTIVE']['CREATE_ANNUAL_SALARY'])
+        # create_table(db_query['INCENTIVE']['CREATE_MONTHLY_TARGET'])
+        # create_table(db_query['INCENTIVE']['CREATE_ANNUAL_SALARY'])
+
+        conn = get_db()
+        try:
+            aliases = conn.execute(
+                "SELECT aliasname FROM company WHERE aliasname IS NOT NULL"
+            ).fetchall()
+            for row in aliases:
+                alias = row["aliasname"]
+                if not alias:
+                    continue
+
+                table_name = f"{alias}_visit"
+                quoted_table_name = table_name.replace('"', '""')
+                create_query = db_query["VISIT"]["CREATE"].replace(
+                    "<>_visit", f'"{quoted_table_name}"'
+                )
+                conn.execute(create_query)
+
+                columns = {
+                    column["name"]
+                    for column in conn.execute(
+                        f'PRAGMA table_info("{quoted_table_name}")'
+                    )
+                }
+                for column in ("state", "city"):
+                    if column not in columns:
+                        conn.execute(
+                            f'ALTER TABLE "{quoted_table_name}" '
+                            f'ADD COLUMN "{column}" TEXT NOT NULL DEFAULT \'\''
+                        )
+            conn.commit()
+        finally:
+            conn.close()
+
         # query = db_query['CLEANUP']['ADD_COLUMN_timeline']
         # create_table(query)
         
