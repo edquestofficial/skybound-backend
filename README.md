@@ -112,9 +112,9 @@ Administrators can view the complete workflow and its communications. Sales head
 Calls may be filtered by month or week:
 
 - Monthly: `GET /lead/calls?period=monthly&month=10&year=2026`
-- A week within a month: `GET /lead/calls?period=weekly&month=10&year=2026&week=1`
+- ISO week 43 within October 2026: `GET /lead/calls?period=weekly&month=10&year=2026&week=43`
 
-Weeks run Sunday through Saturday, and numbering restarts at 1 for each month. Week 1 is the Sunday-to-Saturday week intersecting the first day of the month, with dates outside the selected month excluded. The final week may be a partial week. For weekly data, send `month`, `year`, and `week` together. For monthly data, send `month` and `year`. Omitting all period filters returns calls across all dates.
+Weekly filters use ISO week numbers, running Monday through Sunday and numbered within the year. Results are limited to the requested month, so only the portion of the selected ISO week that falls within that month is returned. For example, ISO week 43 of 2026 overlaps October 19–25. For weekly data, send `month`, `year`, and `week` together. For monthly data, send `month` and `year`. Omitting all period filters returns calls across all dates.
 
 Each nested call contains a `lead` object with only `id`, `name`, `status`, and `vendor`, and a `sales_person` object with only `id` and `name`. `total_calls` is the number of date groups returned.
 
@@ -330,6 +330,15 @@ Base prefix: `/sales-entry`
 
 - `POST /sales-entry/` — save a sales entry (Sales role only)
 - `GET /sales-entry/` — fetch entries (Sales users see their own; SalesHead and Admin see all)
+
+The GET endpoint accepts optional period filters:
+
+- `?date=DD-MM-YYYY` (also accepts `YYYY-MM-DD`) — entries for the specified date
+- `?week=43&year=2026` — entries for the specified ISO week (Monday-Sunday)
+- `?month=10&year=2026` — entries for the specified calendar month
+- `?year=2026` — entries for the specified calendar year
+
+Only one of `date`, `week`, or `month` can be used at a time. `year` is required with `week` or `month`; without any filters, all entries are returned. Invalid combinations or week/year pairs return HTTP 422.
 
 The entry follows [salesEntry.jpeg](./salesEntry.jpeg) and accepts JSON amounts for quotation sent, PO received, PO expected tomorrow, and PO expected this week. Amounts default to `0` and must be non-negative, with up to two decimal places. The entry date and salesperson are recorded by the backend from the current India time and authenticated token. Entries are stored per company; the table is initialized automatically for existing companies when the API is used.
 
