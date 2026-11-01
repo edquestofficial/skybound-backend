@@ -9,7 +9,21 @@ import numpy as np
 from models.response import Response
 from core.role import Role
 from utility.auth import role_required
-from services.lead import bulk_create_lead, create_lead, create_lead_by_indiamart, updateLead, count_lead, fetch_lead, fetch_sales_calls, addTimeLine, delete_lead, getLeadByUniqueID, editTimeLine, deleteTimeline
+from services.lead import (
+    addTimeLine,
+    bulk_create_lead,
+    count_lead,
+    create_lead,
+    create_lead_by_indiamart,
+    delete_lead,
+    deleteTimeline,
+    editTimeLine,
+    ensure_indiamart_lead_schema,
+    fetch_lead,
+    fetch_sales_calls,
+    getLeadByUniqueID,
+    updateLead,
+)
 from datetime import date, timedelta
 from calendar import monthrange
 
@@ -296,6 +310,7 @@ def lead_delete(lead_id: str, userinfo = Depends(role_required([Role.Admin])) ):
 @lead_router.post("/indiamart/callback")
 def indiamart_callback(payload: Any = Body(...)):
     try:      
+        ensure_indiamart_lead_schema()
         # Parse the IndiaMART API response
         if isinstance(payload, dict):
             response_data = payload.get("RESPONSE", {})

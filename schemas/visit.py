@@ -1,7 +1,7 @@
 from datetime import date
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class VisitOutcome(str, Enum):
@@ -10,9 +10,18 @@ class VisitOutcome(str, Enum):
     negative = "Negative"
 
 
+class VisitLocation(BaseModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class CreateVisit(BaseModel):
     visit_date: date
-    visit_location: str
+    state: str
+    city: str
+    location: VisitLocation
     contacted_person: str
     designation: str | None = None
     outcome: VisitOutcome
@@ -20,7 +29,7 @@ class CreateVisit(BaseModel):
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
-    @field_validator("visit_location", "contacted_person", "remark")
+    @field_validator("state", "city", "contacted_person", "remark")
     @classmethod
     def require_non_empty_text(cls, value: str) -> str:
         value = value.strip()

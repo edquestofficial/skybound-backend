@@ -1,4 +1,12 @@
-from database import execute_company_query, execute_filter_lead,fetch_single_record, update_query, execute_insert_query, create_table
+from database import (
+    create_table,
+    execute_company_query,
+    execute_filter_lead,
+    execute_insert_query,
+    fetch_single_record,
+    get_db,
+    update_query,
+)
 from core.config import db_query
 from schemas.lead import EditLead
 from services.project import create_project
@@ -7,6 +15,24 @@ from core.role import Role
 
 from utility.pushnotify import send_notify, send_notifications
 from utility.statemgmt import state
+
+
+def ensure_indiamart_lead_schema():
+    create_table(db_query['LEAD']['CREATE'])
+    table_name = f'{state.value}_lead'.replace('"', '""')
+    conn = get_db()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        columns = {
+            row["name"] for row in conn.execute(f'PRAGMA table_info("{table_name}")')
+        }
+        for column in ("lead_uniqueid", "vendor"):
+            if column not in columns:
+                conn.execute(f'ALTER TABLE "{table_name}" ADD COLUMN "{column}" TEXT')
+        conn.commit()
+    finally:
+        conn.close()
+
 
 # create the lead and find all salesperson to assign the lead and send notification  
 def create_lead(lead,userinfo):
@@ -39,6 +65,7 @@ def create_lead(lead,userinfo):
 
 def create_lead_by_indiamart(lead,indiamart_id):
     try :
+        ensure_indiamart_lead_schema()
         inserted_id = execute_insert_query(db_query['LEAD']['INSERT_INDIAMART'], lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,None,indiamart_id,'indiamart')
         # get all sales person device token and send notification
         query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
