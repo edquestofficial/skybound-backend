@@ -284,6 +284,8 @@ Base prefix: `/lead`
 - `GET /lead/delete`
 - `POST /lead/indiamart/callback`
 
+The `vendor` field can be provided when creating a lead, changed through `POST /lead/edit`, and used as an exact-match filter in `POST /lead/`. Leads received through the IndiaMART callback are saved with `vendor: "indiamart"`.
+
 ### Project APIs
 
 Base prefix: `/project`
@@ -309,12 +311,18 @@ Base prefix: `/visit`
 - `GET /visit/` — fetch visits (Sales users see their own visits; SalesHead and Admin see all visits)
 - `POST /visit/` — save a standalone customer visit (Sales role only)
 
-Send JSON with the fields shown in [visits.jpeg](./visits.jpeg). `visit_date`, `visit_location`, `contacted_person`, `outcome`, and `remark` are required; `designation` is optional. The accepted `outcome` values are `Positive`, `Follow-up`, and `Not Interested`. The salesperson is taken from the authenticated token, and the visit is saved in the active company's visit table. For existing companies, this table is created automatically on the first visit submission.
+Send JSON with the fields shown below. `visit_date`, `state`, `city`, `location.latitude`, `location.longitude`, `address`, `contacted_person`, `outcome`, and `remark` are required; `designation` is optional. The salesperson is taken from the authenticated token, and the visit is saved in the active company's visit table. For existing companies, this table is created automatically on the first visit submission. `GET /visit/` returns `location` with latitude and longitude and returns `address` as a separate field.
 
 ```json
 {
   "visit_date": "2026-10-19",
-  "visit_location": "Customer office, Pune",
+  "state": "Maharashtra",
+  "city": "Pune",
+  "location": {
+    "latitude": 18.5204,
+    "longitude": 73.8567
+  },
+  "address": "Customer office, Pune",
   "contacted_person": "Asha Patil",
   "designation": "Purchase Manager",
   "outcome": "Follow-up",

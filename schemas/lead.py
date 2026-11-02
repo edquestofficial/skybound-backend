@@ -15,6 +15,7 @@ class Lead(BaseModel):
     enquiry_type:str|None = None
     email: str = None
     requirement: str |None = None
+    vendor: str | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -42,6 +43,7 @@ class EditLead(BaseModel):
     stage: Optional[LeadStage] = None
     next_followup:str | None =None
     enquiry_type:Optional[str] = None
+    vendor: Optional[str] = None
     status: Optional[str] = None
     assigned_to: Optional[int] = None
 
@@ -52,6 +54,7 @@ class SearchLead(BaseModel):
     city: str |None = None
     state: str |None = None
     enquiry_type:str |None = None
+    vendor: str | None = None
     status: Optional[str] = None
     assigned_to: Optional[int] = None
     last_id:int |None = None
