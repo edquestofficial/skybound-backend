@@ -325,7 +325,8 @@ def indiamart_callback(payload: Any = Body(...)):
             "contact_number": response_data.get("SENDER_MOBILE", "").replace("+91-", "").replace("+91", ""),
             "email": response_data.get("SENDER_EMAIL"),
             "enquiry_type": "Product Inquiry",
-            "requirement": response_data.get("QUERY_MESSAGE", "")
+            "requirement": response_data.get("QUERY_MESSAGE", ""),
+            "vendor": "indiamart",
         }
         indiamart_id = response_data.get("UNIQUE_QUERY_ID", "")  
        

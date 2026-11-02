@@ -104,7 +104,7 @@ def setup_db():
                         f'PRAGMA table_info("{quoted_table_name}")'
                     )
                 }
-                for column in ("state", "city"):
+                for column in ("state", "city", "address"):
                     if column not in columns:
                         conn.execute(
                             f'ALTER TABLE "{quoted_table_name}" '

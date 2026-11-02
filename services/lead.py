@@ -43,7 +43,7 @@ def create_lead(lead,userinfo):
             id = userinfo['id']
         else:
             state.setvalue('sb')  # Set a default value if userinfo is None
-        inserted_id = execute_insert_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,id)
+        inserted_id = execute_insert_query(db_query['LEAD']['INSERT'],lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,id,lead.vendor)
         # get all sales person device token and send notification
         query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
         rows= execute_company_query( query, Role.Sales.value, Role.SalesHead.value, Role.Admin.value)
@@ -66,7 +66,7 @@ def create_lead(lead,userinfo):
 def create_lead_by_indiamart(lead,indiamart_id):
     try :
         ensure_indiamart_lead_schema()
-        inserted_id = execute_insert_query(db_query['LEAD']['INSERT_INDIAMART'], lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,None,indiamart_id,'indiamart')
+        inserted_id = execute_insert_query(db_query['LEAD']['INSERT_INDIAMART'], lead.name, lead.company_name,lead.city,lead.state,lead.contact_number,lead.enquiry_type,lead.email,lead.requirement,None,indiamart_id,lead.vendor)
         # get all sales person device token and send notification
         query = db_query["USER"]["SELECT_SALESPERSON_DEVICE_TOKEN"]
         rows= execute_company_query( query, Role.Sales.value, Role.SalesHead.value, Role.Admin.value)
@@ -264,6 +264,7 @@ EXACT_COLUMNS = {
     "id": "a.id",
     "status": "a.status",
     "assigned_to": "a.assigned_to",
+    "vendor": "a.vendor",
 }
 
 def build_filters(filters):
