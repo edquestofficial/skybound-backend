@@ -22,6 +22,7 @@ class CreateVisit(BaseModel):
     state: str
     city: str
     location: VisitLocation
+    address: str
     contacted_person: str
     designation: str | None = None
     outcome: VisitOutcome
@@ -29,7 +30,7 @@ class CreateVisit(BaseModel):
 
     model_config = ConfigDict(extra="forbid", use_enum_values=True)
 
-    @field_validator("state", "city", "contacted_person", "remark")
+    @field_validator("state", "city", "address", "contacted_person", "remark")
     @classmethod
     def require_non_empty_text(cls, value: str) -> str:
         value = value.strip()
