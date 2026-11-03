@@ -51,7 +51,7 @@
 
   },
   "VISIT": {
-    "CREATE":"CREATE TABLE IF NOT EXISTS <>_visit(id INTEGER PRIMARY KEY AUTOINCREMENT, visit_date TEXT NOT NULL, state TEXT NOT NULL DEFAULT '', city TEXT NOT NULL DEFAULT '', visit_location TEXT NOT NULL, address TEXT NOT NULL DEFAULT '', contacted_person TEXT NOT NULL, designation TEXT, outcome TEXT NOT NULL CHECK(outcome IN ('Positive', 'Follow-up', 'Not Interested')), remark TEXT NOT NULL, created_by INTEGER NOT NULL, created_date TEXT NOT NULL DEFAULT (datetime('now', '+5 hours', '+30 minutes')))",
+    "CREATE":"CREATE TABLE IF NOT EXISTS <>_visit(id INTEGER PRIMARY KEY AUTOINCREMENT, visit_date TEXT NOT NULL, state TEXT NOT NULL DEFAULT '', city TEXT NOT NULL DEFAULT '', visit_location TEXT NOT NULL, address TEXT NOT NULL DEFAULT '', contacted_person TEXT NOT NULL, designation TEXT, outcome TEXT NOT NULL CHECK(outcome IN ('Positive', 'Follow-up', 'Negative', 'Not Interested')), remark TEXT NOT NULL, created_by INTEGER NOT NULL, created_date TEXT NOT NULL DEFAULT (datetime('now', '+5 hours', '+30 minutes')))",
     "INSERT":"INSERT INTO <>_visit(visit_date, state, city, visit_location, address, contacted_person, designation, outcome, remark, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     "SELECT_ALL":"SELECT v.id, v.visit_date, v.state, v.city, v.visit_location AS location, v.address, v.contacted_person, v.designation, v.outcome, v.remark, v.created_by AS sales_person_id, u.name AS sales_person_name, v.created_date FROM <>_visit AS v INNER JOIN <>_user AS u ON u.id = v.created_by WHERE (? IS NULL OR v.created_by = ?) ORDER BY v.visit_date DESC, v.created_date DESC, v.id DESC"
   },
