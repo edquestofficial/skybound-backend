@@ -1,4 +1,5 @@
 import json
+import re
 
 from core.config import db_query
 from core.role import Role
@@ -18,6 +19,38 @@ def ensure_visit_schema():
         if "address" not in columns:
             conn.execute(
                 f'ALTER TABLE "{table_name}" ADD COLUMN "address" TEXT NOT NULL DEFAULT \'\''
+            )
+        table_sql = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
+            (table_name.replace('""', '"'),),
+        ).fetchone()["sql"]
+        outcome_check = re.compile(
+            r"CHECK\s*\(\s*outcome\s+IN\s*\([^)]*\)\s*\)", re.IGNORECASE
+        )
+        check_match = outcome_check.search(table_sql)
+        if check_match and "'Negative'" not in check_match.group():
+            temporary_table_name = f"{state.value}_visit_migration"
+            conn.execute(f'DROP TABLE IF EXISTS "{temporary_table_name}"')
+            create_sql = outcome_check.sub(
+                "CHECK(outcome IN ('Positive', 'Follow-up', 'Negative', 'Not Interested'))",
+                table_sql,
+                count=1,
+            )
+            create_sql = create_sql.replace(
+                f"{state.value}_visit", temporary_table_name, 1
+            )
+            conn.execute(create_sql)
+            columns = [
+                row["name"] for row in conn.execute(f'PRAGMA table_info("{table_name}")')
+            ]
+            column_list = ", ".join(f'"{column}"' for column in columns)
+            conn.execute(
+                f'INSERT INTO "{temporary_table_name}" ({column_list}) '
+                f'SELECT {column_list} FROM "{table_name}"'
+            )
+            conn.execute(f'DROP TABLE "{table_name}"')
+            conn.execute(
+                f'ALTER TABLE "{temporary_table_name}" RENAME TO "{table_name}"'
             )
         conn.commit()
     finally:
