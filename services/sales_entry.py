@@ -151,7 +151,7 @@ def set_monthly_target(target):
 
 
 def set_annual_salary(salary):
-    _create_incentive_tables()
+    # _create_incentive_tables()
     salesperson = _require_salesperson(salary.user_id)
     execute_company_query(
         db_query["INCENTIVE"]["UPSERT_ANNUAL_SALARY"],
@@ -168,7 +168,7 @@ def set_annual_salary(salary):
 
 
 def calculate_sales_incentive(user_id, month, year):
-    _create_incentive_tables()
+    # _create_incentive_tables()
     salesperson = _require_salesperson(user_id)
 
     targets = execute_company_query(

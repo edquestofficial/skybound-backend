@@ -23,7 +23,7 @@ def _require_company_context(userinfo):
 def get_visits(
     userinfo=Depends(role_required([Role.Sales, Role.SalesHead, Role.Admin])),
 ):
-    _require_company_context(userinfo)
+    # _require_company_context(userinfo)
     result = fetch_visits(userinfo)
     return Response(
         status=True,
@@ -38,7 +38,7 @@ def create(
     visit: CreateVisit,
     userinfo=Depends(role_required([Role.Sales])),
 ):
-    _require_company_context(userinfo)
+    # _require_company_context(userinfo)
     result = create_visit(visit, userinfo)
     return Response(
         status=True,
