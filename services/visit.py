@@ -44,7 +44,8 @@ def ensure_visit_schema(company_alias):
                 f'ALTER TABLE "{table_name}" ADD COLUMN "address" TEXT NOT NULL DEFAULT \'\''
             )
         table_sql = conn.execute(
-            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
+            "SELECT sql FROM sqlite_master "
+            "WHERE type = 'table' AND name = ? COLLATE NOCASE",
             (table_name.replace('""', '"'),),
         ).fetchone()
         if table_sql is None:
@@ -62,8 +63,12 @@ def ensure_visit_schema(company_alias):
                 table_sql,
                 count=1,
             )
-            create_sql = create_sql.replace(
-                f"{company_alias}_visit", temporary_table_name, 1
+            create_sql = re.sub(
+                re.escape(f"{company_alias}_visit"),
+                temporary_table_name,
+                create_sql,
+                count=1,
+                flags=re.IGNORECASE,
             )
             conn.execute(create_sql)
             columns = [

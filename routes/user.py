@@ -70,7 +70,7 @@ Skybound"""
 @router.post("/login")
 def login(user: Login):
     if user.username and user.username.find('_'):
-      prefix =user.username.split('_')[0]
+      prefix = user.username.lower().split('_')[0]
       cur = execute_query(db_query['COMPANY']['SELECT_COMPANY_ALIASNAME'], prefix)
      
       if cur :
