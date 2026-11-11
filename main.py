@@ -40,7 +40,7 @@ async def global_exception_handler(request: Request, exc: Exception):
             status_code=440,
             content={
                 "status": False,
-                "message": "Logged out due to internal error. Please log in again.",
+                "message": "Logged out due to invalid token. Please log in again.",
             }
     ) 
 
