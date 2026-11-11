@@ -96,7 +96,7 @@ def login(user: Login):
                 execute_company_query(db_query['NOTIFICATION']['DELETE'], user_data['id'])   
                 execute_company_query(db_query['NOTIFICATION']['INSERT'],user_data['id'], user.device_id)
 
-        token = create_token(user_data, user.device_id)
+        token = create_token(user_data, user.device_id, prefix)
         state.set_device_tokens(user.device_id)
         data = {"token":token,"user":{"id":user_data["id"],"email":user_data["emailid"],"name":user_data["name"],"role":user_data["role"], "userName":user_data["username"], "mobile":user_data["mobile"]}}
         return Response(
@@ -122,9 +122,9 @@ def verify_password(plain_pass: str, hashed_pass: str) -> bool:
     # plain_pass = plain_pass[:72]
     return bcrypt.checkpw(plain_pass.encode(), hashed_pass.encode())
 
-def create_token(userDetails:User, device_id: str):
+def create_token(userDetails:User, device_id: str, company_code: str):
     payload = {"id":userDetails["id"], "name":userDetails["name"],"role":userDetails["role"],
-               "device_id": device_id}
+               "device_id": device_id, "company_code": company_code}
     
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
