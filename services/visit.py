@@ -90,7 +90,7 @@ def ensure_visit_schema(company_alias):
 
 def create_visit(visit, userinfo):
     company_alias = _company_alias(userinfo)
-    ensure_visit_schema(company_alias)
+    # ensure_visit_schema(company_alias)
     conn = get_db()
     try:
         cursor = conn.execute(
@@ -117,7 +117,7 @@ def create_visit(visit, userinfo):
 
 def fetch_visits(userinfo):
     company_alias = _company_alias(userinfo)
-    ensure_visit_schema(company_alias)
+    # ensure_visit_schema(company_alias)
     sales_user_id = (
         userinfo["id"]
         if userinfo["role"] == Role.Sales.value
