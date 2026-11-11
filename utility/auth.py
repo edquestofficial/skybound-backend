@@ -38,7 +38,12 @@ def role_required(allowed_roles: List[Role]):
                     detail=f"Access denied."
                 )
 
-            return {"id":payload.get("id"), "role":user_role, "device_id": device_id}
+            return {
+                "id": payload.get("id"),
+                "role": user_role,
+                "device_id": device_id,
+                "company_code": payload.get("company_code"),
+            }
 
         except ExpiredSignatureError:
             raise HTTPException(
