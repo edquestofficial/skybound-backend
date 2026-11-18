@@ -1,9 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.role import Role
 from models.response import Response
 from schemas.visit import CreateVisit
-from services.visit import create_visit, fetch_visits
+from services.visit import (
+    create_visit,
+    fetch_consolidated_visits,
+    fetch_employee_visits,
+    fetch_visits,
+)
 from utility.auth import role_required
 from utility.statemgmt import state
 
@@ -29,6 +34,33 @@ def get_visits(
         status=True,
         code=200,
         message="Visits fetched successfully",
+        data=result,
+    )
+
+
+@visit_router.get("/admin/consolidated")
+def get_consolidated_visit_data(
+    userinfo=Depends(role_required([Role.Admin])),
+):
+    result = fetch_consolidated_visits(userinfo)
+    return Response(
+        status=True,
+        code=200,
+        message="Consolidated visit data fetched successfully",
+        data=result,
+    )
+
+
+@visit_router.get("/admin/employee")
+def get_employee_visit_data(
+    employee_id: int = Query(gt=0),
+    userinfo=Depends(role_required([Role.Admin])),
+):
+    result = fetch_employee_visits(userinfo, employee_id)
+    return Response(
+        status=True,
+        code=200,
+        message="Employee visit data fetched successfully",
         data=result,
     )
 

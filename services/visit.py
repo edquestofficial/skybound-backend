@@ -3,6 +3,7 @@ import re
 
 from core.config import db_query
 from core.role import Role
+from fastapi import HTTPException
 from database import get_db
 from utility.statemgmt import state
 
@@ -134,6 +135,10 @@ def fetch_visits(userinfo):
         ]
     finally:
         conn.close()
+    return _normalize_visits(visits)
+
+
+def _normalize_visits(visits):
     for visit in visits:
         saved_address = visit.get("address")
         try:
@@ -150,3 +155,47 @@ def fetch_visits(userinfo):
             visit["address"] = saved_address or visit["location"]
             visit["location"] = {"latitude": None, "longitude": None}
     return visits
+
+
+def fetch_consolidated_visits(userinfo):
+    company_alias = _company_alias(userinfo)
+    conn = get_db()
+    try:
+        return [
+            dict(row)
+            for row in conn.execute(
+                _visit_query(
+                    db_query["VISIT"]["SELECT_CONSOLIDATED"],
+                    company_alias,
+                ),
+                (Role.Sales.value,),
+            ).fetchall()
+        ]
+    finally:
+        conn.close()
+
+
+def fetch_employee_visits(userinfo, employee_id):
+    company_alias = _company_alias(userinfo)
+    conn = get_db()
+    try:
+        employee = conn.execute(
+            _visit_query(
+                db_query["VISIT"]["SELECT_EMPLOYEE"],
+                company_alias,
+            ),
+            (employee_id, Role.Sales.value),
+        ).fetchone()
+        if employee is None:
+            raise HTTPException(status_code=404, detail="Sales employee not found")
+
+        visits = [
+            dict(row)
+            for row in conn.execute(
+                _visit_query(db_query["VISIT"]["SELECT_ALL"], company_alias),
+                (employee_id, employee_id),
+            ).fetchall()
+        ]
+    finally:
+        conn.close()
+    return _normalize_visits(visits)
