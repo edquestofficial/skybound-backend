@@ -1,5 +1,6 @@
 import json
 import re
+from datetime import date
 
 from core.config import db_query
 from core.role import Role
@@ -130,7 +131,7 @@ def fetch_visits(userinfo):
             dict(row)
             for row in conn.execute(
                 _visit_query(db_query["VISIT"]["SELECT_ALL"], company_alias),
-                (sales_user_id, sales_user_id),
+                (sales_user_id, sales_user_id, None, None, None, None),
             ).fetchall()
         ]
     finally:
@@ -157,8 +158,27 @@ def _normalize_visits(visits):
     return visits
 
 
-def fetch_consolidated_visits(userinfo):
+def _visit_date_range(month, year):
+    if month is not None and year is None:
+        raise HTTPException(status_code=422, detail="Year is required with month")
+    if year is None:
+        return None, None
+
+    start_date = date(year, month or 1, 1)
+    if month is None:
+        end_date = date(year + 1, 1, 1) if year < 9999 else None
+    elif month == 12 and year == 9999:
+        end_date = None
+    elif month == 12:
+        end_date = date(year + 1, 1, 1)
+    else:
+        end_date = date(year, month + 1, 1)
+    return start_date.isoformat(), end_date.isoformat() if end_date else None
+
+
+def fetch_consolidated_visits(userinfo, month=None, year=None):
     company_alias = _company_alias(userinfo)
+    start_date, end_date = _visit_date_range(month, year)
     conn = get_db()
     try:
         return [
@@ -168,15 +188,16 @@ def fetch_consolidated_visits(userinfo):
                     db_query["VISIT"]["SELECT_CONSOLIDATED"],
                     company_alias,
                 ),
-                (Role.Sales.value,),
+                (start_date, start_date, end_date, end_date, Role.Sales.value),
             ).fetchall()
         ]
     finally:
         conn.close()
 
 
-def fetch_employee_visits(userinfo, employee_id):
+def fetch_employee_visits(userinfo, employee_id, month=None, year=None):
     company_alias = _company_alias(userinfo)
+    start_date, end_date = _visit_date_range(month, year)
     conn = get_db()
     try:
         employee = conn.execute(
@@ -193,7 +214,7 @@ def fetch_employee_visits(userinfo, employee_id):
             dict(row)
             for row in conn.execute(
                 _visit_query(db_query["VISIT"]["SELECT_ALL"], company_alias),
-                (employee_id, employee_id),
+                (employee_id, employee_id, start_date, start_date, end_date, end_date),
             ).fetchall()
         ]
     finally:

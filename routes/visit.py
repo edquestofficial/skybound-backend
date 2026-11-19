@@ -40,9 +40,11 @@ def get_visits(
 
 @visit_router.get("/admin/consolidated")
 def get_consolidated_visit_data(
+    month: int | None = Query(default=None, ge=1, le=12),
+    year: int | None = Query(default=None, ge=1, le=9999),
     userinfo=Depends(role_required([Role.Admin])),
 ):
-    result = fetch_consolidated_visits(userinfo)
+    result = fetch_consolidated_visits(userinfo, month, year)
     return Response(
         status=True,
         code=200,
@@ -54,9 +56,11 @@ def get_consolidated_visit_data(
 @visit_router.get("/admin/employee")
 def get_employee_visit_data(
     employee_id: int = Query(gt=0),
+    month: int | None = Query(default=None, ge=1, le=12),
+    year: int | None = Query(default=None, ge=1, le=9999),
     userinfo=Depends(role_required([Role.Admin])),
 ):
-    result = fetch_employee_visits(userinfo, employee_id)
+    result = fetch_employee_visits(userinfo, employee_id, month, year)
     return Response(
         status=True,
         code=200,
