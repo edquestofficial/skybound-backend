@@ -26,10 +26,12 @@ def _require_company_context(userinfo):
 
 @visit_router.get("/")
 def get_visits(
+    month: int | None = Query(default=None, ge=1, le=12),
+    year: int | None = Query(default=None, ge=1, le=9999),
     userinfo=Depends(role_required([Role.Sales, Role.SalesHead, Role.Admin])),
 ):
     # _require_company_context(userinfo)
-    result = fetch_visits(userinfo)
+    result = fetch_visits(userinfo, month, year)
     return Response(
         status=True,
         code=200,

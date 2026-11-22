@@ -117,8 +117,9 @@ def create_visit(visit, userinfo):
     return {"visit_id": visit_id}
 
 
-def fetch_visits(userinfo):
+def fetch_visits(userinfo, month=None, year=None):
     company_alias = _company_alias(userinfo)
+    start_date, end_date = _visit_date_range(month, year)
     # ensure_visit_schema(company_alias)
     sales_user_id = (
         userinfo["id"]
@@ -131,7 +132,14 @@ def fetch_visits(userinfo):
             dict(row)
             for row in conn.execute(
                 _visit_query(db_query["VISIT"]["SELECT_ALL"], company_alias),
-                (sales_user_id, sales_user_id, None, None, None, None),
+                (
+                    sales_user_id,
+                    sales_user_id,
+                    start_date,
+                    start_date,
+                    end_date,
+                    end_date,
+                ),
             ).fetchall()
         ]
     finally:
