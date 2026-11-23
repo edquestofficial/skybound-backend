@@ -167,6 +167,135 @@ def set_annual_salary(salary):
     }
 
 
+def _calculate_incentive_amounts(sales_amount, target_amount, annual_salary):
+    monthly_salary = (annual_salary / Decimal(12)).quantize(
+        _CENT,
+        rounding=ROUND_HALF_UP,
+    )
+    achievement_percentage = sales_amount * Decimal(100) / target_amount
+    incentive_amount = (monthly_salary * sales_amount / target_amount).quantize(
+        _CENT,
+        rounding=ROUND_HALF_UP,
+    )
+    return {
+        "achievement_percentage": float(
+            achievement_percentage.quantize(_CENT, rounding=ROUND_HALF_UP)
+        ),
+        "monthly_salary": float(monthly_salary),
+        "incentive_amount": float(incentive_amount),
+        "total_monthly_pay": float(monthly_salary + incentive_amount),
+    }
+
+
+def fetch_sales_targets(year):
+    _create_incentive_tables()
+    rows = execute_company_query(
+        db_query["INCENTIVE"]["SELECT_SALESPERSON_TARGETS_BY_YEAR"],
+        year,
+        Role.Sales.value,
+    )
+    targets_by_user = {}
+    for row in rows:
+        salesperson_targets = targets_by_user.setdefault(
+            row["user_id"],
+            {
+                "user_id": row["user_id"],
+                "salesperson_name": row["salesperson_name"],
+                "year": year,
+                "monthly_targets": [
+                    {"month": month, "target_amount": None}
+                    for month in range(1, 13)
+                ],
+            },
+        )
+        if row["month"] is not None:
+            salesperson_targets["monthly_targets"][row["month"] - 1][
+                "target_amount"
+            ] = float(row["target_amount"])
+    return list(targets_by_user.values())
+
+
+def fetch_sales_performance(month, year):
+    create_table(db_query["SALES_ENTRY"]["CREATE"])
+    _create_incentive_tables()
+    rows = execute_company_query(
+        db_query["INCENTIVE"]["SELECT_SALESPERSON_PERFORMANCE"],
+        month,
+        year,
+        year,
+        f"{year:04d}-{month:02d}",
+        Role.Sales.value,
+    )
+    performance = []
+    for row in rows:
+        sales_amount = Decimal(str(row["sales_amount"]))
+        target_amount = (
+            Decimal(str(row["target_amount"]))
+            if row["target_amount"] is not None
+            else None
+        )
+        annual_salary = (
+            Decimal(str(row["annual_salary"]))
+            if row["annual_salary"] is not None
+            else None
+        )
+        monthly_salary = (
+            (annual_salary / Decimal(12)).quantize(
+                _CENT,
+                rounding=ROUND_HALF_UP,
+            )
+            if annual_salary is not None
+            else None
+        )
+        incentive_details = (
+            _calculate_incentive_amounts(
+                sales_amount,
+                target_amount,
+                annual_salary,
+            )
+            if target_amount is not None and annual_salary is not None
+            else None
+        )
+        performance.append(
+            {
+                "user_id": row["user_id"],
+                "salesperson_name": row["salesperson_name"],
+                "month": month,
+                "year": year,
+                "sales_amount": float(sales_amount),
+                "target_amount": (
+                    float(target_amount) if target_amount is not None else None
+                ),
+                "achievement_percentage": (
+                    incentive_details["achievement_percentage"]
+                    if incentive_details is not None
+                    else None
+                ),
+                "annual_salary": (
+                    float(annual_salary) if annual_salary is not None else None
+                ),
+                "monthly_salary": (
+                    incentive_details["monthly_salary"]
+                    if incentive_details is not None
+                    else float(monthly_salary)
+                    if monthly_salary is not None
+                    else None
+                ),
+                "incentive_amount": (
+                    incentive_details["incentive_amount"]
+                    if incentive_details is not None
+                    else None
+                ),
+                "total_monthly_pay": (
+                    incentive_details["total_monthly_pay"]
+                    if incentive_details is not None
+                    else None
+                ),
+            }
+        )
+    return performance
+
+
 def calculate_sales_incentive(user_id, month, year):
     # _create_incentive_tables()
     salesperson = _require_salesperson(user_id)
@@ -202,16 +331,6 @@ def calculate_sales_incentive(user_id, month, year):
     sales_amount = Decimal(str(sales_rows[0]["sales_amount"]))
     target_amount = Decimal(str(targets[0]["target_amount"]))
     annual_salary = Decimal(str(salaries[0]["annual_salary"]))
-    monthly_salary = (annual_salary / Decimal(12)).quantize(
-        _CENT,
-        rounding=ROUND_HALF_UP,
-    )
-    achievement_percentage = sales_amount * Decimal(100) / target_amount
-    incentive_amount = (monthly_salary * sales_amount / target_amount).quantize(
-        _CENT,
-        rounding=ROUND_HALF_UP,
-    )
-
     return {
         "user_id": user_id,
         "salesperson_name": salesperson["name"],
@@ -219,11 +338,10 @@ def calculate_sales_incentive(user_id, month, year):
         "year": year,
         "sales_amount": float(sales_amount),
         "target_amount": float(target_amount),
-        "achievement_percentage": float(
-            achievement_percentage.quantize(_CENT, rounding=ROUND_HALF_UP)
-        ),
         "annual_salary": float(annual_salary),
-        "monthly_salary": float(monthly_salary),
-        "incentive_amount": float(incentive_amount),
-        "total_monthly_pay": float(monthly_salary + incentive_amount),
+        **_calculate_incentive_amounts(
+            sales_amount,
+            target_amount,
+            annual_salary,
+        ),
     }

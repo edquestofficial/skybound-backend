@@ -1,8 +1,10 @@
 import json
 import re
+from datetime import date
 
 from core.config import db_query
 from core.role import Role
+from fastapi import HTTPException
 from database import get_db
 from utility.statemgmt import state
 
@@ -115,8 +117,9 @@ def create_visit(visit, userinfo):
     return {"visit_id": visit_id}
 
 
-def fetch_visits(userinfo):
+def fetch_visits(userinfo, month=None, year=None):
     company_alias = _company_alias(userinfo)
+    start_date, end_date = _visit_date_range(month, year)
     # ensure_visit_schema(company_alias)
     sales_user_id = (
         userinfo["id"]
@@ -129,11 +132,22 @@ def fetch_visits(userinfo):
             dict(row)
             for row in conn.execute(
                 _visit_query(db_query["VISIT"]["SELECT_ALL"], company_alias),
-                (sales_user_id, sales_user_id),
+                (
+                    sales_user_id,
+                    sales_user_id,
+                    start_date,
+                    start_date,
+                    end_date,
+                    end_date,
+                ),
             ).fetchall()
         ]
     finally:
         conn.close()
+    return _normalize_visits(visits)
+
+
+def _normalize_visits(visits):
     for visit in visits:
         saved_address = visit.get("address")
         try:
@@ -150,3 +164,67 @@ def fetch_visits(userinfo):
             visit["address"] = saved_address or visit["location"]
             visit["location"] = {"latitude": None, "longitude": None}
     return visits
+
+
+def _visit_date_range(month, year):
+    if month is not None and year is None:
+        raise HTTPException(status_code=422, detail="Year is required with month")
+    if year is None:
+        return None, None
+
+    start_date = date(year, month or 1, 1)
+    if month is None:
+        end_date = date(year + 1, 1, 1) if year < 9999 else None
+    elif month == 12 and year == 9999:
+        end_date = None
+    elif month == 12:
+        end_date = date(year + 1, 1, 1)
+    else:
+        end_date = date(year, month + 1, 1)
+    return start_date.isoformat(), end_date.isoformat() if end_date else None
+
+
+def fetch_consolidated_visits(userinfo, month=None, year=None):
+    company_alias = _company_alias(userinfo)
+    start_date, end_date = _visit_date_range(month, year)
+    conn = get_db()
+    try:
+        return [
+            dict(row)
+            for row in conn.execute(
+                _visit_query(
+                    db_query["VISIT"]["SELECT_CONSOLIDATED"],
+                    company_alias,
+                ),
+                (start_date, start_date, end_date, end_date, Role.Sales.value),
+            ).fetchall()
+        ]
+    finally:
+        conn.close()
+
+
+def fetch_employee_visits(userinfo, employee_id, month=None, year=None):
+    company_alias = _company_alias(userinfo)
+    start_date, end_date = _visit_date_range(month, year)
+    conn = get_db()
+    try:
+        employee = conn.execute(
+            _visit_query(
+                db_query["VISIT"]["SELECT_EMPLOYEE"],
+                company_alias,
+            ),
+            (employee_id, Role.Sales.value),
+        ).fetchone()
+        if employee is None:
+            raise HTTPException(status_code=404, detail="Sales employee not found")
+
+        visits = [
+            dict(row)
+            for row in conn.execute(
+                _visit_query(db_query["VISIT"]["SELECT_ALL"], company_alias),
+                (employee_id, employee_id, start_date, start_date, end_date, end_date),
+            ).fetchall()
+        ]
+    finally:
+        conn.close()
+    return _normalize_visits(visits)
