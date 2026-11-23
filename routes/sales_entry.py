@@ -8,7 +8,9 @@ from schemas.sales_entry import CreateSalesEntry, SetAnnualSalary, SetMonthlyTar
 from services.sales_entry import (
     calculate_sales_incentive,
     create_sales_entry,
+    fetch_sales_performance,
     fetch_sales_entries,
+    fetch_sales_targets,
     set_annual_salary,
     set_monthly_target,
 )
@@ -77,6 +79,35 @@ def save_monthly_target(
         status=True,
         code=200,
         message="Monthly sales target saved successfully",
+        data=result,
+    )
+
+
+@sales_entry_router.get("/targets")
+def get_sales_targets(
+    year: int = Query(ge=2000, le=9999),
+    userinfo=Depends(role_required([Role.Admin])),
+):
+    result = fetch_sales_targets(year)
+    return Response(
+        status=True,
+        code=200,
+        message="Monthly sales targets fetched successfully",
+        data=result,
+    )
+
+
+@sales_entry_router.get("/performance")
+def get_sales_performance(
+    month: int = Query(ge=1, le=12),
+    year: int = Query(ge=2000, le=9999),
+    userinfo=Depends(role_required([Role.Admin])),
+):
+    result = fetch_sales_performance(month, year)
+    return Response(
+        status=True,
+        code=200,
+        message="Sales performance fetched successfully",
         data=result,
     )
 
